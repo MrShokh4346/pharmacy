@@ -10,7 +10,7 @@ load_dotenv()
 
 
 SECRET_KEY = os.environ['SECRET_KEY']
-ALGORITHM = ALGORITHM
+ALGORITHM = os.environ['ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 

@@ -7,11 +7,11 @@ from jose import JWTError, jwt
 from pydantic import BaseModel
 from .auth import views
 from . import models
-from .database import SessionLocal, engine
+from .models.database import SessionLocal, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
 
 
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
