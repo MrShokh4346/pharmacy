@@ -1,13 +1,25 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
-from .dependencies import get_password_hash, verify_password
+# from .dependencies import get_password_hash, verify_password
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
 from .pharmacy import *
 from .plan import *
 from .doctors import *
+from passlib.context import CryptContext
 
 from .database import Base, get_db
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
 
 class Region(Base):
@@ -15,10 +27,10 @@ class Region(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    user = relationship("Users", cascade='all, delete', back_populates="region")
-    doctor = relationship("Doctor", cascade='all, delete', back_populates="region")
-    pharmacy = relationship("Pharmacy", cascade='all, delete', back_populates="region")
-    med_org = relationship("MedicalOrganization", cascade='all, delete', back_populates="region")
+    # user = relationship("Users", cascade='all, delete', backref="region")
+    # doctor = relationship("Doctor", cascade='all, delete', backref="region")
+    # pharmacy = relationship("Pharmacy", cascade='all, delete', backref="region")
+    # med_org = relationship("MedicalOrganization", cascade='all, delete', backref="region")
 
 
 class ManufacturedCompany(Base):
@@ -26,7 +38,7 @@ class ManufacturedCompany(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    product = relationship("Products", cascade='all, delete', back_populates="man_company")
+    # product = relationship("Products", cascade='all, delete', backref="man_company")
 
 
 class Products(Base):
@@ -35,20 +47,20 @@ class Products(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     price = Column(Integer)
-    man_company = relationship("ManufacturedCompany", cascade='all, delete', back_populates="product")
+    man_company = relationship("ManufacturedCompany", cascade='all, delete', backref="product")
     man_company_id = Column(Integer, ForeignKey("manufactured_company.id", ondelete='CASCADE'), nullable=False)
-    attch_prd = relationship("UserAttachedProduct", cascade='all, delete', back_populates="product")
-    planattachedproduct = relationship("PlanAttachedProduct", cascade='all, delete', back_populates="product")
-    doctorattachedproduct = relationship("DoctorAttachedProduct", cascade='all, delete', back_populates="product")
+    # attch_prd = relationship("UserAttachedProduct", cascade='all, delete', backref="product")
+    # planattachedproduct = relationship("PlanAttachedProduct", cascade='all, delete', backref="product")
+    # doctorattachedproduct = relationship("DoctorAttachedProduct", cascade='all, delete', backref="product")
 
 
 class UserAttachedProduct(Base):
     __tablename__ = "user_attached_product"
 
     id = Column(Integer, primary_key=True)
-    product = relationship("Products", cascade='all, delete', back_populates="attch_prd")
+    product = relationship("Products", cascade='all, delete', backref="attch_prd")
     product_id = Column(Integer, ForeignKey("products.id", ondelete='CASCADE'), nullable=False)
-    user = relationship("Users", cascade='all, delete', back_populates="ur_attch_prd")
+    user = relationship("Users", cascade='all, delete', backref="ur_attch_prd")
     user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
 
 
@@ -59,9 +71,9 @@ class DoctorMonthlyPlan(Base):
     month_name = Column(String)
     date = Column(DateTime, default=datetime.now())
 
-    user = relationship("Users", cascade='all, delete', back_populates="dm_plan")
+    user = relationship("Users", cascade='all, delete', backref="dm_plan")
     user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
-    dm_plan = relationship("DoctorPlan", cascade='all, delete', back_populates="doctor_plan")
+    # dm_plan = relationship("DoctorPlan", cascade='all, delete', backref="doctor_plan")
 
 
 class DoctorPlan(Base):
@@ -69,7 +81,7 @@ class DoctorPlan(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    doctor_plan = relationship("DoctorMonthlyPlan", cascade='all, delete', back_populates="dm_plan")
+    doctor_plan = relationship("DoctorMonthlyPlan", cascade='all, delete', backref="dm_plan")
     doctor_plan_id = Column(Integer, ForeignKey("doctor_monthly_plan.id", ondelete='CASCADE'), nullable=False)
 
 
@@ -80,9 +92,9 @@ class PharmacyMonthlyPlan(Base):
     month_name = Column(String)
     date = Column(DateTime, default=datetime.now())
 
-    user = relationship("Users", cascade='all, delete', back_populates="pm_plan")
+    user = relationship("Users", cascade='all, delete', backref="pm_plan")
     user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
-    phm_plan = relationship("PharmacyPlan", cascade='all, delete', back_populates="pharmacy_plan")
+    # phm_plan = relationship("PharmacyPlan", cascade='all, delete', backref="pharmacy_plan")
 
 
 class PharmacyPlan(Base):
@@ -90,7 +102,7 @@ class PharmacyPlan(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    pharmacy_plan = relationship("PharmacyMonthlyPlan", cascade='all, delete', back_populates="phm_plan")
+    pharmacy_plan = relationship("PharmacyMonthlyPlan", cascade='all, delete', backref="phm_plan")
     pharmacy_plan_id = Column(Integer, ForeignKey("pharmacy_monthly_plan.id", ondelete='CASCADE'), nullable=False)
 
 
@@ -103,23 +115,28 @@ class Users(Base):
     hashed_password = Column(String)
     status = Column(String)
     deleted = Column(Boolean, default=False)
-    ur_attch_prd = relationship("UserAttachedProduct", cascade='all, delete', back_populates="user")
-    region = relationship("Region", cascade='all, delete', back_populates="user")
+
+    # ur_attch_prd = relationship("UserAttachedProduct", cascade='all, delete', backref="user")
+    region = relationship("Region", cascade='all, delete', backref="user")
     region_id = Column(Integer, ForeignKey("region.id", ondelete='CASCADE'))  #####
-    boss = relationship("Users", cascade='all, delete', remote_side=[id])
-    boss_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))    #####
-    mr_pharmacy = relationship("Pharmacy", cascade='all, delete', back_populates="med_rep")
-    rm_pharmacy = relationship("Pharmacy", cascade='all, delete', back_populates="region_manager")
-    ffm_pharmacy = relationship("Pharmacy", cascade='all, delete', back_populates="ffm")
-    pm_pharmacy = relationship("Pharmacy", cascade='all, delete', back_populates="project_manager")
-    plan = relationship("Plan", cascade='all, delete', back_populates="med_rep")
-    mr_doctor = relationship("Doctor", cascade='all, delete', back_populates="med_rep")
-    rm_doctor = relationship("Doctor", cascade='all, delete', back_populates="region_manager")
-    ffm_doctor = relationship("Doctor", cascade='all, delete', back_populates="ffm")
-    pm_doctor = relationship("Doctor", cascade='all, delete', back_populates="project_manager")
-    med_org = relationship("MedicalOrganization", cascade='all, delete', back_populates="med_rep")
-    dm_plan = relationship("DoctorMonthlyPlan", cascade='all, delete', back_populates="user")
-    pm_plan = relationship("PharmacyMonthlyPlan", cascade='all, delete', back_populates="user")
+    region_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))      #####
+    region_manager = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[region_manager_id])
+    ffm_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))               #####  
+    ffm = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[ffm_id])
+    project_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))    #####
+    project_manager = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[project_manager_id])
+    # mr_pharmacy = relationship("Pharmacy", cascade='all, delete', backref="med_rep", foreign_keys=[med_rep_id])
+    # rm_pharmacy = relationship("Pharmacy", cascade='all, delete', backref="region_manager", foreign_keys=[region_manager_id])
+    # ffm_pharmacy = relationship("Pharmacy", cascade='all, delete', backref="ffm", foreign_keys=[ffm_id])
+    # pm_pharmacy = relationship("Pharmacy", cascade='all, delete', backref="project_manager", foreign_keys=[project_manager_id])
+    # plan = relationship("Plan", cascade='all, delete', backref="med_rep")
+    # mr_doctor = relationship("Doctor", cascade='all, delete', backref="med_rep", foreign_keys=[med_rep_id])
+    # rm_doctor = relationship("Doctor", cascade='all, delete', backref="region_manager", foreign_keys=[region_manager_id])
+    # ffm_doctor = relationship("Doctor", cascade='all, delete', backref="ffm", foreign_keys=[ffm_id])
+    # pm_doctor = relationship("Doctor", cascade='all, delete', backref="project_manager", foreign_keys=[project_manager_id])
+    # med_org = relationship("MedicalOrganization", cascade='all, delete', backref="med_rep")
+    # dm_plan = relationship("DoctorMonthlyPlan", cascade='all, delete', backref="user")
+    # pm_plan = relationship("PharmacyMonthlyPlan", cascade='all, delete', backref="user")
 
     @property
     def password(self):

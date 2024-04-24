@@ -5,9 +5,10 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from pydantic import BaseModel
-from .auth import views
-from . import models
-from .models.database import SessionLocal, engine, Base
+from auth.views import router as auth_router
+from common.views import router as common_router
+from project_manager.views import router as pm_router
+from models.database import SessionLocal, engine, Base
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -27,4 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(views.router)
+app.include_router(auth_router)
+app.include_router(pm_router)
+app.include_router(common_router)
+
+

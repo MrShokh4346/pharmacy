@@ -1,10 +1,13 @@
 # from .main import ALGORITHM, SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import datetime, timedelta, timezone
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from dotenv.main import load_dotenv
+from fastapi import Request, Depends
 import os
+from .users import Users
+from typing import Annotated
+from .database import get_db
 
 load_dotenv()
 
@@ -12,17 +15,6 @@ load_dotenv()
 SECRET_KEY = os.environ['SECRET_KEY']
 ALGORITHM = os.environ['ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
 
 
 def create_access_token(data: dict):
@@ -33,29 +25,43 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-# async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-#     credentials_exception = HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Could not validate credentials",
-#         headers={"WWW-Authenticate": "Bearer"},
-#     )
-#     try:
-#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-#         username: str = payload.get("sub")
-#         if username is None:
-#             raise credentials_exception
-#         token_data = TokenData(username=username)
-#     except JWTError:
-#         raise credentials_exception
-#     user = get_user(fake_users_db, username=token_data.username)
-#     if user is None:
-#         raise credentials_exception
-#     return user
+async def validate_token(request: Request):
+    token = request.headers.get("Authorization")
+    if not token:
+        raise HTTPException(status_code=401, detail="Token is missing")
+
+    try:
+        token = token.split("Bearer ")[1]
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        id: str = payload.get("sub")
+        if id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except (jwt.JWTError, IndexError):
+        raise HTTPException(status_code=401, detail="Could not validate credentials")
+    
+    return id
 
 
-# async def get_current_active_user(
-#     current_user: Annotated[User, Depends(get_current_user)],
-# ):
-#     if current_user.disabled:
-#         raise HTTPException(status_code=400, detail="Inactive user")
-#     return current_user
+async def get_current_user(id: Annotated[str, Depends(validate_token)], db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    user = db.query(Users).filter(Users.id == id).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+def check_if_user_already_exists(username: str, db: Session = Depends(get_db)):
+    db_user = db.query(Users).filter(Users.username == username).first()
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already exists"
+        )
+    return False
+
