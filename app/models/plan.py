@@ -23,12 +23,7 @@ class Plan(Base):
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete='CASCADE'), nullable=False)
     med_rep = relationship("Users", cascade='all, delete', backref="plan")
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
-    # planattachedproduct = relationship("PlanAttachedProduct", cascade='all, delete', backref="plan")
-    # routeplanmonth = relationship("RoutePlanMonth", cascade='all, delete', backref="plan")
-    # doctot = relationship("Doctor", cascade='all, delete', backref="plan")
     
-
-
 
 class PlanAttachedProduct(Base):
     __tablename__ = "plan_attached_product"
@@ -51,7 +46,6 @@ class RoutePlanMonth(Base):
 
     plan = relationship("Plan", cascade='all, delete', backref="routeplanmonth")
     plan_id = Column(Integer, ForeignKey("plan.id", ondelete='CASCADE'), nullable=False)
-    # routeplanweek = relationship("RoutePlanWeek", cascade='all, delete', backref="plan_month")
 
 
 class RoutePlanWeek(Base):

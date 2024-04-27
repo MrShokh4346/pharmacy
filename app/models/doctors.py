@@ -15,7 +15,6 @@ class Speciality(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    # doctor = relationship("Doctor", cascade='all, delete', backref="speciality")
 
 
 class DoctorCategory(Base):
@@ -23,7 +22,6 @@ class DoctorCategory(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    # doctor = relationship("Doctor", cascade='all, delete', backref="category")
 
 
 class MedicalOrganization(Base):
@@ -39,8 +37,6 @@ class MedicalOrganization(Base):
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
     region = relationship("Region", cascade='all, delete', backref="med_org")
     region_id = Column(Integer, ForeignKey("region.id", ondelete='CASCADE'), nullable=False) 
-    # doctor = relationship("Doctor", cascade='all, delete', backref="medical_organization")
-    # plan = relationship("Plan", cascade='all, delete', backref="medical_organization")
 
 
 class DoctorAttachedProduct(Base):
@@ -72,10 +68,13 @@ class Doctor(Base):
     region_manager = relationship("Users", cascade='all, delete', backref="rm_doctor", foreign_keys=[region_manager_id])
     ffm_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
     ffm = relationship("Users", cascade='all, delete', backref="ffm_doctor", foreign_keys=[ffm_id])
-    project_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
-    project_manager = relationship("Users", cascade='all, delete', backref="pm_doctor", foreign_keys=[project_manager_id])
+    product_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+    product_manager = relationship("Users", cascade='all, delete', backref="pm_doctor", foreign_keys=[product_manager_id])
+    deputy_director_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)   
+    deputy_director = relationship("Users", cascade='all, delete',  foreign_keys=[deputy_director_id])
+    director_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)    
+    director = relationship("Users", cascade='all, delete',  foreign_keys=[director_id])
     plan_id = Column(Integer, ForeignKey("plan.id", ondelete='CASCADE'), nullable=False)
-    # plan = relationship("Plan", cascade='all, delete', backref="doctot")
     region = relationship("Region", cascade='all, delete', backref="doctor")
     region_id = Column(Integer, ForeignKey("region.id", ondelete='CASCADE'), nullable=False) 
     pharmacy = relationship("Pharmacy", cascade='all, delete', backref="doctor")
@@ -86,6 +85,5 @@ class Doctor(Base):
     category_id = Column(Integer, ForeignKey("doctor_category.id", ondelete='CASCADE'), nullable=False)
     medical_organization = relationship("MedicalOrganization", cascade='all, delete', backref="doctor")
     medical_organization_id = Column(Integer, ForeignKey("medical_organization.id", ondelete='CASCADE'), nullable=False) 
-    # doctorattachedproduct = relationship("DoctorAttachedProduct", cascade='all, delete', backref="doctor")
 
 

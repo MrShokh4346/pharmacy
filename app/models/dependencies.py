@@ -3,11 +3,12 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from dotenv.main import load_dotenv
-from fastapi import Request, Depends
+from fastapi import Request, Depends, HTTPException
 import os
 from .users import Users
 from typing import Annotated
 from .database import get_db
+from fastapi.security import HTTPBearer
 
 load_dotenv()
 
@@ -15,6 +16,8 @@ load_dotenv()
 SECRET_KEY = os.environ['SECRET_KEY']
 ALGORITHM = os.environ['ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+auth_header = HTTPBearer()
 
 
 def create_access_token(data: dict):
@@ -45,22 +48,21 @@ async def validate_token(request: Request):
 
 
 async def get_current_user(id: Annotated[str, Depends(validate_token)], db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     user = db.query(Users).filter(Users.id == id).first()
     if user is None:
-        raise credentials_exception
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     return user
 
 
-def check_if_user_already_exists(username: str, db: Session = Depends(get_db)):
+def check_if_user_already_exists(username: str, db: Session):
     db_user = db.query(Users).filter(Users.username == username).first()
     if db_user:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=400,
             detail="Username already exists"
         )
     return False

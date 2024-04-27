@@ -30,12 +30,14 @@ class Pharmacy(Base):
     region_manager = relationship("Users", cascade='all, delete', backref="rm_pharmacy", foreign_keys=[region_manager_id])
     ffm_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
     ffm = relationship("Users", cascade='all, delete', backref="ffm_pharmacy", foreign_keys=[ffm_id])
-    project_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
-    project_manager = relationship("Users", cascade='all, delete', backref="pm_pharmacy", foreign_keys=[project_manager_id])
-    # plan = relationship("Plan", cascade='all, delete', backref="pharmacy")
+    product_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+    product_manager = relationship("Users", cascade='all, delete', backref="pm_pharmacy", foreign_keys=[product_manager_id])
+    deputy_director_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)   
+    deputy_director = relationship("Users", cascade='all, delete',  foreign_keys=[deputy_director_id])
+    director_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)    
+    director = relationship("Users", cascade='all, delete',  foreign_keys=[director_id])
     region = relationship("Region", cascade='all, delete', backref="pharmacy")
     region_id = Column(Integer, ForeignKey("region.id", ondelete='CASCADE'), nullable=False) 
-    # doctor = relationship("Doctor", cascade='all, delete', backref="pharmacy")
 
 
 

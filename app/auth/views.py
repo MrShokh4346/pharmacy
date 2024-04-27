@@ -29,7 +29,7 @@ async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.id})
+    access_token = create_access_token(data={"sub": str(user.id)})
     return TokenSchema(access_token=access_token)
 
 
@@ -42,25 +42,25 @@ async def register_user(user: RegisterSchema, db: Session = Depends(get_db)) -> 
             detail="Username already exists",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    new_user = Users(**user.dict())
+    new_user = Users(**user.dict(), status='director')
     new_user.save(db=db)
     return UserOutSchema(**new_user.__dict__)
 
 
-@router.get('/getuser/{user_id}')
-async def get_user_by_id(user_id: int, db: Session = Depends(get_db)) -> UserOutSchema:
-    db_user = db.query(Users).filter(Users.id == user_id).first()
-    return UserOutSchema(**db_user.__dict__)
+# @router.get('/getuser/{user_id}')
+# async def get_user_by_id(user_id: int, db: Session = Depends(get_db)) -> UserOutSchema:
+#     db_user = db.query(Users).filter(Users.id == user_id).first()
+#     return UserOutSchema(**db_user.__dict__)
 
 
-@router.put('/update-user/{user_id}')
-async def update_user(user: UpdateUserSchema, user_id: int, db: Session = Depends(get_db)) -> UserOutSchema:
-    db_user = db.query(Users).filter(Users.id == user_id).first()
-    if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="There is not this user"
-        )
-    db_user.update(**user.dict(), db=db)
-    return UserOutSchema(**db_user.__dict__)
+# @router.put('/update-user/{user_id}')
+# async def update_user(user: UpdateUserSchema, user_id: int, db: Session = Depends(get_db)) -> UserOutSchema:
+#     db_user = db.query(Users).filter(Users.id == user_id).first()
+#     if not db_user:
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="There is not this user"
+#         )
+#     db_user.update(**user.dict(), db=db)
+#     return UserOutSchema(**db_user.__dict__)
 

@@ -9,13 +9,15 @@ class Status(str, Enum):
     regional_manager = "regional_manager"
     ff_manager = "ff_manager"
     product_manager = "product_manager"
+    deputy_director = "deputy_director"
+    director = "director"
 
 
 class RegisterSchema(BaseModel):
     password: str
     username: str
     full_name: str
-    status: Status =  Path(..., title="User Role", description="The role of the user")
+    # status: Status =  Path(..., title="User Role", description="The role of the user")
 
 
 class UpdateUserSchema(RegisterSchema):
@@ -26,7 +28,6 @@ class UserOutSchema(BaseModel):
     id: int
     username: str
     full_name: str
-    status: str 
 
     # class Config:
     #     orm_mode = True

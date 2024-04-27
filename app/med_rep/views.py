@@ -24,7 +24,7 @@ async def add_pharmacy(new_pharmacy: PharmacySchema, db: Session = Depends(get_d
             data['med_rep_id'] = med_rep.id
             data['region_manager_id'] = med_rep.region_manager_id
             data['ffm_id'] = med_rep.ffm_id
-            data['project_manager_id'] = med_rep.project_manager_id
+            data['product_manager_id'] = med_rep.product_manager_id
     else:
         region_manager = db.query(Users).filter(Users.id == new_pharmacy.region_manager_id).first()
         if not region_manager:
