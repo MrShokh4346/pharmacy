@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from models.users import *
 from models.database import get_db
 
-router = APIRouter(prefix='/auth')
+router = APIRouter()
 
 
 def authenticate_user(db: Session, username: str, password: str):
@@ -34,7 +34,7 @@ async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db
 
 
 @router.post('/register')
-async def register_user(user: RegisterSchema, db: Session = Depends(get_db)) -> UserOutSchema:
+async def register_director(user: RegisterSchema, db: Session = Depends(get_db)) -> UserOutSchema:
     db_user = db.query(Users).filter(Users.username == user.username).first()
     if db_user:
         raise HTTPException(

@@ -11,7 +11,7 @@ from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-router = APIRouter(prefix="/dd")
+router = FastAPI()
 
 
 @router.post('/register-for-dd', response_model=UserOutSchema, description='using RegisterForDDSchema')
@@ -49,4 +49,17 @@ async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Use
     raise HTTPException(status_code=403, detail="You are not a deputy director")
 
 
+@router.post('/add-doctor-plan/{med_rep_id}', response_model=List[DoctorVisitPlanOutSchema])
+async def add_doctor_visit_plan_to_mr(med_rep_id:int, plan: DoctorVisitPlanSchema, db: Session = Depends(get_db)):
+    visit = DoctorPlan(**plan.dict(), med_rep_id=med_rep_id)
+    visit.save(db)
+    visits = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==med_rep_id).order_by(DoctorPlan.id.desc()).all()
+    return visits
 
+
+@router.delete('/delete-doctor-plan/{plan_id}')
+async def delete_doctor_visit_plan(plan_id:int, db: Session = Depends(get_db)):
+    visit = db.query(DoctorPlan).get(plan_id)
+    db.delete(visit)
+    db.commit()
+    return {"msg":"Deleted"}

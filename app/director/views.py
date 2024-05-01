@@ -11,7 +11,7 @@ from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-router = APIRouter(prefix="/d")
+router = FastAPI()
 
 
 @router.post('/register-for-d', response_model=UserOutSchema, description='using RegisterForDSchema')

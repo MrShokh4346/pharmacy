@@ -11,7 +11,7 @@ from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-router = APIRouter(prefix="/ffm")
+router = FastAPI()
 
 
 @router.post('/register-for-ffm', response_model=UserOutSchema, description='using RegisterForFFMSchema')

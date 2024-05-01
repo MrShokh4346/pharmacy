@@ -34,7 +34,7 @@ class Region(Base):
             db.commit()
             db.refresh(self)
         except:
-            raise AssertionError("Could not save")
+            raise AssertionError("Could not saved")
 
 
 class ManufacturedCompany(Base):
@@ -42,6 +42,14 @@ class ManufacturedCompany(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
+        
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
 
 
 class Products(Base):
@@ -50,38 +58,76 @@ class Products(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     price = Column(Integer)
-    man_company = relationship("ManufacturedCompany", cascade='all, delete', backref="product")
-    man_company_id = Column(Integer, ForeignKey("manufactured_company.id", ondelete='CASCADE'), nullable=False)
+    discount_price = Column(Integer)
+    man_company = relationship("ManufacturedCompany", backref="product")
+    man_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
+        
 
 
 class UserAttachedProduct(Base):
     __tablename__ = "user_attached_product"
 
     id = Column(Integer, primary_key=True)
-    product = relationship("Products", cascade='all, delete', backref="attch_prd")
-    product_id = Column(Integer, ForeignKey("products.id", ondelete='CASCADE'), nullable=False)
-    user = relationship("Users", cascade='all, delete', backref="ur_attch_prd")
-    user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
-
-
-class DoctorMonthlyPlan(Base):
-    __tablename__ = "doctor_monthly_plan"
-
-    id = Column(Integer, primary_key=True)
-    month_name = Column(String)
-    date = Column(DateTime, default=datetime.now())
-
-    user = relationship("Users", cascade='all, delete', backref="dm_plan")
-    user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+    product = relationship("Products", backref="attch_prd")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    user = relationship("Users", backref="ur_attch_prd")
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 class DoctorPlan(Base):
     __tablename__ = "doctor_plan"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
-    doctor_plan = relationship("DoctorMonthlyPlan", cascade='all, delete', backref="dm_plan")
-    doctor_plan_id = Column(Integer, ForeignKey("doctor_monthly_plan.id", ondelete='CASCADE'), nullable=False)
+    description = Column(String)
+    date = Column(DateTime)
+    status = Column(Boolean, default=False)
+    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor = relationship("Doctor", backref="visit_plan")
+    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    med_rep = relationship("Users", backref="visit_plan")
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+
+    def update(self, date: str, db: Session):
+        try:
+            self.date = date 
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not updated")
+
+    def attach(self, db: Session, **kwargs):
+        try:
+            DoctorPlanAttachedProduct.delete(id=self.id, db=db)
+            self.description = kwargs.get('description', self.description)
+            for product in kwargs['products']:
+                compleated = DoctorPlanAttachedProduct(**product, plan_id=self.id)
+                db.add(compleated)
+            db.commit()
+        except:
+            raise AssertionError("Could not updated")
+
+
+class DoctorPlanAttachedProduct(Base):
+    __tablename__ = "doctor_plan_attached_product"
+
+    id = Column(Integer, primary_key=True)
+    product_name = Column(String)
+    compleated = Column(Integer)
+    plan_id = Column(Integer, ForeignKey("doctor_plan.id"))
+    plan = relationship("DoctorPlan", backref="products")
+
+    @classmethod
+    def delete(cls, id: int, db: Session):
+        db.query(cls).filter(cls.plan_id==id).delete()
+        db.commit()
 
 
 class PharmacyMonthlyPlan(Base):
@@ -91,8 +137,8 @@ class PharmacyMonthlyPlan(Base):
     month_name = Column(String)
     date = Column(DateTime, default=datetime.now())
 
-    user = relationship("Users", cascade='all, delete', backref="pm_plan")
-    user_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'), nullable=False)
+    user = relationship("Users", backref="pm_plan")
+    user_id = Column(Integer, ForeignKey("users.id"))
 
 
 class PharmacyPlan(Base):
@@ -100,8 +146,10 @@ class PharmacyPlan(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    pharmacy_plan = relationship("PharmacyMonthlyPlan", cascade='all, delete', backref="phm_plan")
-    pharmacy_plan_id = Column(Integer, ForeignKey("pharmacy_monthly_plan.id", ondelete='CASCADE'), nullable=False)
+    pharmacy_plan = relationship("PharmacyMonthlyPlan", backref="phm_plan")
+    pharmacy_plan_id = Column(Integer, ForeignKey("pharmacy_monthly_plan.id"))
+    # date 
+    # status 
 
 
 class Users(Base):
@@ -114,18 +162,18 @@ class Users(Base):
     status = Column(String)
     deleted = Column(Boolean, default=False)
 
-    region = relationship("Region", cascade='all, delete', backref="user")
-    region_id = Column(Integer, ForeignKey("region.id", ondelete='CASCADE'))  #####
-    region_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))      #####
-    region_manager = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[region_manager_id])
-    ffm_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))               #####  
-    ffm = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[ffm_id])
-    product_manager_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))    #####
-    product_manager = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[product_manager_id])
-    deputy_director_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))    #####
-    deputy_director = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[deputy_director_id])
-    director_id = Column(Integer, ForeignKey("users.id", ondelete='CASCADE'))    #####
-    director = relationship("Users", cascade='all, delete', remote_side=[id], foreign_keys=[director_id])
+    region = relationship("Region", backref="user")
+    region_id = Column(Integer, ForeignKey("region.id"))  #####
+    region_manager_id = Column(Integer, ForeignKey("users.id"))      #####
+    region_manager = relationship("Users", remote_side=[id], foreign_keys=[region_manager_id])
+    ffm_id = Column(Integer, ForeignKey("users.id"))               #####  
+    ffm = relationship("Users", remote_side=[id], foreign_keys=[ffm_id])
+    product_manager_id = Column(Integer, ForeignKey("users.id"))    #####
+    product_manager = relationship("Users", remote_side=[id], foreign_keys=[product_manager_id])
+    deputy_director_id = Column(Integer, ForeignKey("users.id"))    #####
+    deputy_director = relationship("Users", remote_side=[id], foreign_keys=[deputy_director_id])
+    director_id = Column(Integer, ForeignKey("users.id"))    #####
+    director = relationship("Users", remote_side=[id], foreign_keys=[director_id])
 
     @property
     def password(self):
@@ -141,7 +189,7 @@ class Users(Base):
             db.commit()
             db.refresh(self)
         except:
-            raise AssertionError("Could not save")
+            raise AssertionError("Could not saved")
 
     def update(self, db: Session,  **kwargs):
         try:

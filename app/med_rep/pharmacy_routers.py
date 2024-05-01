@@ -3,18 +3,17 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
-from ..dependencies import create_access_token
 from sqlalchemy.orm import Session
-from ..models.users import Users
-from ..database import get_db
+from models.users import Users
+from models.database import get_db
 
 router = APIRouter()
 
 
-@router.post('add-pharmacy')
-async def add_pharmacy(new_pharmacy: PharmacySchema, db: Session = Depends(get_db)) -> PharmacySchema:
+@router.post('/add-pharmacy')
+async def add_pharmacy(new_pharmacy: PharmacyAddSchema, db: Session = Depends(get_db)) -> PharmacyAddSchema:
     data = {}
-    if new_pharmacy.med_rep_id not None:
+    if new_pharmacy.med_rep_id is not None:
         med_rep = db.query(Users).filter(Users.id == new_pharmacy.med_rep_id).first()
         if not med_rep:
             raise HTTPException(

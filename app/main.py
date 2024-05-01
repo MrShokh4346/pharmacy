@@ -1,10 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
-
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
-from pydantic import BaseModel
+from fastapi import  FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from auth.views import router as auth_router
 from common.views import router as common_router
 from ffm.views import router as ffm_router
@@ -13,7 +8,7 @@ from region_manager.views import router as rm_router
 from deputy_director.views import router as dd_router
 from director.views import router as d_router
 from models.database import SessionLocal, engine, Base
-from fastapi.middleware.cors import CORSMiddleware
+from med_rep.router import router as mr_router
 
 
 Base.metadata.create_all(bind=engine)
@@ -33,12 +28,22 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
-app.include_router(pm_router)
-app.include_router(common_router)
-app.include_router(ffm_router)
-app.include_router(rm_router)
-app.include_router(dd_router)
-app.include_router(d_router)
+# app.include_router(pm_router)
+# app.include_router(common_router)
+# app.include_router(ffm_router)
+# app.include_router(rm_router)
+# app.include_router(dd_router)
+# app.include_router(d_router)
+
+# app.mount("/auth", auth_router)
+app.mount("/pm", pm_router)
+app.mount("/common", common_router)
+app.mount("/ffm", ffm_router)
+app.mount("/rm", rm_router)
+app.mount("/dd", dd_router)
+app.mount("/d", d_router)
+app.mount("/mr", mr_router)
+
 
 
 

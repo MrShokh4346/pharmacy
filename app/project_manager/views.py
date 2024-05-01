@@ -11,7 +11,7 @@ from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-router = APIRouter(prefix="/pm")
+router = FastAPI()
 
 
 @router.post('/register-for-pm', response_model=UserOutSchema, description='using RegisterForPMSchema')

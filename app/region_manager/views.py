@@ -11,7 +11,7 @@ from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
-router = APIRouter(prefix="/rm")
+router = FastAPI()
 
 
 @router.post('/register-for-rm', response_model=UserOutSchema, description='using RegisterForRMSchema')

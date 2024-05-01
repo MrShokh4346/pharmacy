@@ -2,6 +2,9 @@ from pydantic import BaseModel, Field
 from typing import Literal
 from enum import Enum
 from fastapi import FastAPI, Path
+from typing import List 
+from datetime import date
+from med_rep.schemas import DoctorOutSchema
 
 class Status(str, Enum):
     medical_representative = "medical_representative"
@@ -26,3 +29,14 @@ class UserOutSchema(BaseModel):
     username: str
     full_name: str
     status: str 
+
+
+class DoctorVisitPlanSchema(BaseModel):
+    date: date
+    doctor_id: int 
+
+
+class DoctorVisitPlanOutSchema(BaseModel):
+    id: int    
+    date: date
+    doctor: DoctorOutSchema
