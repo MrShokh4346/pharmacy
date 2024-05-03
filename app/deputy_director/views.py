@@ -63,3 +63,19 @@ async def delete_doctor_visit_plan(plan_id:int, db: Session = Depends(get_db)):
     db.delete(visit)
     db.commit()
     return {"msg":"Deleted"}
+
+
+@router.post('/add-pharmacy-plan/{med_rep_id}', response_model=List[PharmacyVisitPlanOutSchema])
+async def add_pharmacy_visit_plan_to_mr(med_rep_id:int, plan: PharmacyVisitPlanSchema, db: Session = Depends(get_db)):
+    visit = PharmacyPlan(**plan.dict(), med_rep_id=med_rep_id)
+    visit.save(db)
+    visits = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==med_rep_id).order_by(PharmacyPlan.id.desc()).all()
+    return visits
+
+
+@router.delete('/delete-pharmacy-plan/{plan_id}')
+async def delete_pharmacy_visit_plan(plan_id:int, db: Session = Depends(get_db)):
+    visit = db.query(PharmacyPlan).get(plan_id)
+    db.delete(visit)
+    db.commit()
+    return {"msg":"Deleted"}

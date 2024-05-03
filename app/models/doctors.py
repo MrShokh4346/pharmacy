@@ -146,7 +146,7 @@ class Doctor(Base):
     plan_id = Column(Integer, ForeignKey("plan.id"))
     region = relationship("Region",  backref="doctor")
     region_id = Column(Integer, ForeignKey("region.id")) 
-    pharmacy = relationship("Pharmacy",  secondary=pharmacy_doctor, backref="doctor")
+    pharmacy = relationship("Pharmacy",  secondary=pharmacy_doctor, backref="doctors")
     speciality = relationship("Speciality",  backref="doctor")
     speciality_id = Column(Integer, ForeignKey("speciality.id")) 
     category = relationship("DoctorCategory",  backref="doctor")
@@ -187,4 +187,3 @@ class Doctor(Base):
             db.refresh(self)
         except:
             raise AssertionError("Could not updated")
-            

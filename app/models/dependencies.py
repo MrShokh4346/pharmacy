@@ -67,3 +67,10 @@ def check_if_user_already_exists(username: str, db: Session):
         )
     return False
 
+
+def check_if_med_rep(user: Users):
+    if user.status != 'medical_representative':
+        raise HTTPException(status_code=400, detail='You are not medical representative')
+    return True
+    
+

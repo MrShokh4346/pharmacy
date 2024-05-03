@@ -84,7 +84,7 @@ class DoctorPlan(Base):
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
     doctor = relationship("Doctor", backref="visit_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"))
-    med_rep = relationship("Users", backref="visit_plan")
+    med_rep = relationship("Users", backref="doctor_visit_plan")
 
     def save(self, db: Session):
         try:
@@ -107,6 +107,7 @@ class DoctorPlan(Base):
         try:
             DoctorPlanAttachedProduct.delete(id=self.id, db=db)
             self.description = kwargs.get('description', self.description)
+            self.status = True
             for product in kwargs['products']:
                 compleated = DoctorPlanAttachedProduct(**product, plan_id=self.id)
                 db.add(compleated)
@@ -130,26 +131,66 @@ class DoctorPlanAttachedProduct(Base):
         db.commit()
 
 
-class PharmacyMonthlyPlan(Base):
-    __tablename__ = "pharmacy_monthly_plan"
-
-    id = Column(Integer, primary_key=True)
-    month_name = Column(String)
-    date = Column(DateTime, default=datetime.now())
-
-    user = relationship("Users", backref="pm_plan")
-    user_id = Column(Integer, ForeignKey("users.id"))
-
-
 class PharmacyPlan(Base):
     __tablename__ = "pharmacy_plan"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
-    pharmacy_plan = relationship("PharmacyMonthlyPlan", backref="phm_plan")
-    pharmacy_plan_id = Column(Integer, ForeignKey("pharmacy_monthly_plan.id"))
-    # date 
-    # status 
+    description = Column(String)
+    date = Column(DateTime)
+    status = Column(Boolean, default=False)
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="visit_plan")
+    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    med_rep = relationship("Users", backref="pharmacy_visit_plan")
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+
+    def update(self, date: str, db: Session):
+        try:
+            self.date = date 
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not updated")
+
+    def attach(self, db: Session, **kwargs):
+        try:
+            PharmacyPlanAttachedProduct.delete(id=self.id, db=db)
+            self.description = kwargs.get('description', self.description)
+            self.status = True
+            for doctor in kwargs['doctors']:
+                doctor_copy = doctor.copy()
+                del doctor_copy['products']
+                for product in doctor['products']:
+                        compleated = PharmacyPlanAttachedProduct(**product, **doctor_copy, plan_id=self.id)
+                        db.add(compleated)
+            db.commit()
+        except:
+            raise AssertionError("Could not updated")
+
+
+class PharmacyPlanAttachedProduct(Base):
+    __tablename__ = "pharmacy_plan_attached_product"
+
+    id = Column(Integer, primary_key=True)
+    doctor_name = Column(String)
+    doctor_speciality = Column(String)
+    product_name = Column(String)
+    compleated = Column(Integer)
+    plan_id = Column(Integer, ForeignKey("pharmacy_plan.id"))
+    plan = relationship("PharmacyPlan", backref="products")
+
+    @classmethod
+    def delete(cls, id: int, db: Session):
+        db.query(cls).filter(cls.plan_id==id).delete()
+        db.commit()
 
 
 class Users(Base):

@@ -108,7 +108,13 @@ async def add_medcine(product: ProductInSchema, db: Session = Depends(get_db)):
     return products 
     
 
-@router.post('/get-product', response_model=List[ProductOutSchema])
+@router.get('/get-product', response_model=List[ProductOutSchema])
 async def get_medcine(db: Session = Depends(get_db)):
     products = db.query(Products).all()
+    return products 
+
+
+@router.get('/search-product', response_model=List[ProductOutSchema])
+async def search_medcine(search: str, db: Session = Depends(get_db)):
+    products = db.query(Products).filter(Products.name.like(f"%{search}%")).all()
     return products 

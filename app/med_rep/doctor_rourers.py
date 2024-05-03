@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
-from .schemas import *
+from .doctor_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.doctors import *
@@ -17,7 +17,7 @@ router = APIRouter()
 
 
 @router.get('/get-doctors', response_model=List[DoctorListSchema])
-async def get_doctor(db: Session = Depends(get_db)):
+async def get_all_doctors(db: Session = Depends(get_db)):
     doctors = db.query(Doctor).all()
     return doctors
 
@@ -29,8 +29,8 @@ async def get_doctor_by_id(id:int, db: Session = Depends(get_db)):
 
 
 @router.post('/add-doctor', response_model=DoctorOutSchema)
-async def add_doctor(doctor: DoctorInSchema, db: Session = Depends(get_db)):
-    med_rep = db.query(Users).get(doctor.med_rep_id)
+async def add_doctor(doctor: DoctorInSchema, med_rep: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+    check_if_med_rep(med_rep)
     new_doctor = Doctor(**doctor.dict(), region_manager_id=med_rep.region_manager_id, ffm_id=med_rep.ffm_id, product_manager_id=med_rep.product_manager_id, deputy_director_id=med_rep.deputy_director_id, director_id=med_rep.director_id)
     new_doctor.save(db=db)
     return new_doctor
@@ -75,8 +75,8 @@ async def delete_product_by_id_form_bonus(bonus_id:int, db: Session = Depends(ge
 
 
 @router.get('/get-bonus/{id}', response_model=List[BonusOutSchema])
-async def get_bonus_by_doctor_id(id: int, filter_bonus: FilterChoice, form_date: str, to_date: str, db: Session = Depends(get_db)):
-    fr_date, to_date = datetime.strptime(form_date, '%Y-%m-%d'), datetime.strptime(to_date, '%Y-%m-%d')
+async def get_bonus_by_doctor_id(id: int, filter_bonus: FilterChoice, from_date: str, to_date: str, db: Session = Depends(get_db)):
+    fr_date, to_date = datetime.strptime(from_date, '%Y-%m-%d'), datetime.strptime(to_date, '%Y-%m-%d')
     if filter_bonus == 'payed': 
         bonuses = db.query(Bonus).filter(Bonus.doctor_id==id, Bonus.payed==True, Bonus.date.between(fr_date, to_date)).order_by(Bonus.id.desc()).all() if (fr_date and to_date) else db.query(Bonus).filter(Bonus.doctor_id==id, Bonus.payed==True).order_by(Bonus.id.desc()).all()
         return bonuses
@@ -88,16 +88,15 @@ async def get_bonus_by_doctor_id(id: int, filter_bonus: FilterChoice, form_date:
         return bonuses
 
 
-@router.get('/get-visit-plan', response_model=List[DoctorVisitPlanOutSchema])
-async def get_visit_plan(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    if user.status == 'medical_representative':
-        plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id).all()
-        return plans 
-    return HTTPException(status_code=400, detail='You are not medical representative')
+@router.get('/get-doctor-visit-plan', response_model=List[DoctorVisitPlanOutSchema])
+async def get_doctor_visit_plan(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+    check_if_med_rep(user)
+    plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id).all()
+    return plans 
 
 
-@router.get('/get-visit-plan/{plan_id}', response_model=DoctorVisitPlanOutSchema)
-async def get_visit_plan_by_id(plan_id: int, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+@router.get('/get-doctor-visit-plan/{plan_id}', response_model=DoctorVisitPlanOutSchema)
+async def get_doctor_visit_plan_by_id(plan_id: int, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
     plan = db.query(DoctorPlan).get(plan_id)
     return plan 
 

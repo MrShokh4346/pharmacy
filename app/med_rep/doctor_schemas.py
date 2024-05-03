@@ -1,24 +1,9 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from models.doctors import Speciality
-from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema
+from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 from datetime import date
 from enum import Enum
-
-
-class PharmacyAddSchema(BaseModel):
-    company_name: str 
-    latitude: str
-    longitude: str 
-    address: str 
-    bank_account_number: str 
-    inter_branch_turnover: str 
-    classification_of_economic_activities: str 
-    VAT_payer_code: str 
-    director: str 
-    region_id: int
-    med_rep_id: int | None = None 
-    region_manager_id: int | None = None 
 
 
 class DoctorInSchema(BaseModel):
@@ -28,7 +13,7 @@ class DoctorInSchema(BaseModel):
     longitude: str 
     category_id: int 
     speciality_id: int 
-    med_rep_id: int
+    # med_rep_id: int
     medical_organization_id: int
     region_id: int 
 
@@ -41,7 +26,6 @@ class DoctorOutSchema(BaseModel):
     longitude: str 
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
-    # med_rep_id: int
     medical_organization: MedicalOrganizationOutSchema
     region: RegionSchema 
     
@@ -53,7 +37,7 @@ class DoctorUpdateSchema(BaseModel):
     longitude: Optional[str] = None  
     category_id: Optional[int] = None  
     speciality_id: Optional[int] = None  
-    med_rep_id: Optional[int] = None 
+    # med_rep_id: Optional[int] = None 
     medical_organization_id: Optional[int] = None 
     region_id: Optional[int] = None  
 
@@ -68,9 +52,6 @@ class DoctorListSchema(BaseModel):
     full_name: str 
     speciality: SpecialitySchema
     
-    class Config:
-        orm_mode = True
-
 
 class AttachProductsSchema(BaseModel):
     doctor_id: int 
@@ -87,7 +68,6 @@ class FilterChoice(str, Enum):
     payed = "payed"
     debt = "debt"
     history = "history"
-
 
 
 class BonusProductSchema(BaseModel):
@@ -125,3 +105,7 @@ class VisitInfoProductSchema(BaseModel):
 class VisitInfoSchema(BaseModel):
     description: str 
     products: List[VisitInfoProductSchema]
+
+
+class DoctorAttachedProductSchema(BaseModel):
+    product: ProductOutSchema

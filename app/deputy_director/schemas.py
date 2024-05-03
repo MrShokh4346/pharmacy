@@ -4,7 +4,8 @@ from enum import Enum
 from fastapi import FastAPI, Path
 from typing import List 
 from datetime import date
-from med_rep.schemas import DoctorOutSchema
+from med_rep.doctor_schemas import DoctorOutSchema
+from med_rep.pharmacy_schemas import PharmacyOutSchema
 
 class Status(str, Enum):
     medical_representative = "medical_representative"
@@ -40,3 +41,14 @@ class DoctorVisitPlanOutSchema(BaseModel):
     id: int    
     date: date
     doctor: DoctorOutSchema
+
+
+class PharmacyVisitPlanSchema(BaseModel):
+    date: date
+    pharmacy_id: int 
+
+
+class PharmacyVisitPlanOutSchema(BaseModel):
+    id: int    
+    date: date
+    pharmacy: PharmacyOutSchema
