@@ -9,6 +9,8 @@ from models.dependencies import *
 from models.database import get_db
 from typing import Annotated, List
 from fastapi.security import HTTPAuthorizationCredentials
+from deputy_director.schemas import NotificationOutSchema
+
 
 router = FastAPI()
 
@@ -118,3 +120,11 @@ async def get_medcine(db: Session = Depends(get_db)):
 async def search_medcine(search: str, db: Session = Depends(get_db)):
     products = db.query(Products).filter(Products.name.like(f"%{search}%")).all()
     return products 
+
+
+@router.get('/get-notofication/{notofication_id}', response_model=NotificationOutSchema)
+async def notifications(notofication_id: int, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+    notification = db.query(Notification).get(notofication_id)
+    if user.status in ['medical_representative']:
+        notification.read(db)
+    return notification

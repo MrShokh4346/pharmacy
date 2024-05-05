@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -42,6 +42,135 @@ class PharmacyAttachedProducts(Base):
     product = relationship("Products", backref="pharmacy_attached_product")
 
 
+class Debt(Base):
+    __tablename__ = "debt"
+
+    id = Column(Integer, primary_key=True)
+    description = Column(String)
+    amount = Column(Integer)
+    payed = Column(Boolean, default=False) 
+    date = Column(DateTime, default=date.today())
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="debts")
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+
+    def update(self, db: Session, **kwargs):
+        self.payed = kwargs.get('payed', self.payed)
+        db.commit()
+        db.refresh(self)
+
+
+class FactoryWarehouse(Base):
+    __tablename__ = "factory_warehouse"
+
+    id = Column(Integer, primary_key=True)
+    quantity = Column(Integer)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="products")
+
+
+class Reservation(Base):
+    __tablename__ = "reservation"
+
+    id = Column(Integer, primary_key=True)
+    company = Column(String)
+    date = Column(DateTime, default=date.today())
+    discount = Column(Float)
+    total_quantity = Column(Integer)
+    total_amount = Column(Float)
+    total_payable = Column(Float)
+
+    @classmethod
+    def save(cls, db: Session, **kwargs):
+        try:
+            products = kwargs.pop('products')
+            reservation = cls(**kwargs)
+            for product in products:
+                res_product = ReservationProducts(**product)
+                reservation.products.append(res_product)
+            db.add(reservation)
+            db.commit()
+            db.refresh(reservation)
+            return reservation
+        except:
+            AssertionError("Could not saved")
+            
+
+class ReservationProducts(Base):
+    __tablename__ = "reservation_products"
+
+    id = Column(Integer, primary_key=True)
+    product_name = Column(String)
+    price = Column(Float)
+    discount_price = Column(Integer)
+    reservation_id = Column(Integer, ForeignKey("reservation.id"))
+    reservation = relationship("Reservation", backref="products")
+
+
+class Wholesale(Base):
+    __tablename__ = "wholesale"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    contact = Column(String)
+    region_id = Column(Integer, ForeignKey("region.id")) 
+    region = relationship("Region", backref="wholesales")
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+
+    def update(self, db: Session, **kwargs):
+        try:
+            for key in list(kwargs.keys()):
+                kwargs.pop(key) if kwargs[key]==None else None 
+            self.name = kwargs.get('name', self.name)
+            self.contact = kwargs.get('contact', self.contact)
+            self.region_id = kwargs.get('region_id', self.region_id)
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not updated")
+
+    def attach(self, db: Session, **kwargs):
+        try:
+            WholesaleProduct.delete(id=self.id, db=db)
+            for product in kwargs['products']:
+                    wh_product = WholesaleProduct(**product, wholesale_id=self.id)
+                    db.add(wh_product)
+            db.commit()
+        except:
+            raise AssertionError("Could not updated")
+
+
+class WholesaleProduct(Base):
+    __tablename__ = "wholesaleproduct"
+
+    id = Column(Integer, primary_key=True)
+    product_name = Column(String)
+    price = Column(Integer)
+    quantity = Column(Integer)
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
+    wholesale = relationship("Wholesale", backref="products")
+
+    @classmethod
+    def delete(cls, id: int, db: Session):
+        db.query(cls).filter(cls.wholesale_id==id).delete()
+        db.commit()
+
+
 class Pharmacy(Base):
     __tablename__ = "pharmacy"
 
@@ -56,6 +185,7 @@ class Pharmacy(Base):
     classification_of_economic_activities = Column(String)
     VAT_payer_code = Column(String)
     pharmacy_director = Column(String)
+    discount = Column(Integer)
     
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users", backref="mr_pharmacy", foreign_keys=[med_rep_id])

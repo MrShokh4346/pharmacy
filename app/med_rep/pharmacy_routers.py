@@ -7,7 +7,7 @@ from models.doctors import Doctor, DoctorAttachedProduct
 from models.users import Products
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
-from models.pharmacy import Pharmacy, BalanceInStock
+from models.pharmacy import *
 from models.users import PharmacyPlan
 from models.database import get_db
 from models.dependencies import *
@@ -82,9 +82,9 @@ async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, tok
     return plan
 
 
-@router.post('/pharmacy-visit-info/{pharmacy_id}')
-async def doctor_visit_info(pharmacy_id: int, visit: VisitInfoSchema, db: Session = Depends(get_db)):
-    plan = db.query(PharmacyPlan).filter(PharmacyPlan.pharmacy_id==pharmacy_id).order_by(PharmacyPlan.id.desc()).first()
+@router.post('/pharmacy-visit-info/{visit_id}')
+async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: Session = Depends(get_db)):
+    plan = db.query(PharmacyPlan).get(visit_id)
     plan.attach(**visit.dict(), db=db)
     return {"msg":"Done"}
 
@@ -112,7 +112,7 @@ async def search_for_pharmacy_attached_doctors(search: str, user: Annotated[User
 @router.get('/search-mr-doctors/{pharmacy_id}', response_model=List[DoctorListSchema])
 async def search_for_med_rep_attached_doctors(pharmacy_id: int, search: str, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
     check_if_med_rep(user)
-    pharmacy = db.query(Pharmacy).filter(Pharmacy.id==pharmacy_id, Pharmacy.doctors.has(Doctor.full_name.like(f"%{search}%"))).all()
+    pharmacy = db.query(Pharmacy).filter(Pharmacy.id==pharmacy_id, Pharmacy.doctors.any(Doctor.full_name.like(f"%{search}%"))).all()
     return pharmacy[0].doctors
 
         
@@ -121,3 +121,62 @@ async def seatch_for_doctor_attached_products(doctor_id: int, search: str, db: S
     products = db.query(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==doctor_id).all()
     return products 
 
+
+@router.post('/add-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
+async def add_debt(pharmacy_id: int, debt: DebtSchema, db: Session = Depends(get_db)):
+    debt = Debt(**debt.dict(), pharmacy_id=pharmacy_id)
+    debt.save(db)
+    debts = db.query(Debt).filter(Debt.pharmacy_id==pharmacy_id).all()
+    return debts
+
+
+@router.put('/update-debt-status/{debt_id}', response_model=DebtOutSchema)
+async def update_debt_status(debt_id: int, st: DebtUpdateSchema, db: Session = Depends(get_db)):
+    debt = db.query(Debt).get(debt_id)
+    debt.update(**st.dict(), db=db)
+    return debt
+
+
+@router.get('/get-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
+async def get_debt(pharmacy_id: int, db: Session = Depends(get_db)):
+    debts = db.query(Debt).filter(Debt.pharmacy_id==pharmacy_id).all()
+    return debts
+
+
+@router.get('/search-from-warehouse', response_model=List[FactoryWarehouseOutSchema])
+async def search_from_factory_warehouse(search: str, db: Session = Depends(get_db)):
+    products = db.query(FactoryWarehouse).filter(FactoryWarehouse.product.has(Products.name.like(f"%{search}%"))).all()
+    return products
+
+
+@router.post('/reservation', response_model=ReservationOutSchema)
+async def reservation(res: ReservationSchema, db: Session = Depends(get_db)):
+    reservation = Reservation.save(**res.dict())
+    return reservation
+
+
+@router.post('/add-wholesale', response_model=WholesaleOutSchema)
+async def wholesale(wholesale: WholesaleSchema, db: Session = Depends(get_db)):
+    wholesale = Wholesale(**wholesale.dict())
+    wholesale.save(db)
+    return wholesale
+
+
+@router.patch('/update-wholesale/{wholesale_id}', response_model=WholesaleOutSchema)
+async def update_wholesale(wholesale_id: int, data: WholesaleUpdateSchema, db: Session = Depends(get_db)):
+    wholesale = db.query(Wholesale).get(wholesale_id)
+    wholesale.update(**data.dict(), db=db)
+    return wholesale
+
+
+@router.post('/wholesale-attach-product/{wholesale_id}')
+async def wholesale_attach_product(wholesale_id: int, product: WholesaleProductsListSchema, db: Session = Depends(get_db)):
+    wholesale = db.query(Wholesale).get(wholesale_id)
+    wholesale.attach(**product.dict(), db=db)
+    return {"msg":"Done"}
+
+
+@router.get('/search-wholesale-products', response_model=List[WholesaleOutSchema])
+async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: Session = Depends(get_db)):
+    wholesale = db.query(Wholesale).filter(Wholesale.region_id==region_id, Wholesale.products.any(Products.name.like(f"%{search}%"))).all()
+    return wholesale

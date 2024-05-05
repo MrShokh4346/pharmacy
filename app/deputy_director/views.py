@@ -79,3 +79,16 @@ async def delete_pharmacy_visit_plan(plan_id:int, db: Session = Depends(get_db))
     db.delete(visit)
     db.commit()
     return {"msg":"Deleted"}
+
+
+@router.post('/post-notification', response_model=NotificationOutSchema)
+async def post_notification(notif: NotificationSchema, db: Session = Depends(get_db)):
+    notification = Notification.save(**notif.dict(), db=db)
+    return notification 
+
+
+@router.get('/notofications/{med_rep_id}', response_model=List[NotificationOutSchema])
+async def notofications(med_rep_id: int, db: Session = Depends(get_db)):
+    notifications = db.query(Notification).filter(Notification.med_rep_id==med_rep_id).all()
+    return notifications
+

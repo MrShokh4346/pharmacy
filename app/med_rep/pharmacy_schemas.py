@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema
+from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 from datetime import date
 from enum import Enum
 
@@ -77,3 +77,80 @@ class VisitInfoDoctorSchema(BaseModel):
 class VisitInfoSchema(BaseModel):
     description: str 
     doctors: List[VisitInfoDoctorSchema]
+
+
+class DebtSchema(BaseModel):
+    description: str 
+    amount: int 
+
+
+class DebtUpdateSchema(BaseModel):
+    payed: bool 
+
+
+class DebtOutSchema(DebtSchema):
+    id: int 
+    date: date 
+    payed: bool 
+
+
+class FactoryWarehouseSchema(BaseModel):
+    quantity: int 
+    product_id: int 
+
+
+class FactoryWarehouseOutSchema(BaseModel):
+    quantity: int 
+    product: ProductOutSchema 
+
+
+class ReservationProductSchema(BaseModel):
+    product_name: str 
+    price: float
+    discount_price: float
+
+
+class ReservationSchema(BaseModel):
+    company: str
+    discount: int
+    total_quantity: int 
+    total_amount: float 
+    total_payable: float 
+    products: ReservationProductSchema
+
+
+class ReservationOutSchema(ReservationSchema):
+    id: int
+    date: date 
+
+
+class WholesaleProductsSchema(BaseModel):
+    product_name: str 
+    price: int 
+    quantity: int 
+
+
+class WholesaleProductsListSchema(BaseModel):
+    products: List[WholesaleProductsSchema]
+
+
+class WholesaleSchema(BaseModel):
+    name: str 
+    contact: str 
+    region_id: int 
+
+
+class WholesaleUpdateSchema(BaseModel):
+    name: Optional[str] = None   
+    contact: Optional[str] = None   
+    region_id: Optional[int] = None    
+
+
+class WholesaleOutSchema(BaseModel):
+    id: int 
+    name: str 
+    contact: str 
+    region: RegionSchema 
+    products: List[WholesaleProductsSchema]
+
+

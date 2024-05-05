@@ -6,9 +6,13 @@ from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
 from .users import Users
+from .pharmacy import Reservation
 from typing import Annotated
 from .database import get_db
 from fastapi.security import HTTPBearer
+from openpyxl import Workbook, load_workbook
+import shutil
+
 
 load_dotenv()
 
@@ -72,5 +76,22 @@ def check_if_med_rep(user: Users):
     if user.status != 'medical_representative':
         raise HTTPException(status_code=400, detail='You are not medical representative')
     return True
-    
+
+
+# def write_excel(reservation: Reservation):
+#     exl1 = "Формула_УГП.xlsx"
+#     exl2 = "Формула маркетинг.xlsx"
+#     source_excel_file = exl1
+#     destination_excel_file = '../excel/report.xlsx'
+
+
+#     shutil.copy2(source_excel_file, destination_excel_file)
+#     sheet_name = 'Сотув'
+#     destination_wb = load_workbook(destination_excel_file)
+#     destination_sheet = destination_wb[sheet_name]
+
+#     destination_wb.save(destination_excel_file)
+#     destination_wb.close()
+
+
 

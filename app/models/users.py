@@ -193,6 +193,40 @@ class PharmacyPlanAttachedProduct(Base):
         db.commit()
 
 
+class Notification(Base):
+    __tablename__ = "notification"
+
+    id = Column(Integer, primary_key=True)
+    author = Column(String)
+    thema = Column(String)
+    description = Column(String)
+    date = Column(DateTime, default=date.today())
+    unread = Column(Boolean, default=True)
+    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    med_rep = relationship("Users", backref="notifications", foreign_keys=[med_rep_id])
+    region_manager_id = Column(Integer, ForeignKey("users.id"))
+    region_manager = relationship("Users", backref="rm_notifications", foreign_keys=[region_manager_id])
+
+    @classmethod
+    def save(cls, db: Session, **kwargs):
+        try:
+            med_rep = db.query(Users).get(kwargs['med_rep_id'])
+            notification = Notification(**kwargs, region_manager_id=med_rep.region_manager_id)
+            db.add(notification)
+            db.commit()
+            db.refresh(notification)
+            return notification
+        except:
+            raise AssertionError("Could not saved")
+
+    def read(self, db: Session):
+        self.unread = False
+        db.add(self)
+        db.commit()
+        db.refresh(self)
+
+
+
 class Users(Base):
     __tablename__ = "users"
 

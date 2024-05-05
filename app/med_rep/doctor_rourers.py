@@ -108,8 +108,8 @@ async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, tok
     return plan
 
 
-@router.post('/doctor-visit-info/{doctor_id}')
-async def doctor_visit_info(doctor_id: int, visit: VisitInfoSchema, db: Session = Depends(get_db)):
-    plan = db.query(DoctorPlan).filter(DoctorPlan.doctor_id==doctor_id).order_by(DoctorPlan.id.desc()).first()
+@router.post('/doctor-visit-info/{visit_id}')
+async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: Session = Depends(get_db)):
+    plan = db.query(DoctorPlan).get(visit_id)
     plan.attach(**visit.dict(), db=db)
     return {"msg":"Done"}

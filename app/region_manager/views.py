@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 from models.users import *
 from models.database import get_db
 from models.dependencies import *
-from typing import Any
+from typing import Any, List 
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from deputy_director.schemas import NotificationOutSchema
 
 
 router = FastAPI()
@@ -23,4 +24,9 @@ async def register_user_for_rm(user: RegisterForRMSchema, manager: Annotated[Use
         return new_user
     raise HTTPException(status_code=403, detail="You are not a regional manager")
 
+
+@router.get('/get-notifications', response_model=List[NotificationOutSchema])
+async def notifications(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+    notifications = db.query(Notification).filter(Notification.region_manager_id==user.id).all()
+    return notifications
 

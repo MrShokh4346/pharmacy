@@ -52,3 +52,16 @@ class PharmacyVisitPlanOutSchema(BaseModel):
     id: int    
     date: date
     pharmacy: PharmacyOutSchema
+
+
+class NotificationSchema(BaseModel):
+    author: str 
+    thema: str 
+    description: str 
+    med_rep_id: int
+
+
+class NotificationOutSchema(NotificationSchema):
+    id: int 
+    date: date 
+    unread: bool
