@@ -40,4 +40,5 @@ class LoginSchema(BaseModel):
 
 class TokenSchema(BaseModel):
     access_token: str
+    status: str
 

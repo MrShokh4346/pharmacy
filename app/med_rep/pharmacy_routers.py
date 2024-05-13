@@ -151,8 +151,19 @@ async def search_from_factory_warehouse(search: str, db: Session = Depends(get_d
 
 @router.post('/reservation', response_model=ReservationOutSchema)
 async def reservation(res: ReservationSchema, db: Session = Depends(get_db)):
-    reservation = Reservation.save(**res.dict())
+    reservation = Reservation.save(**res.dict(), db=db)
     return reservation
+
+
+@router.get('/get-reservations', response_model=ReservationOutSchema)
+async def get_reservation(db: Session = Depends(get_db)):
+    reservations = db.query(Reservation).all()
+    return reservations
+
+
+@router.get('/get-report/{reservation_id}')
+async def get_report(reservation_id: int, db: Session = Depends(get_db)):
+    return write_excel(reservation_id, db)
 
 
 @router.post('/add-wholesale', response_model=WholesaleOutSchema)
@@ -180,3 +191,9 @@ async def wholesale_attach_product(wholesale_id: int, product: WholesaleProducts
 async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: Session = Depends(get_db)):
     wholesale = db.query(Wholesale).filter(Wholesale.region_id==region_id, Wholesale.products.any(Products.name.like(f"%{search}%"))).all()
     return wholesale
+
+
+@router.post('/attach-doctor')
+async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: Session = Depends(get_db)):
+    Pharmacy.attach_doctor(**att.dict(), db=db)
+    return {"msg":"Done"}

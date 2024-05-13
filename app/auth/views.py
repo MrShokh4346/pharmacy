@@ -30,7 +30,7 @@ async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token = create_access_token(data={"sub": str(user.id)})
-    return TokenSchema(access_token=access_token)
+    return TokenSchema(access_token=access_token, status=user.status)
 
 
 @router.post('/register')

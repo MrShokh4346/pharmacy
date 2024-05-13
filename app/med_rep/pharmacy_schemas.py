@@ -108,6 +108,7 @@ class ReservationProductSchema(BaseModel):
     product_name: str 
     price: float
     discount_price: float
+    quantity: int
 
 
 class ReservationSchema(BaseModel):
@@ -116,7 +117,7 @@ class ReservationSchema(BaseModel):
     total_quantity: int 
     total_amount: float 
     total_payable: float 
-    products: ReservationProductSchema
+    products: List[ReservationProductSchema]
 
 
 class ReservationOutSchema(ReservationSchema):
@@ -154,3 +155,6 @@ class WholesaleOutSchema(BaseModel):
     products: List[WholesaleProductsSchema]
 
 
+class AttachDoctorToPharmacySchema(BaseModel):
+    doctor_id: int 
+    pharmacy_id: int 

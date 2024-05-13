@@ -92,10 +92,10 @@ class Reservation(Base):
         try:
             products = kwargs.pop('products')
             reservation = cls(**kwargs)
+            db.add(reservation)
             for product in products:
                 res_product = ReservationProducts(**product)
                 reservation.products.append(res_product)
-            db.add(reservation)
             db.commit()
             db.refresh(reservation)
             return reservation
@@ -108,6 +108,7 @@ class ReservationProducts(Base):
 
     id = Column(Integer, primary_key=True)
     product_name = Column(String)
+    quantity = Column(Integer)
     price = Column(Float)
     discount_price = Column(Integer)
     reservation_id = Column(Integer, ForeignKey("reservation.id"))
@@ -237,11 +238,22 @@ class Pharmacy(Base):
         except:
             raise AssertionError("Could not updated")
 
-    def attach_doctor(self, doctor_id: int, db: Session):
-        doctor = db.query(Doctor).get(doctor_id)
-        self.doctors.append(doctor)
-        db.commit()
-        db.refresh(self)
+    @classmethod
+    def attach_doctor(cls, db: Session, **kwargs):
+        try:
+            doc = db.query(cls).filter(cls.doctors.any(Doctor.id==kwargs.get('doctor_id'))).first()
+            if not doc:
+                pharmacy = db.query(cls).get(kwargs.get('pharmacy_id'))
+                pharmacy.doctors.append(db.query(Doctor).get(kwargs.get('doctor_id')))
+                db.commit()
+                db.refresh(pharmacy)
+            else:
+                raise HTTPException(
+                status_code=400,
+                detail="This doctor already attached"
+            )
+        except:
+            raise AssertionError('Something went wrong')
 
             
 

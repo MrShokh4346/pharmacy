@@ -12,6 +12,7 @@ from .database import get_db
 from fastapi.security import HTTPBearer
 from openpyxl import Workbook, load_workbook
 import shutil
+from fastapi.responses import FileResponse
 
 
 load_dotenv()
@@ -77,21 +78,37 @@ def check_if_med_rep(user: Users):
         raise HTTPException(status_code=400, detail='You are not medical representative')
     return True
 
-
-# def write_excel(reservation: Reservation):
-#     exl1 = "Формула_УГП.xlsx"
-#     exl2 = "Формула маркетинг.xlsx"
-#     source_excel_file = exl1
-#     destination_excel_file = '../excel/report.xlsx'
+import os
 
 
-#     shutil.copy2(source_excel_file, destination_excel_file)
-#     sheet_name = 'Сотув'
-#     destination_wb = load_workbook(destination_excel_file)
-#     destination_sheet = destination_wb[sheet_name]
+def write_excel(reservation_id: int, db: Session):
+    source_excel_file = 'app/report/Book.xlsx'
+    destination_excel_file = 'app/report/report.xlsx'
+    sheet_name = 'Sheet1'
+    shutil.copy2(source_excel_file, destination_excel_file)
+    destination_wb = load_workbook(destination_excel_file)
+    destination_sheet = destination_wb[sheet_name]
 
-#     destination_wb.save(destination_excel_file)
-#     destination_wb.close()
+    reservation = db.query(Reservation).get(reservation_id)
+
+    count = 9
+
+    for product in reservation.products:
+        data_to_write = {
+            f'D{count}' : product.product_name,
+            f'E{count}' : product.quantity,
+            f'F{count}' : product.price,
+            f'H{count}' : product.quantity * product.price
+        }
+        count += 1
+        for cell_address, value in data_to_write.items():
+            destination_sheet[cell_address] = value
+
+    # destination_sheet["H9"] = 'sum'
+
+    destination_wb.save(destination_excel_file)
+    destination_wb.close()
+    return FileResponse("app/report/report.xlsx")
 
 
 
