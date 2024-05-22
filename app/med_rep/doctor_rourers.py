@@ -12,6 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials
 from typing import List, Annotated
 from deputy_director.schemas import DoctorVisitPlanOutSchema
 from deputy_director.schemas import NotificationOutSchema
+from sqlalchemy import text
 
 
 router = APIRouter()
@@ -29,12 +30,25 @@ async def get_all_doctors(db: Session = Depends(get_db)):
     return doctors
 
 
+@router.get('/filter-doctors', response_model=List[DoctorListSchema])
+async def filter_doctors(category_id: int | None = None, speciality_id: int | None = None, region_id: int | None = None, db: Session = Depends(get_db)):
+    query = filter_doctor(category_id, speciality_id, region_id)
+    doctors = db.execute(text(query))
+    return doctors
+
+
+@router.get('/filter-doctors-by-product', response_model=List[DoctorListSchema])
+async def filter_doctors_by_product_id(product_id: int , db: Session = Depends(get_db)):
+    doctors = db.query(Doctor).filter(Doctor.doctorattachedproduct.any(DoctorAttachedProduct.product_id==product_id)).all()
+    return doctors
+
+
 @router.get('/get-doctor/{id}', response_model=DoctorOutSchema)
 async def get_doctor_by_id(id:int, db: Session = Depends(get_db)):
     doctor = db.query(Doctor).get(id)
     return doctor
 
-#######
+
 @router.post('/add-doctor', response_model=DoctorOutSchema)
 async def add_doctor(doctor: DoctorInSchema, user_id: int, db: Session = Depends(get_db)):
     med_rep = get_user(user_id, db)
@@ -101,7 +115,7 @@ async def get_bonus_by_doctor_id(id: int, filter_bonus: FilterChoice, from_date:
         bonuses = db.query(Bonus).filter(Bonus.doctor_id==id, Bonus.date.between(fr_date, to_date)).order_by(Bonus.id.desc()).all() if (fr_date and to_date) else db.query(Bonus).filter(Bonus.doctor_id==id).order_by(Bonus.id.desc()).all()
         return bonuses
 
-###########
+
 @router.get('/get-doctor-visit-plan', response_model=List[DoctorVisitPlanOutSchema])
 async def get_doctor_visit_plan(user_id: int, db: Session = Depends(get_db)):
     user = get_user(user_id, db)

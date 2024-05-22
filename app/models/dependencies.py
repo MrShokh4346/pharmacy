@@ -13,6 +13,7 @@ from fastapi.security import HTTPBearer
 from openpyxl import Workbook, load_workbook
 import shutil
 from fastapi.responses import FileResponse
+import os
 
 
 load_dotenv()
@@ -79,8 +80,6 @@ def get_user(user_id: int, db: Session):
         raise HTTPException(status_code=400, detail="There isn't user with this id")
     return user 
 
-import os
-
 
 def write_excel(reservation_id: int, db: Session):
     source_excel_file = 'app/report/Book.xlsx'
@@ -112,3 +111,19 @@ def write_excel(reservation_id: int, db: Session):
     return FileResponse("app/report/report.xlsx")
 
 
+def filter_doctor(category_id: int | None = None, speciality_id: int | None = None, region_id: int | None = None):
+    query = """SELECT doctor.*, speciality.* FROM doctor
+    LEFT JOIN speciality ON doctor.speciality_id = speciality.id  WHERE """
+    conditions = []
+
+    if category_id is not None:
+        conditions.append(f"category_id = {category_id}")
+    if speciality_id is not None:
+        conditions.append(f"speciality_id = {speciality_id}")
+    if region_id is not None:
+        conditions.append(f"region_id = {region_id}")
+    if not conditions:
+        raise ValueError("At least one argument must be provided")
+
+    query += " OR ".join(conditions)
+    return query

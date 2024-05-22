@@ -119,18 +119,6 @@ pharmacy_doctor = Table(
     Column("product_id", ForeignKey("products.id"), primary_key=True),
 )
 
-# class PharmacyDoctor(Base):
-#     __tablename__ = "pharmacy_doctor"
-
-#     doctor_id = Column(Integer, ForeignKey("doctor.id"), primary_key=True)
-#     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), primary_key=True)
-#     product_id = Column(Integer, ForeignKey("products.id"), primary_key=True)
-
-#     doctor = relationship("Doctor",  backref="ph_d")
-#     pharmacy = relationship("Pharmacy",  backref="ph_d")
-#     product = relationship("Products",  backref="ph_d")
-
-
 
 class Doctor(Base):
     __tablename__ = "doctor"

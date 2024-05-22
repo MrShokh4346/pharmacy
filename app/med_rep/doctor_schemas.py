@@ -56,7 +56,7 @@ class SpecialitySchema(BaseModel):
 class DoctorListSchema(BaseModel):
     id: int 
     full_name: str 
-    speciality: SpecialitySchema
+    speciality: Optional[SpecialitySchema] = None
     
 
 class AttachProductsSchema(BaseModel):

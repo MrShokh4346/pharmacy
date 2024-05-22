@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
-from datetime import date 
+from datetime import date, datetime 
 
 from .database import Base, get_db
 
@@ -264,6 +264,18 @@ class Notification(Base):
         db.add(self)
         db.commit()
         db.refresh(self)
+
+
+class UserProductPlan(Base):
+    __tablename__ = "user_product_plan"
+
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+    product = relationship("Products", backref="product_plan")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    med_rep = relationship("Users", backref="product_plan")
+    med_rep_id = Column(Integer, ForeignKey("users.id"))
 
 
 class Users(Base):
