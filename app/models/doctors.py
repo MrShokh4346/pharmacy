@@ -3,9 +3,6 @@ from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
-from .users import *
-from .pharmacy import *
-from .doctors import *
 from sqlalchemy import Table
 from .database import Base, get_db
 
@@ -119,7 +116,20 @@ pharmacy_doctor = Table(
     Base.metadata,
     Column("doctor_id", ForeignKey("doctor.id"), primary_key=True),
     Column("pharmacy_id", ForeignKey("pharmacy.id"), primary_key=True),
+    Column("product_id", ForeignKey("products.id"), primary_key=True),
 )
+
+# class PharmacyDoctor(Base):
+#     __tablename__ = "pharmacy_doctor"
+
+#     doctor_id = Column(Integer, ForeignKey("doctor.id"), primary_key=True)
+#     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), primary_key=True)
+#     product_id = Column(Integer, ForeignKey("products.id"), primary_key=True)
+
+#     doctor = relationship("Doctor",  backref="ph_d")
+#     pharmacy = relationship("Pharmacy",  backref="ph_d")
+#     product = relationship("Products",  backref="ph_d")
+
 
 
 class Doctor(Base):
@@ -127,7 +137,9 @@ class Doctor(Base):
 
     id = Column(Integer, primary_key=True)
     full_name = Column(String)
-    contact = Column(String)
+    contact1 = Column(String)
+    contact2 = Column(String)
+    email = Column(String)
     latitude = Column(String)
     longitude = Column(String)
 
@@ -143,10 +155,9 @@ class Doctor(Base):
     deputy_director = relationship("Users",   foreign_keys=[deputy_director_id])
     director_id = Column(Integer, ForeignKey("users.id"))    
     director = relationship("Users",   foreign_keys=[director_id])
-    plan_id = Column(Integer, ForeignKey("plan.id"))
     region = relationship("Region",  backref="doctor")
     region_id = Column(Integer, ForeignKey("region.id")) 
-    pharmacy = relationship("Pharmacy",  secondary=pharmacy_doctor, backref="doctors")
+    pharmacy = relationship("Pharmacy",  secondary="pharmacy_doctor", backref="doctors")
     speciality = relationship("Speciality",  backref="doctor")
     speciality_id = Column(Integer, ForeignKey("speciality.id")) 
     category = relationship("DoctorCategory",  backref="doctor")
@@ -167,7 +178,9 @@ class Doctor(Base):
             for key in list(kwargs.keys()):
                 kwargs.pop(key) if kwargs[key]==None else None 
             self.full_name = kwargs.get('full_name', self.full_name)
-            self.contact = kwargs.get('contact', self.contact)
+            self.contact1 = kwargs.get('contact1', self.contact1)
+            self.contact2 = kwargs.get('contact2', self.contact2)
+            self.email = kwargs.get('email', self.email)
             self.latitude = kwargs.get('latitude', self.latitude)
             self.longitude = kwargs.get('longitude', self.longitude)
             self.bonus = kwargs.get('bonus', self.bonus)
@@ -187,3 +200,14 @@ class Doctor(Base):
             db.refresh(self)
         except:
             raise AssertionError("Could not updated")
+
+    @classmethod
+    def check_if_doctor_exists(cls, doctor_id: int, db: Session):
+        doctor = db.query(cls).get(doctor_id)
+        if doctor:
+            return doctor
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="This doctor don't exists"
+            )

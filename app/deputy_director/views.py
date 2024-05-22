@@ -50,7 +50,7 @@ async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Use
 
 
 @router.post('/add-doctor-plan/{med_rep_id}', response_model=List[DoctorVisitPlanOutSchema])
-async def add_doctor_visit_plan_to_mr(med_rep_id:int, plan: DoctorVisitPlanSchema, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def add_doctor_visit_plan_to_mr(med_rep_id:int, plan: DoctorVisitPlanSchema,  db: Session = Depends(get_db)):
     visit = DoctorPlan(**plan.dict(), med_rep_id=med_rep_id)
     visit.save(db)
     visits = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==med_rep_id).order_by(DoctorPlan.id.desc()).all()
@@ -66,7 +66,7 @@ async def delete_doctor_visit_plan(plan_id:int, db: Session = Depends(get_db)):
 
 
 @router.post('/add-pharmacy-plan/{med_rep_id}', response_model=List[PharmacyVisitPlanOutSchema])
-async def add_pharmacy_visit_plan_to_mr(med_rep_id:int, plan: PharmacyVisitPlanSchema, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def add_pharmacy_visit_plan_to_mr(med_rep_id:int, plan: PharmacyVisitPlanSchema,  db: Session = Depends(get_db)):
     visit = PharmacyPlan(**plan.dict(), med_rep_id=med_rep_id)
     visit.save(db)
     visits = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==med_rep_id).order_by(PharmacyPlan.id.desc()).all()
@@ -82,7 +82,7 @@ async def delete_pharmacy_visit_plan(plan_id:int, db: Session = Depends(get_db))
 
 
 @router.post('/post-notification', response_model=NotificationOutSchema)
-async def post_notification(notif: NotificationSchema, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def post_notification(notif: NotificationSchema,  db: Session = Depends(get_db)):
     notification = Notification.save(**notif.dict(), db=db)
     return notification 
 
@@ -91,4 +91,12 @@ async def post_notification(notif: NotificationSchema, user: Annotated[Users, De
 async def notofications(med_rep_id: int, db: Session = Depends(get_db)):
     notifications = db.query(Notification).filter(Notification.med_rep_id==med_rep_id).all()
     return notifications
+
+
+@router.delete('/delete-notofications/{notofication_id}')
+async def delete_notofications(notofication_id: int, db: Session = Depends(get_db)):
+    notification = db.query(Notification).get(notofication_id)
+    db.delete(notification)
+    db.commit()
+    return {"msg":"Deleted"}
 

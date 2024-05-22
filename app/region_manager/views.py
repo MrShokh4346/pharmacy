@@ -19,14 +19,14 @@ router = FastAPI()
 async def register_user_for_rm(user: RegisterForRMSchema, manager: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)) -> Any:
     if manager.status == 'regional_manager':
         check_if_user_already_exists(username=user.username, db = db)
-        new_user = Users(**user.dict(), region_manager_id=manager.id, ffm_id=manager.ffm_id, product_manager_id=manager.product_manager_id)
+        new_user = Users(**user.dict(), region_manager_id=manager.id, ffm_id=manager.ffm_id, product_manager_id=manager.product_manager_id, deputy_director_id=manager.deputy_director_id, director_id=manager.director_id)
         new_user.save(db=db)
         return new_user
     raise HTTPException(status_code=403, detail="You are not a regional manager")
 
-
-@router.get('/get-notifications', response_model=List[NotificationOutSchema])
-async def notifications(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    notifications = db.query(Notification).filter(Notification.region_manager_id==user.id).all()
-    return notifications
+# #######
+# @router.get('/get-notifications', response_model=List[NotificationOutSchema])
+# async def notifications(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+#     notifications = db.query(Notification).filter(Notification.region_manager_id==user.id).all()
+#     return notifications
 

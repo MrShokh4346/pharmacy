@@ -1,13 +1,15 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 
 class PharmacyAddSchema(BaseModel):
     company_name: str 
-    contact: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
     latitude: str
     longitude: str 
     address: str 
@@ -22,7 +24,10 @@ class PharmacyAddSchema(BaseModel):
 class PharmacyOutSchema(BaseModel):
     id: int
     company_name: str 
-    contact: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
+    brand_name: str | None
     latitude: str
     longitude: str 
     address: str 
@@ -36,7 +41,10 @@ class PharmacyOutSchema(BaseModel):
 
 class PharmacyUpdateSchema(BaseModel):
     company_name: Optional[str] = None  
-    contact: Optional[str] = None   
+    contact1: Optional[str] = None   
+    contact2: Optional[str] = None   
+    email: Optional[str] = None   
+    brand_name: Optional[str] = None   
     latitude: Optional[str] = None  
     longitude: Optional[str] = None   
     address: Optional[str] = None   
@@ -55,12 +63,13 @@ class StockProduct(BaseModel):
 
 class BalanceInStockSchema(BaseModel):
     products: List[StockProduct]
-    date: date 
+    date: datetime 
     pharmacy_id: int 
 
 
 class RescheduleSchema(BaseModel):
-    date: date 
+    date: datetime 
+    postpone: bool 
 
 
 class VisitInfoProductSchema(BaseModel):
@@ -90,7 +99,7 @@ class DebtUpdateSchema(BaseModel):
 
 class DebtOutSchema(DebtSchema):
     id: int 
-    date: date 
+    date: datetime 
     payed: bool 
 
 
@@ -122,7 +131,7 @@ class ReservationSchema(BaseModel):
 
 class ReservationOutSchema(ReservationSchema):
     id: int
-    date: date 
+    date: datetime 
 
 
 class WholesaleProductsSchema(BaseModel):
@@ -158,3 +167,4 @@ class WholesaleOutSchema(BaseModel):
 class AttachDoctorToPharmacySchema(BaseModel):
     doctor_id: int 
     pharmacy_id: int 
+    product_id: int 

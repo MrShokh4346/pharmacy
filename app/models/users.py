@@ -1,12 +1,9 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
-# from .dependencies import get_password_hash, verify_password
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
-from .pharmacy import *
-from .plan import *
-from .doctors import *
 from passlib.context import CryptContext
+from datetime import date 
 
 from .database import Base, get_db
 
@@ -52,6 +49,21 @@ class ManufacturedCompany(Base):
             raise AssertionError("Could not saved")
 
 
+class ProductCategory(Base):
+    __tablename__ = "product_category"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+
+
 class Products(Base):
     __tablename__ = "products"
 
@@ -61,8 +73,28 @@ class Products(Base):
     discount_price = Column(Integer)
     man_company = relationship("ManufacturedCompany", backref="product")
     man_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
-        
+    category = relationship("ProductCategory", backref="product")
+    category_id = Column(Integer, ForeignKey("product_category.id"))
 
+    @classmethod
+    def check_if_product_exists(cls, product_id: int, db: Session):
+        product = db.query(cls).get(product_id)
+        if product:
+            return product
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="This product don't exists"
+            )
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+        
 
 class UserAttachedProduct(Base):
     __tablename__ = "user_attached_product"
@@ -81,6 +113,7 @@ class DoctorPlan(Base):
     description = Column(String)
     date = Column(DateTime)
     status = Column(Boolean, default=False)
+    postpone = Column(Boolean, default=False)
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
     doctor = relationship("Doctor", backref="visit_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"))
@@ -94,9 +127,10 @@ class DoctorPlan(Base):
         except:
             raise AssertionError("Could not saved")
 
-    def update(self, date: str, db: Session):
+    def update(self, date: str, postpone: bool,  db: Session):
         try:
             self.date = date 
+            self.postpone = postpone
             db.add(self)
             db.commit()
             db.refresh(self)
@@ -138,6 +172,7 @@ class PharmacyPlan(Base):
     description = Column(String)
     date = Column(DateTime)
     status = Column(Boolean, default=False)
+    postpone = Column(Boolean, default=False)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref="visit_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"))
@@ -151,9 +186,10 @@ class PharmacyPlan(Base):
         except:
             raise AssertionError("Could not saved")
 
-    def update(self, date: str, db: Session):
+    def update(self, date: str, postpone: bool, db: Session):
         try:
             self.date = date 
+            self.postpone = postpone
             db.add(self)
             db.commit()
             db.refresh(self)
@@ -206,6 +242,10 @@ class Notification(Base):
     med_rep = relationship("Users", backref="notifications", foreign_keys=[med_rep_id])
     region_manager_id = Column(Integer, ForeignKey("users.id"))
     region_manager = relationship("Users", backref="rm_notifications", foreign_keys=[region_manager_id])
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="notifications")
+    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor = relationship("Doctor", backref="notifications")
 
     @classmethod
     def save(cls, db: Session, **kwargs):
@@ -224,7 +264,6 @@ class Notification(Base):
         db.add(self)
         db.commit()
         db.refresh(self)
-
 
 
 class Users(Base):

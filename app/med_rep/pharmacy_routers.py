@@ -25,16 +25,17 @@ async def get_all_pharmacy(db: Session = Depends(get_db)):
     pharmacies = db.query(Pharmacy).all()
     return pharmacies
 
-
+#######
 @router.get('/get-pharmacy', response_model=List[PharmacyOutSchema])
-async def get_med_rep_related_pharmacy(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def get_med_rep_related_pharmacy(user_id: int, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
     pharmacies = db.query(Pharmacy).filter(Pharmacy.med_rep_id==user.id).all()
     return pharmacies
     
-
+########
 @router.post('/add-pharmacy', response_model=PharmacyOutSchema)
-async def add_pharmacy(new_pharmacy: PharmacyAddSchema, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    check_if_med_rep(user)
+async def add_pharmacy(new_pharmacy: PharmacyAddSchema, user_id: int, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
     pharmacy = Pharmacy(**new_pharmacy.dict(), med_rep_id=user.id, region_manager_id=user.region_manager_id, 
                         ffm_id=user.ffm_id, product_manager_id=user.product_manager_id, 
                         deputy_director_id=user.deputy_director_id, director_id=user.director_id)
@@ -61,22 +62,22 @@ async def get_balance_in_stock(pharmacy_id: int, from_date: str, to_date: str, d
     products = db.query(BalanceInStock).filter(BalanceInStock.date.between(from_date, to_date)).all()
     return products
 
-
+##########
 @router.get('/get-pharmacy-visit-plan', response_model=List[PharmacyVisitPlanOutSchema])
-async def get_pharmacy_visit_plan(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    check_if_med_rep(user)
+async def get_pharmacy_visit_plan(user_id: int, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
     plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id).all()
     return plans 
 
 
 @router.get('/get-pharmacy-visit-plan/{plan_id}', response_model=PharmacyVisitPlanOutSchema)
-async def get_pharmacy_visit_plan_by_id(plan_id: int, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def get_pharmacy_visit_plan_by_id(plan_id: int, db: Session = Depends(get_db)):
     plan = db.query(PharmacyPlan).get(plan_id)
     return plan 
 
 
 @router.post('/reschedule-pharmacy-visit/{plan_id}', response_model=PharmacyVisitPlanOutSchema)
-async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db: Session = Depends(get_db)):
     plan = db.query(PharmacyPlan).get(plan_id)
     plan.update(**date.dict(), db=db)
     return plan
@@ -101,17 +102,16 @@ async def attach_doctor_to_pharmacy(pharmacy_id: int, doctor_id: int, db: Sessio
     pharmacy.attach_doctor(doctor_id, db)
     return pharmacy.doctors 
 
-
+########
 @router.get('/search-pharmacy-doctors', response_model=List[DoctorListSchema])
-async def search_for_pharmacy_attached_doctors(search: str, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    check_if_med_rep(user)
+async def search_for_pharmacy_attached_doctors(search: str, user_id: int, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
     doctors = db.query(Doctor).filter(Doctor.full_name.like(f"%{search}%"), Doctor.med_rep_id==user.id).all()
     return doctors
 
 
 @router.get('/search-mr-doctors/{pharmacy_id}', response_model=List[DoctorListSchema])
-async def search_for_med_rep_attached_doctors(pharmacy_id: int, search: str, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    check_if_med_rep(user)
+async def search_for_med_rep_attached_doctors(pharmacy_id: int, search: str, db: Session = Depends(get_db)):
     pharmacy = db.query(Pharmacy).filter(Pharmacy.id==pharmacy_id, Pharmacy.doctors.any(Doctor.full_name.like(f"%{search}%"))).all()
     return pharmacy[0].doctors
 

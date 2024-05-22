@@ -1,11 +1,10 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
-from .users import *
-from .plan import *
-from .doctors import *
+from .doctors import Doctor, pharmacy_doctor
 from datetime import date 
+from .users import Products
 
 
 from .database import Base, get_db
@@ -177,7 +176,9 @@ class Pharmacy(Base):
 
     id = Column(Integer, primary_key=True)
     company_name = Column(String)
-    contact = Column(String)
+    contact1 = Column(String)
+    contact2 = Column(String)
+    email = Column(String)
     latitude = Column(String)
     longitude = Column(String)
     address = Column(String)
@@ -187,6 +188,7 @@ class Pharmacy(Base):
     VAT_payer_code = Column(String)
     pharmacy_director = Column(String)
     discount = Column(Integer)
+    brand_name = Column(String, nullable=True)
     
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users", backref="mr_pharmacy", foreign_keys=[med_rep_id])
@@ -216,7 +218,10 @@ class Pharmacy(Base):
             for key in list(kwargs.keys()):
                 kwargs.pop(key) if kwargs[key]==None else None 
             self.company_name = kwargs.get('company_name', self.company_name)
-            self.contact = kwargs.get('contact', self.contact)
+            self.contact1 = kwargs.get('contact1', self.contact1)
+            self.contact2 = kwargs.get('contact2', self.contact2)
+            self.email = kwargs.get('email', self.email)
+            self.brand_name = kwargs.get('brand_name', self.brand_name)
             self.address = kwargs.get('address', self.address)
             self.latitude = kwargs.get('latitude', self.latitude)
             self.longitude = kwargs.get('longitude', self.longitude)
@@ -244,7 +249,14 @@ class Pharmacy(Base):
             doc = db.query(cls).filter(cls.doctors.any(Doctor.id==kwargs.get('doctor_id'))).first()
             if not doc:
                 pharmacy = db.query(cls).get(kwargs.get('pharmacy_id'))
-                pharmacy.doctors.append(db.query(Doctor).get(kwargs.get('doctor_id')))
+                product = Products.check_if_product_exists(kwargs.get('product_id'), db)
+                doctor = Doctor.check_if_doctor_exists(kwargs.get('doctor_id'), db)
+                association_entry = pharmacy_doctor.insert().values(
+                    doctor_id=doctor.id,
+                    pharmacy_id=pharmacy.id,
+                    product_id=product.id
+                )
+                db.execute(association_entry)
                 db.commit()
                 db.refresh(pharmacy)
             else:

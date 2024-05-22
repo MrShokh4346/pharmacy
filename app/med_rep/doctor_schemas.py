@@ -2,44 +2,50 @@ from pydantic import BaseModel
 from typing import List, Optional
 from models.doctors import Speciality
 from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
-from datetime import date
+from datetime import date, datetime
 from enum import Enum
 
 
 class DoctorInSchema(BaseModel):
     full_name: str 
-    contact: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
     latitude: str 
     longitude: str 
     category_id: int 
     speciality_id: int 
     # med_rep_id: int
     medical_organization_id: int
-    region_id: int 
+    # region_id: int 
 
 
 class DoctorOutSchema(BaseModel):
     id: int 
     full_name: str 
-    contact: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
     latitude: str 
     longitude: str 
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
     medical_organization: MedicalOrganizationOutSchema
-    region: RegionSchema 
+    # region: RegionSchema 
     
 
 class DoctorUpdateSchema(BaseModel):
     full_name: Optional[str] = None  
-    contact: Optional[str] = None  
+    contact1: Optional[str] = None  
+    contact2: Optional[str] = None  
+    email: Optional[str] = None  
     latitude: Optional[str] = None  
     longitude: Optional[str] = None  
     category_id: Optional[int] = None  
     speciality_id: Optional[int] = None  
     # med_rep_id: Optional[int] = None 
     medical_organization_id: Optional[int] = None 
-    region_id: Optional[int] = None  
+    # region_id: Optional[int] = None  
 
 
 class SpecialitySchema(BaseModel):
@@ -60,8 +66,14 @@ class AttachProductsSchema(BaseModel):
     monthly_plan: int 
 
 
+class AttachProductsOutSchema(BaseModel):
+    product: ProductOutSchema
+    quantity: int 
+    monthly_plan: int 
+
+
 class AttachProductsListSchema(BaseModel):
-    items: List[AttachProductsSchema]
+    items: List[AttachProductsOutSchema]
 
 
 class FilterChoice(str, Enum):
@@ -76,7 +88,7 @@ class BonusProductSchema(BaseModel):
 
 
 class BonusSchema(BaseModel):
-    date: date
+    date: datetime
     payed: bool 
     description: str 
     amount: int 
@@ -94,7 +106,8 @@ class BonusOutSchema(BonusSchema):
 
 
 class RescheduleSchema(BaseModel):
-    date: date 
+    date: datetime 
+    postpone: bool 
 
 
 class VisitInfoProductSchema(BaseModel):

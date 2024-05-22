@@ -11,9 +11,15 @@ class UserOutSchema(BaseModel):
     username: str
     full_name: str
     status: str
+    region_id: int
 
 
 class DoctorCategorySchema(BaseModel):
+    id: int
+    name: str
+
+
+class ProductCategorySchema(BaseModel):
     id: int
     name: str
 
@@ -31,8 +37,13 @@ class MedicalOrganizationInSchema(BaseModel):
     region_id: int 
 
 
-class MedicalOrganizationOutSchema(MedicalOrganizationInSchema):
+class MedicalOrganizationOutSchema(BaseModel):
     id: int
+    address: str 
+    latitude: str 
+    longitude: str 
+    med_rep: UserOutSchema
+    region: RegionSchema
 
 
 class ProductInSchema(BaseModel):
@@ -40,13 +51,21 @@ class ProductInSchema(BaseModel):
     price: int 
     discount_price: int 
     man_company_id: int 
-
-
-class ProductOutSchema(ProductInSchema):
-    id: int 
+    category_id: int
 
 
 class ManufacturedCompanySchema(BaseModel):
     id: int 
     name: str 
+
+
+class ProductOutSchema(BaseModel):
+    id: int 
+    name: str 
+    price: int 
+    discount_price: int 
+    man_company: ManufacturedCompanySchema 
+    category: ProductCategorySchema
+
+
 

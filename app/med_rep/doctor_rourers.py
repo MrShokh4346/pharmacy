@@ -5,15 +5,22 @@ from .doctor_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.doctors import *
-from models.users import Users, DoctorPlan
+from models.users import Users, DoctorPlan, Notification
 from models.database import get_db
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import List, Annotated
 from deputy_director.schemas import DoctorVisitPlanOutSchema
+from deputy_director.schemas import NotificationOutSchema
 
 
 router = APIRouter()
+
+
+@router.get('/get-doctor-notifications/{doctor_id}', response_model=List[NotificationOutSchema])
+async def get_doctor_notifications(doctor_id: int, db: Session = Depends(get_db)):
+    notifications = db.query(Notification).filter(Notification.doctor_id==doctor_id).all()
+    return notifications
 
 
 @router.get('/get-doctors', response_model=List[DoctorListSchema])
@@ -27,10 +34,10 @@ async def get_doctor_by_id(id:int, db: Session = Depends(get_db)):
     doctor = db.query(Doctor).get(id)
     return doctor
 
-
+#######
 @router.post('/add-doctor', response_model=DoctorOutSchema)
-async def add_doctor(doctor: DoctorInSchema, med_rep: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    check_if_med_rep(med_rep)
+async def add_doctor(doctor: DoctorInSchema, user_id: int, db: Session = Depends(get_db)):
+    med_rep = get_user(user_id, db)
     new_doctor = Doctor(**doctor.dict(), region_manager_id=med_rep.region_manager_id, ffm_id=med_rep.ffm_id, product_manager_id=med_rep.product_manager_id, deputy_director_id=med_rep.deputy_director_id, director_id=med_rep.director_id)
     new_doctor.save(db=db)
     return new_doctor
@@ -42,7 +49,14 @@ async def attach_products_to_doctor(objects: AttachProductsListSchema, db: Sessi
         product = DoctorAttachedProduct(**obj.dict())
         db.add(product)
     db.commit()
-    return {"msg":"Done"}   
+    return {"msg":"Done"} 
+
+
+@router.get('/get-doctor-attached-products/{doctor_id}', response_model=List[AttachProductsOutSchema])
+async def get_doctor_attached_products(doctor_id: int, db: Session = Depends(get_db)):
+    products = db.query(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==doctor_id).all()
+    print(products)
+    return products 
 
 
 @router.patch('/update-doctor/{id}', response_model=DoctorOutSchema)
@@ -87,22 +101,22 @@ async def get_bonus_by_doctor_id(id: int, filter_bonus: FilterChoice, from_date:
         bonuses = db.query(Bonus).filter(Bonus.doctor_id==id, Bonus.date.between(fr_date, to_date)).order_by(Bonus.id.desc()).all() if (fr_date and to_date) else db.query(Bonus).filter(Bonus.doctor_id==id).order_by(Bonus.id.desc()).all()
         return bonuses
 
-
+###########
 @router.get('/get-doctor-visit-plan', response_model=List[DoctorVisitPlanOutSchema])
-async def get_doctor_visit_plan(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
-    check_if_med_rep(user)
+async def get_doctor_visit_plan(user_id: int, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
     plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id).all()
     return plans 
 
 
 @router.get('/get-doctor-visit-plan/{plan_id}', response_model=DoctorVisitPlanOutSchema)
-async def get_doctor_visit_plan_by_id(plan_id: int, user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def get_doctor_visit_plan_by_id(plan_id: int, db: Session = Depends(get_db)):
     plan = db.query(DoctorPlan).get(plan_id)
     return plan 
 
 
 @router.post('/reschedule-doctor-visit/{plan_id}', response_model=DoctorVisitPlanOutSchema)
-async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db: Session = Depends(get_db)):
     plan = db.query(DoctorPlan).get(plan_id)
     plan.update(**date.dict(), db=db)
     return plan

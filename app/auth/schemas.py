@@ -39,6 +39,8 @@ class LoginSchema(BaseModel):
 
 
 class TokenSchema(BaseModel):
+    id: int
     access_token: str
     status: str
+    region_id: int
 

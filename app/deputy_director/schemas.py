@@ -1,9 +1,9 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 from enum import Enum
 from fastapi import FastAPI, Path
 from typing import List 
-from datetime import date
+from datetime import date, datetime
 from med_rep.doctor_schemas import DoctorOutSchema
 from med_rep.pharmacy_schemas import PharmacyOutSchema
 
@@ -39,7 +39,9 @@ class DoctorVisitPlanSchema(BaseModel):
 
 class DoctorVisitPlanOutSchema(BaseModel):
     id: int    
-    date: date
+    date: datetime
+    status: bool 
+    postpone: bool
     doctor: DoctorOutSchema
 
 
@@ -50,7 +52,9 @@ class PharmacyVisitPlanSchema(BaseModel):
 
 class PharmacyVisitPlanOutSchema(BaseModel):
     id: int    
-    date: date
+    date: datetime
+    status: bool 
+    postpone: bool 
     pharmacy: PharmacyOutSchema
 
 
@@ -59,9 +63,17 @@ class NotificationSchema(BaseModel):
     thema: str 
     description: str 
     med_rep_id: int
+    pharmacy_id: Optional[int] = None
+    doctor_id: Optional[int] = None
 
 
-class NotificationOutSchema(NotificationSchema):
+class NotificationOutSchema(BaseModel):
     id: int 
+    author: str 
+    thema: str 
+    description: str 
     date: date 
     unread: bool
+    doctor: Optional[DoctorOutSchema] = None
+    pharmacy: Optional[PharmacyOutSchema] = None
+

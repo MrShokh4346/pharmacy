@@ -24,7 +24,7 @@ async def register_user_for_pm(user: RegisterForPMSchema, manager: Annotated[Use
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="region_manager_id, ffm_id should be declared"
                 )
-            new_user = Users(**user.dict(), product_manager_id=manager.id)
+            new_user = Users(**user.dict(), product_manager_id=manager.id, deputy_director_id=manager.deputy_director_id, director_id=manager.director_id)
             new_user.save(db=db)
         elif user.status == 'regional_manager':
             if not user.ffm_id:
@@ -32,10 +32,10 @@ async def register_user_for_pm(user: RegisterForPMSchema, manager: Annotated[Use
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="ffm_id should be declared"
                 )
-            new_user = Users(**user.dict(), product_manager_id=manager.id)
+            new_user = Users(**user.dict(), product_manager_id=manager.id, deputy_director_id=manager.deputy_director_id, director_id=manager.director_id)
             new_user.save(db=db)
         else:
-            new_user = Users(**user.dict(), product_manager_id=manager.id)
+            new_user = Users(**user.dict(), product_manager_id=manager.id, deputy_director_id=manager.deputy_director_id, director_id=manager.director_id)
             new_user.save(db=db)
         return new_user
     raise HTTPException(status_code=403, detail="You are not a product manager")

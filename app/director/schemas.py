@@ -3,6 +3,15 @@ from typing import Literal
 from enum import Enum
 from fastapi import FastAPI, Path
 
+user_role_to_role_ids = {
+    "medical_representative" : "med_rep_id",
+    "regional_manager" : "region_manager_id",
+    "ff_manager" : "ffm_id",
+    "product_manager" : "product_manager_id",
+    "deputy_director" : "deputy_director_id",
+    "director" : "director_id"
+}
+
 class Status(str, Enum):
     medical_representative = "medical_representative"
     regional_manager = "regional_manager"

@@ -24,10 +24,10 @@ async def register_user_for_ffm(user: RegisterForFFMSchema, manager: Annotated[U
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="region_manager_id should be declared"
                 )
-            new_user = Users(**user.dict(), ffm_id=manager.id, product_manager_id=manager.product_manager_id)
+            new_user = Users(**user.dict(), ffm_id=manager.id, product_manager_id=manager.product_manager_id, deputy_director_id=manager.deputy_director_id, director_id=manager.director_id)
             new_user.save(db=db)
         else:
-            new_user = Users(**user.dict(), ffm_id=manager.id, product_manager_id=manager.product_manager_id)
+            new_user = Users(**user.dict(), ffm_id=manager.id, product_manager_id=manager.product_manager_id, deputy_director_id=manager.deputy_director_id, director_id=manager.director_id)
             new_user.save(db=db)
         return new_user
     raise HTTPException(status_code=403, detail="You are not a field force manager")

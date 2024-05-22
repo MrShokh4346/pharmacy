@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
-from .users import Users
+from .users import Users, Products
 from .pharmacy import Reservation
 from typing import Annotated
 from .database import get_db
@@ -73,10 +73,11 @@ def check_if_user_already_exists(username: str, db: Session):
     return False
 
 
-def check_if_med_rep(user: Users):
-    if user.status != 'medical_representative':
-        raise HTTPException(status_code=400, detail='You are not medical representative')
-    return True
+def get_user(user_id: int, db: Session):
+    user = db.query(Users).get(user_id)
+    if not user:
+        raise HTTPException(status_code=400, detail="There isn't user with this id")
+    return user 
 
 import os
 
@@ -109,6 +110,5 @@ def write_excel(reservation_id: int, db: Session):
     destination_wb.save(destination_excel_file)
     destination_wb.close()
     return FileResponse("app/report/report.xlsx")
-
 
 
