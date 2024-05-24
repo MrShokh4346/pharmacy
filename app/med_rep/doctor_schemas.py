@@ -62,18 +62,16 @@ class DoctorListSchema(BaseModel):
 class AttachProductsSchema(BaseModel):
     doctor_id: int 
     product_id: int 
-    quantity: int 
     monthly_plan: int 
 
 
 class AttachProductsOutSchema(BaseModel):
     product: ProductOutSchema
-    quantity: int 
     monthly_plan: int 
 
 
 class AttachProductsListSchema(BaseModel):
-    items: List[AttachProductsOutSchema]
+    items: List[AttachProductsSchema]
 
 
 class FilterChoice(str, Enum):
@@ -108,11 +106,13 @@ class BonusOutSchema(BonusSchema):
 class RescheduleSchema(BaseModel):
     date: datetime 
     postpone: bool 
+    description: str 
+    theme: str 
 
 
 class VisitInfoProductSchema(BaseModel):
-    product_name: str 
-    compleated: int 
+    product_id: int 
+    amount: int 
 
 
 class VisitInfoSchema(BaseModel):

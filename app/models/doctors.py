@@ -64,7 +64,6 @@ class DoctorAttachedProduct(Base):
     __tablename__ = "doctor_attached_product"
 
     id = Column(Integer, primary_key=True)
-    quantity = Column(Integer)
     monthly_plan = Column(Integer)
 
     product = relationship("Products",  backref="doctorattachedproduct")
@@ -80,6 +79,26 @@ class DoctorAttachedProduct(Base):
         except:
             raise AssertionError("Could not saved")
             
+
+class DoctorCompleatedPlan(Base):
+    __tablename__ = "doctor_compleated_plan"
+
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+    product = relationship("Products",  backref="doctorcompleatedplan")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    doctor = relationship("Doctor",  backref="doctorcompleatedplan")
+    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+
+    def save(self, db: Session):
+        try:
+            db.add(self)
+            db.commit()
+            db.refresh(self)
+        except:
+            raise AssertionError("Could not saved")
+
 
 class Bonus(Base):
     __tablename__ = "bonus"

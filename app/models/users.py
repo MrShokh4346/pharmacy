@@ -111,6 +111,7 @@ class DoctorPlan(Base):
 
     id = Column(Integer, primary_key=True)
     description = Column(String)
+    theme = Column(String, default='')
     date = Column(DateTime)
     status = Column(Boolean, default=False)
     postpone = Column(Boolean, default=False)
@@ -127,10 +128,12 @@ class DoctorPlan(Base):
         except:
             raise AssertionError("Could not saved")
 
-    def update(self, date: str, postpone: bool,  db: Session):
+    def update(self, db: Session, **kwargs):
         try:
-            self.date = date 
-            self.postpone = postpone
+            self.date = kwargs.get('date') 
+            self.postpone = kwargs.get('postpone')
+            self.description = kwargs.get('description')
+            self.theme = kwargs.get('theme')
             db.add(self)
             db.commit()
             db.refresh(self)
@@ -170,6 +173,7 @@ class PharmacyPlan(Base):
 
     id = Column(Integer, primary_key=True)
     description = Column(String)
+    theme = Column(String, default='')
     date = Column(DateTime)
     status = Column(Boolean, default=False)
     postpone = Column(Boolean, default=False)
@@ -234,7 +238,7 @@ class Notification(Base):
 
     id = Column(Integer, primary_key=True)
     author = Column(String)
-    thema = Column(String)
+    theme = Column(String)
     description = Column(String)
     date = Column(DateTime, default=date.today())
     unread = Column(Boolean, default=True)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .doctor_schemas import DoctorListSchema, DoctorAttachedProductSchema
@@ -8,31 +8,47 @@ from models.users import Products
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.pharmacy import *
-from models.users import PharmacyPlan
+from models.users import PharmacyPlan, Notification
 from models.database import get_db
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import List
 from deputy_director.schemas import PharmacyVisitPlanOutSchema
 from common.schemas import ProductOutSchema
+from sqlalchemy import text
+from deputy_director.schemas import NotificationOutSchema
 
 
 router = APIRouter()
 
 
-@router.get('/get-all-pharmacy', response_model=List[PharmacyOutSchema])
+@router.get('/get-pharmacy-notifications/{pharmacy_id}', response_model=List[NotificationOutSchema])
+async def get_doctor_notifications(pharmacy_id: int, db: Session = Depends(get_db)):
+    notifications = db.query(Notification).filter(Notification.pharmacy_id==pharmacy_id).all()
+    return notifications
+
+
+@router.get('/get-all-pharmacy', response_model=List[PharmacyListSchema])
 async def get_all_pharmacy(db: Session = Depends(get_db)):
     pharmacies = db.query(Pharmacy).all()
     return pharmacies
 
-#######
-@router.get('/get-pharmacy', response_model=List[PharmacyOutSchema])
+
+@router.get('/filter-pharmacy', response_model=List[PharmacyListSchema])
+async def filter_pharmacies(doctor_id: int | None = None, product_id: int | None = None, region_id: int | None = None, db: Session = Depends(get_db)):
+    query = filter_pharmacy(doctor_id, product_id, region_id)
+    pharmacy = db.execute(text(query))
+    print(pharmacy.__dict__)
+    return pharmacy
+
+
+@router.get('/get-pharmacy', response_model=List[PharmacyListSchema])
 async def get_med_rep_related_pharmacy(user_id: int, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
     pharmacies = db.query(Pharmacy).filter(Pharmacy.med_rep_id==user.id).all()
     return pharmacies
     
-########
+
 @router.post('/add-pharmacy', response_model=PharmacyOutSchema)
 async def add_pharmacy(new_pharmacy: PharmacyAddSchema, user_id: int, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
@@ -51,8 +67,14 @@ async def update_pharmacy(id: int, data: PharmacyUpdateSchema, db: Session = Dep
 
 
 @router.post('/add-balance-in-stock')
-async def add_todays_balance_in_stock(balance: BalanceInStockSchema, db: Session = Depends(get_db)):
-    BalanceInStock.save(**balance.dict(), db=db)
+async def add_balance_in_stock(balance: BalanceInStockSchema, db: Session = Depends(get_db)):
+    IncomingBalanceInStock.save(**balance.dict(), db=db)
+    return {"msg":"Done"}
+
+
+@router.post('/checking-balance-in-stock')
+async def checking_balance_in_stock(balance: CheckBalanceInStockSchema, db: Session = Depends(get_db)):
+    CheckingBalanceInStock.save(**balance.dict(), db=db)
     return {"msg":"Done"}
 
 
@@ -62,11 +84,18 @@ async def get_balance_in_stock(pharmacy_id: int, from_date: str, to_date: str, d
     products = db.query(BalanceInStock).filter(BalanceInStock.date.between(from_date, to_date)).all()
     return products
 
-##########
+
 @router.get('/get-pharmacy-visit-plan', response_model=List[PharmacyVisitPlanOutSchema])
 async def get_pharmacy_visit_plan(user_id: int, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
     plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id).all()
+    return plans 
+
+
+@router.get('/filter-pharmacy-visit-plan-by-date', response_model=List[PharmacyVisitPlanOutSchema])
+async def get_pharmacy_visit_plan(user_id: int, date: date, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
+    plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id, PharmacyPlan.date==date).all()
     return plans 
 
 
@@ -96,13 +125,13 @@ async def get_phatmacy_attached_doctors_list(pharmacy_id: int, db: Session = Dep
     return pharmacy.doctors
 
 
-@router.post('/attach-pharmacy-doctor/{pharmacy_id}', response_model=List[DoctorListSchema])
-async def attach_doctor_to_pharmacy(pharmacy_id: int, doctor_id: int, db: Session = Depends(get_db)):
+@router.post('/attach-doctor-to-pharmacy/{pharmacy_id}')
+async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: Session = Depends(get_db)):
     pharmacy = db.query(Pharmacy).get(pharmacy_id)
-    pharmacy.attach_doctor(doctor_id, db)
-    return pharmacy.doctors 
+    pharmacy.attach_doctor(**att.dict(), db=db)
+    return {"msg":"Done"}
 
-########
+
 @router.get('/search-pharmacy-doctors', response_model=List[DoctorListSchema])
 async def search_for_pharmacy_attached_doctors(search: str, user_id: int, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
@@ -191,9 +220,3 @@ async def wholesale_attach_product(wholesale_id: int, product: WholesaleProducts
 async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: Session = Depends(get_db)):
     wholesale = db.query(Wholesale).filter(Wholesale.region_id==region_id, Wholesale.products.any(Products.name.like(f"%{search}%"))).all()
     return wholesale
-
-
-@router.post('/attach-doctor')
-async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: Session = Depends(get_db)):
-    Pharmacy.attach_doctor(**att.dict(), db=db)
-    return {"msg":"Done"}

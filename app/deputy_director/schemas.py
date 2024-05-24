@@ -7,6 +7,7 @@ from datetime import date, datetime
 from med_rep.doctor_schemas import DoctorOutSchema
 from med_rep.pharmacy_schemas import PharmacyOutSchema
 
+
 class Status(str, Enum):
     medical_representative = "medical_representative"
     regional_manager = "regional_manager"
@@ -35,11 +36,15 @@ class UserOutSchema(BaseModel):
 class DoctorVisitPlanSchema(BaseModel):
     date: date
     doctor_id: int 
+    description: Optional[str] = None
+    theme: Optional[str] = None 
 
 
 class DoctorVisitPlanOutSchema(BaseModel):
     id: int    
     date: datetime
+    theme: Optional[str] = None
+    description: Optional[str] = None 
     status: bool 
     postpone: bool
     doctor: DoctorOutSchema
@@ -48,11 +53,15 @@ class DoctorVisitPlanOutSchema(BaseModel):
 class PharmacyVisitPlanSchema(BaseModel):
     date: date
     pharmacy_id: int 
+    description: Optional[str] = None
+    theme: Optional[str] = None 
 
 
 class PharmacyVisitPlanOutSchema(BaseModel):
     id: int    
     date: datetime
+    theme: Optional[str] = None
+    description: Optional[str] = None 
     status: bool 
     postpone: bool 
     pharmacy: PharmacyOutSchema
@@ -60,8 +69,8 @@ class PharmacyVisitPlanOutSchema(BaseModel):
 
 class NotificationSchema(BaseModel):
     author: str 
-    thema: str 
-    description: str 
+    theme: Optional[str] = None 
+    description: Optional[str] = None 
     med_rep_id: int
     pharmacy_id: Optional[int] = None
     doctor_id: Optional[int] = None
@@ -70,8 +79,8 @@ class NotificationSchema(BaseModel):
 class NotificationOutSchema(BaseModel):
     id: int 
     author: str 
-    thema: str 
-    description: str 
+    theme: Optional[str] = None 
+    description: Optional[str] = None 
     date: date 
     unread: bool
     doctor: Optional[DoctorOutSchema] = None

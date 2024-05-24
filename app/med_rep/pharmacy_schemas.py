@@ -21,13 +21,19 @@ class PharmacyAddSchema(BaseModel):
     region_id: int
 
 
+class PharmacyListSchema(BaseModel):
+    id: Optional[int] 
+    company_name: str 
+    region: Optional[RegionSchema] = None
+
+
 class PharmacyOutSchema(BaseModel):
     id: int
     company_name: str 
     contact1: str 
     contact2: Optional[str] = None   
     email: str 
-    brand_name: str | None
+    brand_name: str | None = None
     latitude: str
     longitude: str 
     address: str 
@@ -36,7 +42,7 @@ class PharmacyOutSchema(BaseModel):
     classification_of_economic_activities: str 
     VAT_payer_code: str 
     pharmacy_director: str
-    region: RegionSchema
+    region: Optional[RegionSchema]
 
 
 class PharmacyUpdateSchema(BaseModel):
@@ -57,14 +63,26 @@ class PharmacyUpdateSchema(BaseModel):
 
 
 class StockProduct(BaseModel):
-    product_name: str 
+    product_id: int 
     quantity: int 
 
 
 class BalanceInStockSchema(BaseModel):
     products: List[StockProduct]
-    date: datetime 
     pharmacy_id: int 
+    saler: str 
+    description: Optional[str] 
+
+
+class CheckStockProduct(BaseModel):
+    product_id: int 
+    remainder: int 
+
+
+class CheckBalanceInStockSchema(BaseModel):
+    products: List[CheckStockProduct]
+    pharmacy_id: int 
+    description: Optional[str] 
 
 
 class RescheduleSchema(BaseModel):

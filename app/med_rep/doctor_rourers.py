@@ -1,7 +1,8 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .doctor_schemas import *
+from .pharmacy_schemas import PharmacyListSchema
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.doctors import *
@@ -66,11 +67,10 @@ async def attach_products_to_doctor(objects: AttachProductsListSchema, db: Sessi
     return {"msg":"Done"} 
 
 
-@router.get('/get-doctor-attached-products/{doctor_id}', response_model=List[AttachProductsOutSchema])
+@router.get('/doctor-attached-products/{doctor_id}', response_model=List[AttachProductsOutSchema])
 async def get_doctor_attached_products(doctor_id: int, db: Session = Depends(get_db)):
     products = db.query(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==doctor_id).all()
-    print(products)
-    return products 
+    return products
 
 
 @router.patch('/update-doctor/{id}', response_model=DoctorOutSchema)
@@ -78,6 +78,12 @@ async def update_doctor(id: int, data: DoctorUpdateSchema, db: Session = Depends
     doctor = db.query(Doctor).get(id)
     doctor.update(**data.dict(), db=db)
     return doctor
+
+
+@router.get('/get-doctor-pharmacies-list/{doctor_id}', response_model=List[PharmacyListSchema])
+async def get_phatmacy_attached_doctors_list(doctor_id: int, db: Session = Depends(get_db)):
+    doctors = db.query(Doctor).get(doctor_id)
+    return doctors.pharmacy
    
 
 @router.post('/add-bonus', response_model=List[BonusOutSchema])
@@ -123,6 +129,13 @@ async def get_doctor_visit_plan(user_id: int, db: Session = Depends(get_db)):
     return plans 
 
 
+@router.get('/filter-doctor-visit-plan-by-date', response_model=List[DoctorVisitPlanOutSchema])
+async def filter_doctor_visit_plan_by_date(user_id: int, date: date, db: Session = Depends(get_db)):
+    user = get_user(user_id, db)
+    plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id, DoctorPlan.date==date).all()
+    return plans
+
+
 @router.get('/get-doctor-visit-plan/{plan_id}', response_model=DoctorVisitPlanOutSchema)
 async def get_doctor_visit_plan_by_id(plan_id: int, db: Session = Depends(get_db)):
     plan = db.query(DoctorPlan).get(plan_id)
@@ -135,7 +148,7 @@ async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db:
     plan.update(**date.dict(), db=db)
     return plan
 
-
+#######
 @router.post('/doctor-visit-info/{visit_id}')
 async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: Session = Depends(get_db)):
     plan = db.query(DoctorPlan).get(visit_id)

@@ -125,5 +125,24 @@ def filter_doctor(category_id: int | None = None, speciality_id: int | None = No
     if not conditions:
         raise ValueError("At least one argument must be provided")
 
-    query += " OR ".join(conditions)
+    query += " AND ".join(conditions)
+    return query
+
+
+def filter_pharmacy(doctor_id: int | None = None, product_id: int | None = None, region_id: int | None = None):
+    query = """SELECT pharmacy.id, pharmacy.company_name, pharmacy.region_id  FROM pharmacy
+    LEFT JOIN pharmacy_doctor ON pharmacy.id = pharmacy_doctor.pharmacy_id 
+    LEFT JOIN pharmacy_attached_products ON pharmacy.id = pharmacy_attached_products.pharmacy_id  WHERE """
+    conditions = []
+
+    if doctor_id is not None:
+        conditions.append(f"pharmacy_doctor.doctor_id = {doctor_id}")
+    if product_id is not None:
+        conditions.append(f"pharmacy_attached_products.product_id = {product_id}")
+    if region_id is not None:
+        conditions.append(f"pharmacy.region_id = {region_id}")
+    if not conditions:
+        raise ValueError("At least one argument must be provided")
+
+    query += " AND ".join(conditions)
     return query

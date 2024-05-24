@@ -10,26 +10,109 @@ from .users import Products
 from .database import Base, get_db
 
 
-class BalanceInStock(Base):
-    __tablename__ = "balance_in_stock"
+class IncomingStockProducts(Base):
+    __tablename__ = "incoming_stock_products"
 
     id = Column(Integer, primary_key=True)
-    product_name = Column(String)
     quantity = Column(Integer)
+
+    stock_id = Column(Integer, ForeignKey("incoming_balance_in_stock.id"))
+    stock = relationship("IncomingBalanceInStock", backref="products")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="incomingstockproducts")
+
+
+class IncomingBalanceInStock(Base):
+    __tablename__ = "incoming_balance_in_stock"
+
+    id = Column(Integer, primary_key=True)
+    saler = Column(String)
     date = Column(DateTime, default=date.today())
+    description = Column(String)
 
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref='balanceinstock')
 
     @classmethod
     def save(cls, db: Session, **kwargs):
-        try:
-            for product in kwargs['products']:
-                stock_product = cls(**product, date=kwargs['date'], pharmacy_id=kwargs['pharmacy_id'])
-                db.add(stock_product)
+        # try:
+            products = kwargs.pop('products')
+            stock = cls(**kwargs)
+            for product in products:
+                stock_product = IncomingStockProducts(**product)
+                stock.products.append(stock_product)
+                current = CurrentBalanceInStock.add(pharmacy_id=kwargs['pharmacy_id'], product_id=product['product_id'], amount=product['quantity'], db=db)
+            db.add(stock)
             db.commit()
-        except:
-            raise AssertionError("Could not saved")
+        # except:
+            # raise AssertionError("Could not saved")
+
+
+class CurrentBalanceInStock(Base):
+    __tablename__ = "current_balance_in_stock"
+
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="currntbalanceinstock")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref='currntbalanceinstock')
+
+    @classmethod
+    def add(cls, pharmacy_id: int, product_id: int, amount: int, db: Session):
+        current = db.query(cls).filter(cls.product_id==product_id, cls.pharmacy_id==pharmacy_id).first()
+        if not current:
+            current = cls(pharmacy_id=pharmacy_id, product_id=product_id, amount=amount)
+            db.add(current)
+        else:
+            current.amount += amount
+        return current
+
+
+class CheckingStockProducts(Base):
+    __tablename__ = "checking_stock_products"
+
+    id = Column(Integer, primary_key=True)
+    previous = Column(Integer)
+    saled = Column(Integer)
+    remainder = Column(Integer)
+
+    stock_id = Column(Integer, ForeignKey("checking_balance_in_stock.id"))
+    stock = relationship("CheckingBalanceInStock", backref="products")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="checkingbalanceinstock")
+
+
+class CheckingBalanceInStock(Base):
+    __tablename__ = "checking_balance_in_stock"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(DateTime, default=date.today())
+    description = Column(String)
+
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref='checkingbalanceinstock')
+
+    @classmethod
+    def save(cls, db: Session, **kwargs):
+        # try:
+            products = kwargs.pop('products')
+            stock = cls(**kwargs)
+            for product in products:
+                current = db.query(CurrentBalanceInStock).filter(CurrentBalanceInStock.product_id==product['product_id'], CurrentBalanceInStock.pharmacy_id==kwargs['pharmacy_id']).first()
+                stock_product = CheckingStockProducts(**product, previous=current.amount, saled=current.amount-product['remainder'])
+                stock.products.append(stock_product)
+                current.amount -= stock_product.saled
+                if stock_product.saled > current.amount:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="There isn't enough product in stock"
+                    )
+            db.add(stock)
+            db.commit()
+        # except:
+        #     raise AssertionError("Could not saved")
 
 
 class PharmacyAttachedProducts(Base):
@@ -39,6 +122,8 @@ class PharmacyAttachedProducts(Base):
     monthly_plan = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="pharmacy_attached_product")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="pharmacy_attached_product")
 
 
 class Debt(Base):
@@ -243,29 +328,27 @@ class Pharmacy(Base):
         except:
             raise AssertionError("Could not updated")
 
-    @classmethod
-    def attach_doctor(cls, db: Session, **kwargs):
-        try:
-            doc = db.query(cls).filter(cls.doctors.any(Doctor.id==kwargs.get('doctor_id'))).first()
+    def attach_doctor(self, db: Session, **kwargs):
+        # try:
+            doc = db.query(Pharmacy).filter(Pharmacy.doctors.any(Doctor.id==kwargs.get('doctor_id'))).first()
             if not doc:
-                pharmacy = db.query(cls).get(kwargs.get('pharmacy_id'))
                 product = Products.check_if_product_exists(kwargs.get('product_id'), db)
                 doctor = Doctor.check_if_doctor_exists(kwargs.get('doctor_id'), db)
                 association_entry = pharmacy_doctor.insert().values(
                     doctor_id=doctor.id,
-                    pharmacy_id=pharmacy.id,
+                    pharmacy_id=self.id,
                     product_id=product.id
                 )
                 db.execute(association_entry)
                 db.commit()
-                db.refresh(pharmacy)
+                db.refresh(self)
             else:
                 raise HTTPException(
                 status_code=400,
                 detail="This doctor already attached"
             )
-        except:
-            raise AssertionError('Something went wrong')
+        # except:
+        #     raise AssertionError('Something went wrong')
 
             
 
