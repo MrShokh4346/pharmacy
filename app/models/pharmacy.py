@@ -5,6 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from .doctors import Doctor, pharmacy_doctor
 from datetime import date 
 from .users import Products
+from sqlalchemy.exc import IntegrityError
 
 
 from .database import Base, get_db
@@ -35,7 +36,7 @@ class IncomingBalanceInStock(Base):
 
     @classmethod
     def save(cls, db: Session, **kwargs):
-        # try:
+        try:
             products = kwargs.pop('products')
             stock = cls(**kwargs)
             for product in products:
@@ -44,8 +45,8 @@ class IncomingBalanceInStock(Base):
                 current = CurrentBalanceInStock.add(pharmacy_id=kwargs['pharmacy_id'], product_id=product['product_id'], amount=product['quantity'], db=db)
             db.add(stock)
             db.commit()
-        # except:
-            # raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class CurrentBalanceInStock(Base):
@@ -96,7 +97,7 @@ class CheckingBalanceInStock(Base):
 
     @classmethod
     def save(cls, db: Session, **kwargs):
-        # try:
+        try:
             products = kwargs.pop('products')
             stock = cls(**kwargs)
             for product in products:
@@ -111,8 +112,8 @@ class CheckingBalanceInStock(Base):
                     )
             db.add(stock)
             db.commit()
-        # except:
-        #     raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class PharmacyAttachedProducts(Base):
@@ -142,13 +143,16 @@ class Debt(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, db: Session, **kwargs):
-        self.payed = kwargs.get('payed', self.payed)
-        db.commit()
-        db.refresh(self)
+        try:
+            self.payed = kwargs.get('payed', self.payed)
+            db.commit()
+            db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class FactoryWarehouse(Base):
@@ -183,8 +187,8 @@ class Reservation(Base):
             db.commit()
             db.refresh(reservation)
             return reservation
-        except:
-            AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
 
 class ReservationProducts(Base):
@@ -213,8 +217,8 @@ class Wholesale(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, db: Session, **kwargs):
         try:
@@ -226,8 +230,8 @@ class Wholesale(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def attach(self, db: Session, **kwargs):
         try:
@@ -236,8 +240,8 @@ class Wholesale(Base):
                     wh_product = WholesaleProduct(**product, wholesale_id=self.id)
                     db.add(wh_product)
             db.commit()
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class WholesaleProduct(Base):
@@ -295,8 +299,8 @@ class Pharmacy(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, db: Session, **kwargs):
         try:
@@ -325,11 +329,11 @@ class Pharmacy(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def attach_doctor(self, db: Session, **kwargs):
-        # try:
+        try:
             doc = db.query(Pharmacy).filter(Pharmacy.doctors.any(Doctor.id==kwargs.get('doctor_id'))).first()
             if not doc:
                 product = Products.check_if_product_exists(kwargs.get('product_id'), db)
@@ -347,8 +351,8 @@ class Pharmacy(Base):
                 status_code=400,
                 detail="This doctor already attached"
             )
-        # except:
-        #     raise AssertionError('Something went wrong')
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
             
 

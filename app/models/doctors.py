@@ -4,7 +4,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import Table
-from .database import Base, get_db
+from .database import Base, get_db, get_or_404, check_exists
+from sqlalchemy.orm import validates
+from sqlalchemy.exc import IntegrityError
 
 
 class Speciality(Base):
@@ -56,8 +58,15 @@ class MedicalOrganization(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    @classmethod
+    def get(cls, id: int, db: Session):
+        org = db.query(cls).get(id)
+        if org:
+            return org
+        raise HTTPException(status_code=404, detail="There is not medical organisation with this id")
 
 
 class DoctorAttachedProduct(Base):
@@ -76,8 +85,8 @@ class DoctorAttachedProduct(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
 
 class DoctorCompleatedPlan(Base):
@@ -96,8 +105,8 @@ class DoctorCompleatedPlan(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class Bonus(Base):
@@ -177,8 +186,8 @@ class Doctor(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, db: Session, **kwargs):
         try:
@@ -205,8 +214,8 @@ class Doctor(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     @classmethod
     def check_if_doctor_exists(cls, doctor_id: int, db: Session):

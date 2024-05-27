@@ -5,7 +5,8 @@ from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
-from .users import Users, Products
+from .users import Users, Products, Region
+from .doctors import DoctorCategory, Speciality, MedicalOrganization
 from .pharmacy import Reservation
 from typing import Annotated
 from .database import get_db
@@ -146,3 +147,22 @@ def filter_pharmacy(doctor_id: int | None = None, product_id: int | None = None,
 
     query += " AND ".join(conditions)
     return query
+
+
+def get_or_404(model, name: str, id: int, db: Session):
+    obj = db.query(model).get(id)
+    if obj:
+        return obj
+    raise HTTPException(status_code=404, detail=f"There is not {name} with this id")
+
+
+# def check_exists(category_id:int | None = None, speciality_id: int | None = None, region_id: int | None = None, medical_organization_id: int | None = None, db: Session = None):
+#     if category_id is not None:
+#         category = get_or_404(DoctorCategory, "category", category_id, db)
+#     if speciality_id is not None:
+#         speciality = get_or_404(Speciality, "speciality", speciality_id, db)
+#     if region_id is not None:
+#         region = get_or_404(Region, "region", region_id, db)
+#     if medical_organization_id is not None:
+#         medical_organization = get_or_404(MedicalOrganization, "medical organization", medical_organization_id, db)
+#         return True

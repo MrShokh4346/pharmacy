@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
 from datetime import date, datetime 
-
+from sqlalchemy.exc import IntegrityError
 from .database import Base, get_db
 
 
@@ -92,8 +92,8 @@ class Products(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
         
 
 class UserAttachedProduct(Base):
@@ -125,8 +125,8 @@ class DoctorPlan(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, db: Session, **kwargs):
         try:
@@ -137,8 +137,8 @@ class DoctorPlan(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def attach(self, db: Session, **kwargs):
         try:
@@ -149,8 +149,8 @@ class DoctorPlan(Base):
                 compleated = DoctorPlanAttachedProduct(**product, plan_id=self.id)
                 db.add(compleated)
             db.commit()
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class DoctorPlanAttachedProduct(Base):
@@ -187,8 +187,8 @@ class PharmacyPlan(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, date: str, postpone: bool, db: Session):
         try:
@@ -197,8 +197,8 @@ class PharmacyPlan(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def attach(self, db: Session, **kwargs):
         try:
@@ -212,8 +212,8 @@ class PharmacyPlan(Base):
                         compleated = PharmacyPlanAttachedProduct(**product, **doctor_copy, plan_id=self.id)
                         db.add(compleated)
             db.commit()
-        except:
-            raise AssertionError("Could not updated")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class PharmacyPlanAttachedProduct(Base):
@@ -260,8 +260,8 @@ class Notification(Base):
             db.commit()
             db.refresh(notification)
             return notification
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def read(self, db: Session):
         self.unread = False
@@ -318,8 +318,8 @@ class Users(Base):
             db.add(self)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     def update(self, db: Session,  **kwargs):
         try:
@@ -338,5 +338,5 @@ class Users(Base):
             self.region_id =  kwargs.get('region_id', self.region_id)
             db.commit()
             db.refresh(self)
-        except:
-            raise AssertionError("Could not update")
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

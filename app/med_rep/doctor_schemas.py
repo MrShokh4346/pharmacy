@@ -64,6 +64,12 @@ class AttachProductsSchema(BaseModel):
     product_id: int 
     monthly_plan: int 
 
+    # @validator('doctor_id')
+    # def validate_doctor_id(cls, value, db:Session = Depends(get_db)):
+    #     if db_session.query(Email).filter(Email.address == value).count():
+    #         raise ValueError('Email already exists')
+    #     return value
+
 
 class AttachProductsOutSchema(BaseModel):
     product: ProductOutSchema

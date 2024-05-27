@@ -7,7 +7,7 @@ from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.doctors import *
 from models.users import Users, DoctorPlan, Notification
-from models.database import get_db
+from models.database import get_db, check_exists
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import List, Annotated
@@ -46,13 +46,15 @@ async def filter_doctors_by_product_id(product_id: int , db: Session = Depends(g
 
 @router.get('/get-doctor/{id}', response_model=DoctorOutSchema)
 async def get_doctor_by_id(id:int, db: Session = Depends(get_db)):
-    doctor = db.query(Doctor).get(id)
+    # doctor = get_or_404(Doctor, "doctor", id, db)
+    doctor = check_exists(Doctor, "doctor", id, db)
     return doctor
 
 
 @router.post('/add-doctor', response_model=DoctorOutSchema)
 async def add_doctor(doctor: DoctorInSchema, user_id: int, db: Session = Depends(get_db)):
     med_rep = get_user(user_id, db)
+    # check_exists(category_id=doctor.category_id, speciality_id=doctor.speciality_id, medical_organization_id=doctor.medical_organization_id, db=db)
     new_doctor = Doctor(**doctor.dict(), region_manager_id=med_rep.region_manager_id, ffm_id=med_rep.ffm_id, product_manager_id=med_rep.product_manager_id, deputy_director_id=med_rep.deputy_director_id, director_id=med_rep.director_id)
     new_doctor.save(db=db)
     return new_doctor
@@ -128,11 +130,12 @@ async def get_doctor_visit_plan(user_id: int, db: Session = Depends(get_db)):
     plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id).all()
     return plans 
 
+from sqlalchemy import cast, Date
 
 @router.get('/filter-doctor-visit-plan-by-date', response_model=List[DoctorVisitPlanOutSchema])
 async def filter_doctor_visit_plan_by_date(user_id: int, date: date, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
-    plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id, DoctorPlan.date==date).all()
+    plans = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==user.id, cast(DoctorPlan.date, Date)==date).all()
     return plans
 
 

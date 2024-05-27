@@ -91,11 +91,12 @@ async def get_pharmacy_visit_plan(user_id: int, db: Session = Depends(get_db)):
     plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id).all()
     return plans 
 
+from sqlalchemy import cast, Date
 
 @router.get('/filter-pharmacy-visit-plan-by-date', response_model=List[PharmacyVisitPlanOutSchema])
 async def get_pharmacy_visit_plan(user_id: int, date: date, db: Session = Depends(get_db)):
     user = get_user(user_id, db)
-    plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id, PharmacyPlan.date==date).all()
+    plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id, cast(PharmacyPlan.date, Date)==date).all()
     return plans 
 
 

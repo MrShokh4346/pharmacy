@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Optional
 from enum import Enum
 from fastapi import FastAPI, Path
 
@@ -42,5 +42,5 @@ class TokenSchema(BaseModel):
     id: int
     access_token: str
     status: str
-    region_id: int
+    region_id: Optional[int]
 

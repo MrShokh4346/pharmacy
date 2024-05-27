@@ -5,6 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.users import *
+from models.doctors import DoctorCategory
 from models.dependencies import *
 from models.database import get_db
 from typing import Annotated, List
@@ -38,7 +39,7 @@ async def get_regions(db: Session = Depends(get_db)):
 
 
 @router.post("/add-region", response_model=List[RegionSchema])
-async def add_region(name: str, token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)):
+async def add_region(name: str, db: Session = Depends(get_db)):
     region = Region(name = name)
     region.save(db)
     regions = db.query(Region).all()
