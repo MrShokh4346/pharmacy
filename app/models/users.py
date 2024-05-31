@@ -1,11 +1,11 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
 from datetime import date, datetime 
 from sqlalchemy.exc import IntegrityError
-from .database import Base, get_db
+from .database import Base, get_db, get_or_404
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -23,61 +23,61 @@ class Region(Base):
     __tablename__ = "region"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String, unique=True)
     
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class ManufacturedCompany(Base):
     __tablename__ = "manufactured_company"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String, unique=True)
         
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class ProductCategory(Base):
     __tablename__ = "product_category"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String, unique=True)
 
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
-        except:
-            raise AssertionError("Could not saved")
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class Products(Base):
     __tablename__ = "products"
 
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    name = Column(String, unique=True)
     price = Column(Integer)
     discount_price = Column(Integer)
-    man_company = relationship("ManufacturedCompany", backref="product")
+    man_company = relationship("ManufacturedCompany", backref="product", lazy='selectin')
     man_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
-    category = relationship("ProductCategory", backref="product")
+    category = relationship("ProductCategory", backref="product", lazy='selectin')
     category_id = Column(Integer, ForeignKey("product_category.id"))
 
     @classmethod
-    def check_if_product_exists(cls, product_id: int, db: Session):
+    def check_if_product_exists(cls, product_id: int, db: AsyncSession):
         product = db.query(cls).get(product_id)
         if product:
             return product
@@ -87,11 +87,11 @@ class Products(Base):
                 detail="This product don't exists"
             )
 
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
         
@@ -120,27 +120,29 @@ class DoctorPlan(Base):
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users", backref="doctor_visit_plan")
 
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def update(self, db: Session, **kwargs):
+    async def update(self, db: AsyncSession, **kwargs):
         try:
-            self.date = kwargs.get('date') 
+            self.date = datetime.strptime(str(kwargs.get('date')), '%Y-%m-%d %H:%M') 
             self.postpone = kwargs.get('postpone')
             self.description = kwargs.get('description')
             self.theme = kwargs.get('theme')
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    def attach(self, db: Session, **kwargs):
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
+            
+    def attach(self, db: AsyncSession, **kwargs):
         try:
             DoctorPlanAttachedProduct.delete(id=self.id, db=db)
             self.description = kwargs.get('description', self.description)
@@ -163,7 +165,7 @@ class DoctorPlanAttachedProduct(Base):
     plan = relationship("DoctorPlan", backref="products")
 
     @classmethod
-    def delete(cls, id: int, db: Session):
+    def delete(cls, id: int, db: AsyncSession):
         db.query(cls).filter(cls.plan_id==id).delete()
         db.commit()
 
@@ -182,25 +184,29 @@ class PharmacyPlan(Base):
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users", backref="pharmacy_visit_plan")
 
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def update(self, date: str, postpone: bool, db: Session):
+    async def update(self, db: AsyncSession, **kwargs):
         try:
-            self.date = date 
-            self.postpone = postpone
+            self.date = datetime.strptime(str(kwargs.get('date')), '%Y-%m-%d %H:%M') 
+            self.postpone = kwargs.get('postpone')
+            self.description = kwargs.get('description')
+            self.theme = kwargs.get('theme')
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+        except ValueError as e:
+            raise HTTPException(status_code=404, detail=str(e))
 
-    def attach(self, db: Session, **kwargs):
+    def attach(self, db: AsyncSession, **kwargs):
         try:
             PharmacyPlanAttachedProduct.delete(id=self.id, db=db)
             self.description = kwargs.get('description', self.description)
@@ -228,7 +234,7 @@ class PharmacyPlanAttachedProduct(Base):
     plan = relationship("PharmacyPlan", backref="products")
 
     @classmethod
-    def delete(cls, id: int, db: Session):
+    def delete(cls, id: int, db: AsyncSession):
         db.query(cls).filter(cls.plan_id==id).delete()
         db.commit()
 
@@ -247,27 +253,29 @@ class Notification(Base):
     region_manager_id = Column(Integer, ForeignKey("users.id"))
     region_manager = relationship("Users", backref="rm_notifications", foreign_keys=[region_manager_id])
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="notifications")
+    pharmacy = relationship("Pharmacy", backref="notifications", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="notifications")
+    doctor = relationship("Doctor", backref="notifications", lazy='selectin')
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
+    wholesale = relationship("Wholesale", backref="notifications", lazy='selectin')
 
     @classmethod
-    def save(cls, db: Session, **kwargs):
+    async def save(cls, db: AsyncSession, **kwargs):
         try:
-            med_rep = db.query(Users).get(kwargs['med_rep_id'])
+            med_rep = await get_or_404(Users, kwargs['med_rep_id'], db)
             notification = Notification(**kwargs, region_manager_id=med_rep.region_manager_id)
             db.add(notification)
-            db.commit()
-            db.refresh(notification)
+            await db.commit()
+            await db.refresh(notification)
             return notification
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def read(self, db: Session):
+    async def read(self, db: AsyncSession):
         self.unread = False
         db.add(self)
-        db.commit()
-        db.refresh(self)
+        await db.commit()
+        await db.refresh(self)
 
 
 class UserProductPlan(Base):
@@ -313,15 +321,15 @@ class Users(Base):
     def password(self, password):
         self.hashed_password = get_password_hash(password)
 
-    def save(self, db: Session):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def update(self, db: Session,  **kwargs):
+    def update(self, db: AsyncSession,  **kwargs):
         try:
             self.full_name = kwargs.get('full_name', self.full_name)
             if kwargs.get('username') and kwargs.get('username') != self.username:

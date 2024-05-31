@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import List, Optional
 from models.doctors import Speciality
 from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
@@ -20,6 +20,11 @@ class DoctorInSchema(BaseModel):
     # region_id: int 
 
 
+class MedOrgSchema(BaseModel):
+    id: int 
+    name: str
+
+
 class DoctorOutSchema(BaseModel):
     id: int 
     full_name: str 
@@ -30,7 +35,7 @@ class DoctorOutSchema(BaseModel):
     longitude: str 
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
-    medical_organization: MedicalOrganizationOutSchema
+    medical_organization: MedOrgSchema
     # region: RegionSchema 
     
 
@@ -57,18 +62,14 @@ class DoctorListSchema(BaseModel):
     id: int 
     full_name: str 
     speciality: Optional[SpecialitySchema] = None
+    medical_organization: Optional[MedOrgSchema] = None
+    category: Optional[DoctorCategorySchema] = None
     
 
 class AttachProductsSchema(BaseModel):
     doctor_id: int 
     product_id: int 
     monthly_plan: int 
-
-    # @validator('doctor_id')
-    # def validate_doctor_id(cls, value, db:Session = Depends(get_db)):
-    #     if db_session.query(Email).filter(Email.address == value).count():
-    #         raise ValueError('Email already exists')
-    #     return value
 
 
 class AttachProductsOutSchema(BaseModel):
@@ -92,7 +93,7 @@ class BonusProductSchema(BaseModel):
 
 
 class BonusSchema(BaseModel):
-    date: datetime
+    date: date
     payed: bool 
     description: str 
     amount: int 
@@ -110,7 +111,7 @@ class BonusOutSchema(BonusSchema):
 
 
 class RescheduleSchema(BaseModel):
-    date: datetime 
+    date: str 
     postpone: bool 
     description: str 
     theme: str 
@@ -128,3 +129,22 @@ class VisitInfoSchema(BaseModel):
 
 class DoctorAttachedProductSchema(BaseModel):
     product: ProductOutSchema
+
+
+class DoctorVisitPlanListSchema(BaseModel):
+    id: int    
+    date: datetime
+    # theme: Optional[str] = None
+    # description: Optional[str] = None 
+    status: bool 
+    postpone: bool
+    doctor: DoctorListSchema
+
+    # @validator('date', pre=True, always=True)
+    # def format_date(cls, value):
+    #     if isinstance(value, datetime):
+    #         return value.strftime('%Y-%m-%d %H:%M')
+    #     return value
+
+    # class Config:
+    #     orm_mode = True

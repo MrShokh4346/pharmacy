@@ -6,154 +6,177 @@ from .pharmacy_schemas import *
 from models.doctors import Doctor, DoctorAttachedProduct
 from models.users import Products
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from models.pharmacy import *
 from models.users import PharmacyPlan, Notification
-from models.database import get_db
+from models.database import get_db, get_or_404
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import List
-from deputy_director.schemas import PharmacyVisitPlanOutSchema
+from deputy_director.schemas import PharmacyVisitPlanOutSchema, PharmacyVisitPlanListSchema
 from common.schemas import ProductOutSchema
 from sqlalchemy import text
-from deputy_director.schemas import NotificationOutSchema
+from deputy_director.schemas import NotificationOutSchema, NotificationListSchema
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy import cast, Date
 
 
 router = APIRouter()
 
 
-@router.get('/get-pharmacy-notifications/{pharmacy_id}', response_model=List[NotificationOutSchema])
-async def get_doctor_notifications(pharmacy_id: int, db: Session = Depends(get_db)):
-    notifications = db.query(Notification).filter(Notification.pharmacy_id==pharmacy_id).all()
-    return notifications
+@router.get('/get-pharmacy-notifications/{pharmacy_id}', response_model=List[NotificationListSchema])
+async def get_doctor_notifications(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Notification).options(selectinload(Notification.doctor), selectinload(Notification.pharmacy), selectinload(Notification.wholesale)).filter(Notification.pharmacy_id==pharmacy_id))
+    return result.scalars().all()
 
 
 @router.get('/get-all-pharmacy', response_model=List[PharmacyListSchema])
-async def get_all_pharmacy(db: Session = Depends(get_db)):
-    pharmacies = db.query(Pharmacy).all()
-    return pharmacies
+async def get_all_pharmacy(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Pharmacy))
+    return result.scalars().all()
+
+
+@router.get('/get-pharmacy/{pharmacy_id}', response_model=PharmacyOutSchema)
+async def get_pharmacy_by_id(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    result = await get_or_404(Pharmacy, pharmacy_id, db)
+    return result
 
 
 @router.get('/filter-pharmacy', response_model=List[PharmacyListSchema])
-async def filter_pharmacies(doctor_id: int | None = None, product_id: int | None = None, region_id: int | None = None, db: Session = Depends(get_db)):
-    query = filter_pharmacy(doctor_id, product_id, region_id)
-    pharmacy = db.execute(text(query))
-    print(pharmacy.__dict__)
-    return pharmacy
+async def filter_pharmacies(doctor_id: int | None = None, product_id: int | None = None, region_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    query = select(Pharmacy).options(selectinload(Pharmacy.pharmacy_attached_product), selectinload(Pharmacy.doctors))
+    if doctor_id:
+        query = query.filter(Pharmacy.doctors.any(Doctor.id == doctor_id))
+    if region_id:
+        query = query.filter(Pharmacy.region_id == region_id)
+    if product_id:
+        query = query.filter(Pharmacy.pharmacy_attached_product.any(PharmacyAttachedProducts.product_id == product_id))
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
 @router.get('/get-pharmacy', response_model=List[PharmacyListSchema])
-async def get_med_rep_related_pharmacy(user_id: int, db: Session = Depends(get_db)):
-    user = get_user(user_id, db)
-    pharmacies = db.query(Pharmacy).filter(Pharmacy.med_rep_id==user.id).all()
-    return pharmacies
+async def get_med_rep_related_pharmacy(user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
+    result = await db.execute(select(Pharmacy).filter(Pharmacy.med_rep_id==user.id))
+    return result.scalars().all()
     
 
 @router.post('/add-pharmacy', response_model=PharmacyOutSchema)
-async def add_pharmacy(new_pharmacy: PharmacyAddSchema, user_id: int, db: Session = Depends(get_db)):
-    user = get_user(user_id, db)
+async def add_pharmacy(new_pharmacy: PharmacyAddSchema, user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
     pharmacy = Pharmacy(**new_pharmacy.dict(), med_rep_id=user.id, region_manager_id=user.region_manager_id, 
                         ffm_id=user.ffm_id, product_manager_id=user.product_manager_id, 
                         deputy_director_id=user.deputy_director_id, director_id=user.director_id)
-    pharmacy.save(db)
+    await pharmacy.save(db)
     return pharmacy
     
 
-@router.patch('/update-pharmacy/{id}', response_model=PharmacyOutSchema)
-async def update_pharmacy(id: int, data: PharmacyUpdateSchema, db: Session = Depends(get_db)):
-    pharmacy = db.query(Pharmacy).get(id)
-    pharmacy.update(**data.dict(), db=db)
+@router.patch('/update-pharmacy/{pharmacy_id}', response_model=PharmacyOutSchema)
+async def update_pharmacy(pharmacy_id: int, data: PharmacyUpdateSchema, db: AsyncSession = Depends(get_db)):
+    pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
+    await pharmacy.update(**data.dict(), db=db)
     return pharmacy
 
 
 @router.post('/add-balance-in-stock')
-async def add_balance_in_stock(balance: BalanceInStockSchema, db: Session = Depends(get_db)):
-    IncomingBalanceInStock.save(**balance.dict(), db=db)
+async def add_balance_in_stock(balance: BalanceInStockSchema, db: AsyncSession = Depends(get_db)):
+    await IncomingBalanceInStock.save(**balance.dict(), db=db)
     return {"msg":"Done"}
 
 
 @router.post('/checking-balance-in-stock')
-async def checking_balance_in_stock(balance: CheckBalanceInStockSchema, db: Session = Depends(get_db)):
-    CheckingBalanceInStock.save(**balance.dict(), db=db)
+async def checking_balance_in_stock(balance: CheckBalanceInStockSchema, db: AsyncSession = Depends(get_db)):
+    await CheckingBalanceInStock.save(**balance.dict(), db=db)
     return {"msg":"Done"}
 
 
-@router.get('/get-balnce-in-stock/{pharmacy_id}', response_model=List[StockProduct])
-async def get_balance_in_stock(pharmacy_id: int, from_date: str, to_date: str, db: Session = Depends(get_db)):
-    from_date, to_date = datetime.strptime(from_date, '%Y-%m-%d'), datetime.strptime(to_date, '%Y-%m-%d')
-    products = db.query(BalanceInStock).filter(BalanceInStock.date.between(from_date, to_date)).all()
-    return products
+@router.get('/get-balnce-in-stock/{pharmacy_id}', response_model=List[StockOutSchema])
+async def get_balance_in_stock(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(CurrentBalanceInStock).options(selectinload(CurrentBalanceInStock.product)).filter(CurrentBalanceInStock.pharmacy_id==pharmacy_id))
+    return result.scalars().all()
 
 
-@router.get('/get-pharmacy-visit-plan', response_model=List[PharmacyVisitPlanOutSchema])
-async def get_pharmacy_visit_plan(user_id: int, db: Session = Depends(get_db)):
-    user = get_user(user_id, db)
-    plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id).all()
-    return plans 
+@router.get('/get-pharmacy-visit-plan', response_model=List[PharmacyVisitPlanListSchema])
+async def get_pharmacy_visit_plan(user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).filter(PharmacyPlan.med_rep_id==user.id))
+    return result.scalars().all()
 
-from sqlalchemy import cast, Date
 
-@router.get('/filter-pharmacy-visit-plan-by-date', response_model=List[PharmacyVisitPlanOutSchema])
-async def get_pharmacy_visit_plan(user_id: int, date: date, db: Session = Depends(get_db)):
-    user = get_user(user_id, db)
-    plans = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==user.id, cast(PharmacyPlan.date, Date)==date).all()
-    return plans 
+@router.get('/filter-pharmacy-visit-plan-by-date', response_model=List[PharmacyVisitPlanListSchema])
+async def get_pharmacy_visit_plan(user_id: int, date: date, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).filter(PharmacyPlan.med_rep_id == user.id, cast(PharmacyPlan.date, Date) == date))
+    return result.scalars().all()
 
 
 @router.get('/get-pharmacy-visit-plan/{plan_id}', response_model=PharmacyVisitPlanOutSchema)
-async def get_pharmacy_visit_plan_by_id(plan_id: int, db: Session = Depends(get_db)):
-    plan = db.query(PharmacyPlan).get(plan_id)
-    return plan 
-
-
-@router.post('/reschedule-pharmacy-visit/{plan_id}', response_model=PharmacyVisitPlanOutSchema)
-async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db: Session = Depends(get_db)):
-    plan = db.query(PharmacyPlan).get(plan_id)
-    plan.update(**date.dict(), db=db)
+async def get_pharmacy_visit_plan_by_id(plan_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).where(PharmacyPlan.id==plan_id))
+    plan = result.scalars().first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
     return plan
 
 
+@router.post('/reschedule-pharmacy-visit/{plan_id}', response_model=PharmacyVisitPlanOutSchema, description='date format: (%Y-%m-%d %H:%M)')
+async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).where(PharmacyPlan.id == plan_id))
+    plan = result.scalars().first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    await plan.update(**date.dict(), db=db)
+    return plan
+
+#######
 @router.post('/pharmacy-visit-info/{visit_id}')
-async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: Session = Depends(get_db)):
+async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
     plan = db.query(PharmacyPlan).get(visit_id)
     plan.attach(**visit.dict(), db=db)
     return {"msg":"Done"}
 
 
 @router.get('/get-pharmacy-doctors-list/{pharmacy_id}', response_model=List[DoctorListSchema])
-async def get_phatmacy_attached_doctors_list(pharmacy_id: int, db: Session = Depends(get_db)):
+async def get_phatmacy_attached_doctors_list(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     pharmacy = db.query(Pharmacy).get(pharmacy_id)
     return pharmacy.doctors
+    result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.pharmacy)).where(Pharmacy.id == doctor_id))
+    doctor = result.scalars().first()
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    return doctor.pharmacy
 
 
 @router.post('/attach-doctor-to-pharmacy/{pharmacy_id}')
-async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: Session = Depends(get_db)):
+async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: AsyncSession = Depends(get_db)):
     pharmacy = db.query(Pharmacy).get(pharmacy_id)
     pharmacy.attach_doctor(**att.dict(), db=db)
     return {"msg":"Done"}
 
 
 @router.get('/search-pharmacy-doctors', response_model=List[DoctorListSchema])
-async def search_for_pharmacy_attached_doctors(search: str, user_id: int, db: Session = Depends(get_db)):
+async def search_for_pharmacy_attached_doctors(search: str, user_id: int, db: AsyncSession = Depends(get_db)):
     user = get_user(user_id, db)
     doctors = db.query(Doctor).filter(Doctor.full_name.like(f"%{search}%"), Doctor.med_rep_id==user.id).all()
     return doctors
 
 
 @router.get('/search-mr-doctors/{pharmacy_id}', response_model=List[DoctorListSchema])
-async def search_for_med_rep_attached_doctors(pharmacy_id: int, search: str, db: Session = Depends(get_db)):
+async def search_for_med_rep_attached_doctors(pharmacy_id: int, search: str, db: AsyncSession = Depends(get_db)):
     pharmacy = db.query(Pharmacy).filter(Pharmacy.id==pharmacy_id, Pharmacy.doctors.any(Doctor.full_name.like(f"%{search}%"))).all()
     return pharmacy[0].doctors
 
         
 @router.get('/get-doctor-attached-products/{doctor_id}', response_model=List[DoctorAttachedProductSchema])
-async def seatch_for_doctor_attached_products(doctor_id: int, search: str, db: Session = Depends(get_db)):
+async def seatch_for_doctor_attached_products(doctor_id: int, search: str, db: AsyncSession = Depends(get_db)):
     products = db.query(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==doctor_id).all()
     return products 
 
 
 @router.post('/add-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
-async def add_debt(pharmacy_id: int, debt: DebtSchema, db: Session = Depends(get_db)):
+async def add_debt(pharmacy_id: int, debt: DebtSchema, db: AsyncSession = Depends(get_db)):
     debt = Debt(**debt.dict(), pharmacy_id=pharmacy_id)
     debt.save(db)
     debts = db.query(Debt).filter(Debt.pharmacy_id==pharmacy_id).all()
@@ -161,63 +184,30 @@ async def add_debt(pharmacy_id: int, debt: DebtSchema, db: Session = Depends(get
 
 
 @router.put('/update-debt-status/{debt_id}', response_model=DebtOutSchema)
-async def update_debt_status(debt_id: int, st: DebtUpdateSchema, db: Session = Depends(get_db)):
+async def update_debt_status(debt_id: int, st: DebtUpdateSchema, db: AsyncSession = Depends(get_db)):
     debt = db.query(Debt).get(debt_id)
     debt.update(**st.dict(), db=db)
     return debt
 
 
 @router.get('/get-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
-async def get_debt(pharmacy_id: int, db: Session = Depends(get_db)):
+async def get_debt(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     debts = db.query(Debt).filter(Debt.pharmacy_id==pharmacy_id).all()
     return debts
 
 
-@router.get('/search-from-warehouse', response_model=List[FactoryWarehouseOutSchema])
-async def search_from_factory_warehouse(search: str, db: Session = Depends(get_db)):
-    products = db.query(FactoryWarehouse).filter(FactoryWarehouse.product.has(Products.name.like(f"%{search}%"))).all()
-    return products
-
-
 @router.post('/reservation', response_model=ReservationOutSchema)
-async def reservation(res: ReservationSchema, db: Session = Depends(get_db)):
+async def reservation(res: ReservationSchema, db: AsyncSession = Depends(get_db)):
     reservation = Reservation.save(**res.dict(), db=db)
     return reservation
 
 
 @router.get('/get-reservations', response_model=ReservationOutSchema)
-async def get_reservation(db: Session = Depends(get_db)):
+async def get_reservation(db: AsyncSession = Depends(get_db)):
     reservations = db.query(Reservation).all()
     return reservations
 
 
 @router.get('/get-report/{reservation_id}')
-async def get_report(reservation_id: int, db: Session = Depends(get_db)):
+async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
     return write_excel(reservation_id, db)
-
-
-@router.post('/add-wholesale', response_model=WholesaleOutSchema)
-async def wholesale(wholesale: WholesaleSchema, db: Session = Depends(get_db)):
-    wholesale = Wholesale(**wholesale.dict())
-    wholesale.save(db)
-    return wholesale
-
-
-@router.patch('/update-wholesale/{wholesale_id}', response_model=WholesaleOutSchema)
-async def update_wholesale(wholesale_id: int, data: WholesaleUpdateSchema, db: Session = Depends(get_db)):
-    wholesale = db.query(Wholesale).get(wholesale_id)
-    wholesale.update(**data.dict(), db=db)
-    return wholesale
-
-
-@router.post('/wholesale-attach-product/{wholesale_id}')
-async def wholesale_attach_product(wholesale_id: int, product: WholesaleProductsListSchema, db: Session = Depends(get_db)):
-    wholesale = db.query(Wholesale).get(wholesale_id)
-    wholesale.attach(**product.dict(), db=db)
-    return {"msg":"Done"}
-
-
-@router.get('/search-wholesale-products', response_model=List[WholesaleOutSchema])
-async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: Session = Depends(get_db)):
-    wholesale = db.query(Wholesale).filter(Wholesale.region_id==region_id, Wholesale.products.any(Products.name.like(f"%{search}%"))).all()
-    return wholesale

@@ -22,3 +22,59 @@ router = APIRouter()
 #     return notifications
 
 
+# UPDATE medical_organization 
+# SET med_rep_id = NULL 
+# WHERE med_rep_id IN (SELECT id FROM users WHERE status = 'medical_representative' AND id != 31 AND id != 32);
+
+
+
+
+
+# BEGIN;
+
+# UPDATE users 
+# SET medical_representative_id = NULL 
+# WHERE medical_representative_id IN (SELECT id FROM users WHERE status = 'medical_representative' AND id != 31 AND id != 32);
+
+# UPDATE pharmacy 
+# SET medical_representative_id = NULL 
+# WHERE medical_representative_id IN (SELECT id FROM users WHERE status = 'medical_representative' AND id != 31 AND id != 32);
+
+# UPDATE doctor 
+# SET medical_representative_id = NULL 
+# WHERE medical_representative_id IN (SELECT id FROM users WHERE status = 'medical_representative' AND id != 31 AND id != 32);
+
+# DELETE FROM users 
+# WHERE status = 'medical_representative' AND id != 31 AND id != 32;
+
+# COMMIT;
+
+# DELETE FROM products WHERE id=1;
+
+
+
+
+# #med rep
+# BEGIN;
+
+# UPDATE pharmacy 
+# SET med_rep_id = NULL 
+# WHERE med_rep_id IN (SELECT id FROM users WHERE status = 'medical_representative');
+
+# UPDATE doctor 
+# SET med_rep_id = NULL 
+# WHERE med_rep_id IN (SELECT id FROM users WHERE status = 'medical_representative');
+
+# UPDATE doctor_plan 
+# SET med_rep_id = NULL 
+# WHERE med_rep_id IN (SELECT id FROM users WHERE status = 'medical_representative');
+
+# UPDATE pharmacy_plan 
+# SET med_rep_id = NULL 
+# WHERE med_rep_id IN (SELECT id FROM users WHERE status = 'medical_representative');
+
+# DELETE FROM users 
+# WHERE status = 'medical_representative';
+
+# COMMIT;
+

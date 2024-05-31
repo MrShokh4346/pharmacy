@@ -7,12 +7,14 @@ from models.dependencies import create_access_token
 from sqlalchemy.orm import Session
 from models.users import *
 from models.database import get_db
+from sqlalchemy.future import select
 
 router = APIRouter()
 
 
-def authenticate_user(db: Session, username: str, password: str):
-    user = db.query(Users).filter(Users.username == username).first()
+async def authenticate_user(db: Session, username: str, password: str):
+    result = await db.execute(select(Users).filter(Users.username == username))
+    user = result.scalar()
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -22,7 +24,7 @@ def authenticate_user(db: Session, username: str, password: str):
 
 @router.post("/login")
 async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db)) -> TokenSchema:
-    user = authenticate_user(db, user.username, user.password)
+    user = await authenticate_user(db, user.username, user.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -35,7 +37,8 @@ async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db
 
 @router.post('/register')
 async def register_director(user: RegisterSchema, db: Session = Depends(get_db)) -> UserOutSchema:
-    db_user = db.query(Users).filter(Users.username == user.username).first()
+    result = await db.execute(select(Users).filter(Users.username == user.username))
+    db_user = result.scalar()
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -43,7 +46,7 @@ async def register_director(user: RegisterSchema, db: Session = Depends(get_db))
             headers={"WWW-Authenticate": "Bearer"},
         )
     new_user = Users(**user.dict(), status='director')
-    new_user.save(db=db)
+    await new_user.save(db=db)
     return UserOutSchema(**new_user.__dict__)
 
 

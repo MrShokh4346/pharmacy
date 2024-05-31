@@ -7,11 +7,11 @@ from project_manager.views import router as pm_router
 from region_manager.views import router as rm_router
 from deputy_director.views import router as dd_router
 from director.views import router as d_router
-from models.database import SessionLocal, engine, Base
+from models.database import engine, Base
 from med_rep.router import router as mr_router
 
 
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 

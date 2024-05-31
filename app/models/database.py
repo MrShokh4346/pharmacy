@@ -1,40 +1,26 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import exists
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from fastapi import HTTPException
+from sqlalchemy.future import select
+from sqlalchemy.orm import lazyload
 
+DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/pharmacy"
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./sql_app.db"
-# SQLALCHEMY_DATABASE_URL = "postgresql://postgres:password@localhost:5432/pharmacy"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-from sqlalchemy.orm import Session
-
-def get_or_404(model, name: str, obj_id: int, db: Session):
-    obj = db.query(model).get(obj_id) if obj_id > 0 else None
-    if obj:
-        return obj
-    raise HTTPException(status_code=404, detail=f"There is not {name} with this id")
-
-
-def check_exists(model, name: str, id: int, db: Session):
-    ret = db.query(exists().where(model.id==id)).scalar()
-    print(ret)
-    if ret:
-        return ret 
-    raise HTTPException(status_code=404, detail=f"There is not {name} with this id")
-
+engine = create_async_engine(DATABASE_URL, echo=True)
+async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 Base = declarative_base()
+
+async def get_db():
+    async with async_session() as session:
+        yield session
+
+async def get_or_404(model, id, db):
+    obj = await db.get(model, id)
+    if not obj:
+        raise HTTPException(status_code=404, detail=f"{model.__name__} not found")
+    return obj
+
+async def check_exists(model, field, value, db):
+    exists = await db.execute(select(model).filter(field == value))
+    return exists.scalar_one_or_none()

@@ -4,8 +4,7 @@ from enum import Enum
 from fastapi import FastAPI, Path
 from typing import List 
 from datetime import date, datetime
-from med_rep.doctor_schemas import DoctorOutSchema
-from med_rep.pharmacy_schemas import PharmacyOutSchema
+from med_rep.doctor_schemas import DoctorListSchema
 
 
 class Status(str, Enum):
@@ -40,6 +39,14 @@ class DoctorVisitPlanSchema(BaseModel):
     theme: Optional[str] = None 
 
 
+class DoctorOutSchema(BaseModel):
+    id: int 
+    full_name: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
+
+
 class DoctorVisitPlanOutSchema(BaseModel):
     id: int    
     date: datetime
@@ -47,7 +54,7 @@ class DoctorVisitPlanOutSchema(BaseModel):
     description: Optional[str] = None 
     status: bool 
     postpone: bool
-    doctor: DoctorOutSchema
+    doctor: DoctorListSchema
 
 
 class PharmacyVisitPlanSchema(BaseModel):
@@ -55,6 +62,24 @@ class PharmacyVisitPlanSchema(BaseModel):
     pharmacy_id: int 
     description: Optional[str] = None
     theme: Optional[str] = None 
+
+
+class PharmacyOutSchema(BaseModel):
+    id: int
+    company_name: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
+    brand_name: str | None = None
+    pharmacy_director: str
+
+
+class PharmacyVisitPlanListSchema(BaseModel):
+    id: int    
+    date: datetime
+    status: bool 
+    postpone: bool 
+    pharmacy: PharmacyOutSchema
 
 
 class PharmacyVisitPlanOutSchema(BaseModel):
@@ -74,6 +99,13 @@ class NotificationSchema(BaseModel):
     med_rep_id: int
     pharmacy_id: Optional[int] = None
     doctor_id: Optional[int] = None
+    wholesale_id: Optional[int] = None
+
+
+class WholesaleSchema(BaseModel):
+    id: int 
+    name: str 
+    contact: str 
 
 
 class NotificationOutSchema(BaseModel):
@@ -83,6 +115,19 @@ class NotificationOutSchema(BaseModel):
     description: Optional[str] = None 
     date: date 
     unread: bool
-    doctor: Optional[DoctorOutSchema] = None
+    doctor: Optional[DoctorListSchema] = None
     pharmacy: Optional[PharmacyOutSchema] = None
+    wholesale: Optional[WholesaleSchema] = None
+
+
+class NotificationListSchema(BaseModel):
+    id: int 
+    # author: str 
+    theme: Optional[str] = None 
+    # description: Optional[str] = None 
+    date: date 
+    unread: bool
+    doctor: Optional[DoctorListSchema] = None
+    pharmacy: Optional[PharmacyOutSchema] = None
+    wholesale: Optional[WholesaleSchema] = None
 

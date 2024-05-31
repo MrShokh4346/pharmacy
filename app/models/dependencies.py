@@ -1,6 +1,6 @@
 # from .main import ALGORITHM, SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import datetime, timedelta, timezone
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
@@ -39,7 +39,6 @@ async def validate_token(request: Request):
     token = request.headers.get("Authorization")
     if not token:
         raise HTTPException(status_code=401, detail="Token is missing")
-
     try:
         token = token.split("Bearer ")[1]
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -50,12 +49,12 @@ async def validate_token(request: Request):
         raise HTTPException(status_code=401, detail="Token has expired")
     except (jwt.JWTError, IndexError):
         raise HTTPException(status_code=401, detail="Could not validate credentials")
-    
     return id
 
 
-async def get_current_user(id: Annotated[str, Depends(validate_token)], db: Session = Depends(get_db)):
-    user = db.query(Users).filter(Users.id == id).first()
+async def get_current_user(id: Annotated[str, Depends(validate_token)], db: AsyncSession = Depends(get_db)):
+    user = await db.get(Users, int(id))
+    print(user.__dict__)
     if user is None:
         raise HTTPException(
             status_code=401,
@@ -65,7 +64,7 @@ async def get_current_user(id: Annotated[str, Depends(validate_token)], db: Sess
     return user
 
 
-def check_if_user_already_exists(username: str, db: Session):
+def check_if_user_already_exists(username: str, db: AsyncSession):
     db_user = db.query(Users).filter(Users.username == username).first()
     if db_user:
         raise HTTPException(
@@ -75,14 +74,14 @@ def check_if_user_already_exists(username: str, db: Session):
     return False
 
 
-def get_user(user_id: int, db: Session):
-    user = db.query(Users).get(user_id)
+async def get_user(user_id: int, db: AsyncSession):
+    user = await db.get(Users, user_id)
     if not user:
         raise HTTPException(status_code=400, detail="There isn't user with this id")
     return user 
 
 
-def write_excel(reservation_id: int, db: Session):
+def write_excel(reservation_id: int, db: AsyncSession):
     source_excel_file = 'app/report/Book.xlsx'
     destination_excel_file = 'app/report/report.xlsx'
     sheet_name = 'Sheet1'
@@ -149,14 +148,14 @@ def filter_pharmacy(doctor_id: int | None = None, product_id: int | None = None,
     return query
 
 
-def get_or_404(model, name: str, id: int, db: Session):
-    obj = db.query(model).get(id)
-    if obj:
-        return obj
-    raise HTTPException(status_code=404, detail=f"There is not {name} with this id")
+# def get_or_404(model, name: str, id: int, db: AsyncSession):
+#     obj = db.query(model).get(id)
+#     if obj:
+#         return obj
+#     raise HTTPException(status_code=404, detail=f"There is not {name} with this id")
 
 
-# def check_exists(category_id:int | None = None, speciality_id: int | None = None, region_id: int | None = None, medical_organization_id: int | None = None, db: Session = None):
+# def check_exists(category_id:int | None = None, speciality_id: int | None = None, region_id: int | None = None, medical_organization_id: int | None = None, db: AsyncSession = None):
 #     if category_id is not None:
 #         category = get_or_404(DoctorCategory, "category", category_id, db)
 #     if speciality_id is not None:

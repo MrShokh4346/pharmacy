@@ -30,6 +30,7 @@ class DoctorSpecialitySchema(BaseModel):
 
 
 class MedicalOrganizationInSchema(BaseModel):
+    name: str
     address: str 
     latitude: str 
     longitude: str 
@@ -39,6 +40,7 @@ class MedicalOrganizationInSchema(BaseModel):
 
 class MedicalOrganizationOutSchema(BaseModel):
     id: int
+    name: str
     address: str 
     latitude: str 
     longitude: str 

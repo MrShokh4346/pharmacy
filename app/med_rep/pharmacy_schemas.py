@@ -13,6 +13,7 @@ class PharmacyAddSchema(BaseModel):
     latitude: str
     longitude: str 
     address: str 
+    brand_name: str
     bank_account_number: str 
     inter_branch_turnover: str 
     classification_of_economic_activities: str 
@@ -24,7 +25,8 @@ class PharmacyAddSchema(BaseModel):
 class PharmacyListSchema(BaseModel):
     id: Optional[int] 
     company_name: str 
-    region: Optional[RegionSchema] = None
+    brand_name: str | None = None
+    pharmacy_director: str
 
 
 class PharmacyOutSchema(BaseModel):
@@ -66,6 +68,11 @@ class StockProduct(BaseModel):
     product_id: int 
     quantity: int 
 
+class StockOutSchema(BaseModel):
+    id: int 
+    amount: int 
+    product: ProductOutSchema
+
 
 class BalanceInStockSchema(BaseModel):
     products: List[StockProduct]
@@ -86,8 +93,10 @@ class CheckBalanceInStockSchema(BaseModel):
 
 
 class RescheduleSchema(BaseModel):
-    date: datetime 
+    date: str 
     postpone: bool 
+    description: str 
+    theme: str 
 
 
 class VisitInfoProductSchema(BaseModel):
@@ -150,36 +159,6 @@ class ReservationSchema(BaseModel):
 class ReservationOutSchema(ReservationSchema):
     id: int
     date: datetime 
-
-
-class WholesaleProductsSchema(BaseModel):
-    product_name: str 
-    price: int 
-    quantity: int 
-
-
-class WholesaleProductsListSchema(BaseModel):
-    products: List[WholesaleProductsSchema]
-
-
-class WholesaleSchema(BaseModel):
-    name: str 
-    contact: str 
-    region_id: int 
-
-
-class WholesaleUpdateSchema(BaseModel):
-    name: Optional[str] = None   
-    contact: Optional[str] = None   
-    region_id: Optional[int] = None    
-
-
-class WholesaleOutSchema(BaseModel):
-    id: int 
-    name: str 
-    contact: str 
-    region: RegionSchema 
-    products: List[WholesaleProductsSchema]
 
 
 class AttachDoctorToPharmacySchema(BaseModel):
