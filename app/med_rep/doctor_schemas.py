@@ -75,6 +75,7 @@ class AttachProductsSchema(BaseModel):
 class AttachProductsOutSchema(BaseModel):
     product: ProductOutSchema
     monthly_plan: int 
+    fact: int 
 
 
 class AttachProductsListSchema(BaseModel):
@@ -119,7 +120,7 @@ class RescheduleSchema(BaseModel):
 
 class VisitInfoProductSchema(BaseModel):
     product_id: int 
-    amount: int 
+    recept: int 
 
 
 class VisitInfoSchema(BaseModel):

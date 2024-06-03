@@ -6,7 +6,7 @@ from .pharmacy_schemas import PharmacyListSchema
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.doctors import *
-from models.users import Users, DoctorPlan, Notification
+from models.users import Users, DoctorPlan, Notification, DoctorVisitInfo
 from models.database import get_db, get_or_404
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
@@ -172,9 +172,10 @@ async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db:
     await plan.update(**date.dict(), db=db)
     return plan
 
-#######
-@router.post('/doctor-visit-info/{visit_id}')
-async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
-    plan = db.query(DoctorPlan).get(visit_id)
-    plan.attach(**visit.dict(), db=db)
+
+@router.post('/doctor-visit-info')
+async def doctor_visit_info(plan_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(DoctorPlan, plan_id, db) 
+    await plan.update(description=visit.dict().get('description'), status=True, db=db)
+    await DoctorVisitInfo.save(**visit.dict(), doctor_id=plan.doctor_id, db=db)
     return {"msg":"Done"}

@@ -69,6 +69,7 @@ class DoctorAttachedProduct(Base):
 
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
+    fact = Column(Integer, default=0)
 
     product = relationship("Products",  backref="doctorattachedproduct")
     product_id = Column(Integer, ForeignKey("products.id"))

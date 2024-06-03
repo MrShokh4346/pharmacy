@@ -119,10 +119,11 @@ class DoctorPlan(Base):
 
     async def update(self, db: AsyncSession, **kwargs):
         try:
-            self.date = datetime.strptime(str(kwargs.get('date')), '%Y-%m-%d %H:%M') 
-            self.postpone = kwargs.get('postpone')
-            self.description = kwargs.get('description')
-            self.theme = kwargs.get('theme')
+            self.date = datetime.strptime(str(kwargs.get('date', str(self.date)[:-3])), '%Y-%m-%d %H:%M') 
+            self.postpone = kwargs.get('postpone', self.postpone)
+            self.description = kwargs.get('description', self.description)
+            self.theme = kwargs.get('theme', self.theme)
+            self.status = kwargs.get('status', self.status)
             db.add(self)
             await db.commit()
             await db.refresh(self)
@@ -131,32 +132,26 @@ class DoctorPlan(Base):
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
             
-    def attach(self, db: AsyncSession, **kwargs):
-        try:
-            DoctorPlanAttachedProduct.delete(id=self.id, db=db)
-            self.description = kwargs.get('description', self.description)
-            self.status = True
-            for product in kwargs['products']:
-                compleated = DoctorPlanAttachedProduct(**product, plan_id=self.id)
-                db.add(compleated)
-            db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-
-class DoctorPlanAttachedProduct(Base):
-    __tablename__ = "doctor_plan_attached_product"
+class DoctorVisitInfo(Base):
+    __tablename__ = "doctor_visit_info"
 
     id = Column(Integer, primary_key=True)
-    product_name = Column(String)
-    compleated = Column(Integer)
-    plan_id = Column(Integer, ForeignKey("doctor_plan.id"))
-    plan = relationship("DoctorPlan", backref="products")
+    recept = Column(Integer)
+    data = Column(DateTime, default = datetime.now())
+    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor = relationship("Doctor", backref="visit_info")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="visit_info")
 
     @classmethod
-    def delete(cls, id: int, db: AsyncSession):
-        db.query(cls).filter(cls.plan_id==id).delete()
-        db.commit()
+    async def save(cls, db: AsyncSession, **kwargs):
+        try:
+            products = [cls(**obj, doctor_id=kwargs['doctor_id']) for obj in kwargs['products']]
+            db.add_all(products)
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class PharmacyPlan(Base):
