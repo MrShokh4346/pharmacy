@@ -3,7 +3,6 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
 from models.users import *
 from models.database import get_db
 from models.dependencies import *
@@ -18,9 +17,9 @@ router = FastAPI()
 
 
 @router.post('/register-for-dd', response_model=UserOutSchema, description='using RegisterForDDSchema')
-async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)) -> Any:
+async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: AsyncSession = Depends(get_db)) -> Any:
     if manager.status == 'deputy_director':
-        check_if_user_already_exists(username=user.username, db = db)
+        await check_if_user_already_exists(username=user.username, db = db)
         if user.status == 'medical_representative':
             if not (user.region_manager_id and user.ffm_id and user.product_manager_id):
                 raise HTTPException(
@@ -28,7 +27,7 @@ async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Use
                     detail="region_manager_id, ffm_id, product_manager_id should be declared"
                 )
             new_user = Users(**user.dict(), deputy_director_id=manager.id, director_id=manager.director_id)
-            new_user.save(db=db)
+            await new_user.save(db=db)
         elif user.status == 'regional_manager':
             if not (user.ffm_id and user.product_manager_id):
                 raise HTTPException(
@@ -36,7 +35,7 @@ async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Use
                     detail="ffm_id, product_manager_id should be declared"
                 )
             new_user = Users(**user.dict(), deputy_director_id=manager.id, director_id=manager.director_id)
-            new_user.save(db=db)
+            await new_user.save(db=db)
         elif user.status == 'ff_manager':
             if not user.product_manager_id:
                 raise HTTPException(
@@ -44,43 +43,43 @@ async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Use
                     detail="product_manager_id should be declared"
                 )
             new_user = Users(**user.dict(), deputy_director_id=manager.id, director_id=manager.director_id)
-            new_user.save(db=db)
+            await new_user.save(db=db)
         else:
             new_user = Users(**user.dict(), deputy_director_id=manager.id, director_id=manager.director_id)
-            new_user.save(db=db)
+            await new_user.save(db=db)
         return new_user
     raise HTTPException(status_code=403, detail="You are not a deputy director")
 
 
 @router.post('/add-doctor-plan/{med_rep_id}', response_model=List[DoctorVisitPlanOutSchema])
-async def add_doctor_visit_plan_to_mr(med_rep_id:int, plan: DoctorVisitPlanSchema,  db: Session = Depends(get_db)):
+async def add_doctor_visit_plan_to_mr(med_rep_id:int, plan: DoctorVisitPlanSchema,  db: AsyncSession = Depends(get_db)):
     visit = DoctorPlan(**plan.dict(), med_rep_id=med_rep_id)
-    visit.save(db)
-    visits = db.query(DoctorPlan).filter(DoctorPlan.med_rep_id==med_rep_id).order_by(DoctorPlan.id.desc()).all()
-    return visits
+    await visit.save(db)
+    result = await db.execute(select(DoctorPlan).options(selectinload(DoctorPlan.doctor)).filter(DoctorPlan.med_rep_id==med_rep_id))
+    return result.scalars().all()
 
 
 @router.delete('/delete-doctor-plan/{plan_id}')
-async def delete_doctor_visit_plan(plan_id:int, db: Session = Depends(get_db)):
-    visit = db.query(DoctorPlan).get(plan_id)
-    db.delete(visit)
-    db.commit()
+async def delete_doctor_visit_plan(plan_id:int, db: AsyncSession = Depends(get_db)):
+    visit = await get_or_404(DoctorPlan, plan_id, db)
+    await db.delete(visit)
+    await db.commit()
     return {"msg":"Deleted"}
 
 
 @router.post('/add-pharmacy-plan/{med_rep_id}', response_model=List[PharmacyVisitPlanOutSchema])
-async def add_pharmacy_visit_plan_to_mr(med_rep_id:int, plan: PharmacyVisitPlanSchema,  db: Session = Depends(get_db)):
+async def add_pharmacy_visit_plan_to_mr(med_rep_id:int, plan: PharmacyVisitPlanSchema,  db: AsyncSession = Depends(get_db)):
     visit = PharmacyPlan(**plan.dict(), med_rep_id=med_rep_id)
-    visit.save(db)
-    visits = db.query(PharmacyPlan).filter(PharmacyPlan.med_rep_id==med_rep_id).order_by(PharmacyPlan.id.desc()).all()
-    return visits
+    await visit.save(db)
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).filter(PharmacyPlan.med_rep_id==med_rep_id))
+    return result.scalars().all()
 
 
 @router.delete('/delete-pharmacy-plan/{plan_id}')
-async def delete_pharmacy_visit_plan(plan_id:int, db: Session = Depends(get_db)):
-    visit = db.query(PharmacyPlan).get(plan_id)
-    db.delete(visit)
-    db.commit()
+async def delete_pharmacy_visit_plan(plan_id:int, db: AsyncSession = Depends(get_db)):
+    visit = await get_or_404(PharmacyPlan, plan_id, db)
+    await db.delete(visit)
+    await db.commit()
     return {"msg":"Deleted"}
 
 

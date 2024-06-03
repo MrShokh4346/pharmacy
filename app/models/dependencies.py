@@ -15,6 +15,7 @@ from openpyxl import Workbook, load_workbook
 import shutil
 from fastapi.responses import FileResponse
 import os
+from sqlalchemy.future import select
 
 
 load_dotenv()
@@ -54,7 +55,6 @@ async def validate_token(request: Request):
 
 async def get_current_user(id: Annotated[str, Depends(validate_token)], db: AsyncSession = Depends(get_db)):
     user = await db.get(Users, int(id))
-    print(user.__dict__)
     if user is None:
         raise HTTPException(
             status_code=401,
@@ -64,8 +64,9 @@ async def get_current_user(id: Annotated[str, Depends(validate_token)], db: Asyn
     return user
 
 
-def check_if_user_already_exists(username: str, db: AsyncSession):
-    db_user = db.query(Users).filter(Users.username == username).first()
+async def check_if_user_already_exists(username: str, db: AsyncSession):
+    result = await db.execute(select(Users).where(Users.username==username))
+    db_user = result.all()
     if db_user:
         raise HTTPException(
             status_code=400,

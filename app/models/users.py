@@ -76,17 +76,6 @@ class Products(Base):
     category = relationship("ProductCategory", backref="product", lazy='selectin')
     category_id = Column(Integer, ForeignKey("product_category.id"))
 
-    @classmethod
-    def check_if_product_exists(cls, product_id: int, db: AsyncSession):
-        product = db.query(cls).get(product_id)
-        if product:
-            return product
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="This product don't exists"
-            )
-
     async def save(self, db: AsyncSession):
         try:
             db.add(self)

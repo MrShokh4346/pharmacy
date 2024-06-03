@@ -11,8 +11,6 @@ from models.database import engine, Base
 from med_rep.router import router as mr_router
 
 
-# Base.metadata.create_all(bind=engine)
-
 app = FastAPI()
 
 origins = [

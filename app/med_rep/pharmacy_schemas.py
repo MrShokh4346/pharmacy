@@ -141,24 +141,29 @@ class FactoryWarehouseOutSchema(BaseModel):
 
 
 class ReservationProductSchema(BaseModel):
-    product_name: str 
-    price: float
-    discount_price: float
+    product_id: int 
     quantity: int
 
 
 class ReservationSchema(BaseModel):
     company: str
-    discount: int
-    total_quantity: int 
-    total_amount: float 
-    total_payable: float 
     products: List[ReservationProductSchema]
 
 
-class ReservationOutSchema(ReservationSchema):
+class ReservationProductOutSchema(BaseModel):
+    product: Optional[ProductOutSchema] 
+    quantity: int
+
+
+class ReservationOutSchema(BaseModel):
     id: int
     date: datetime 
+    # products: Optional[ReservationProductOutSchema] 
+    company: str
+    discount: int
+    total_quantity: float
+    total_amount: float
+    total_payable: float
 
 
 class AttachDoctorToPharmacySchema(BaseModel):

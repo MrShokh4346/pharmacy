@@ -7,9 +7,10 @@ from datetime import date
 from .users import Products
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 
-from .database import Base, get_db
+from .database import Base, get_db, get_or_404
 
 
 class IncomingStockProducts(Base):
@@ -142,19 +143,19 @@ class Debt(Base):
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref="debts")
 
-    def save(self, db: AsyncSession):
+    async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def update(self, db: AsyncSession, **kwargs):
+    async def update(self, db: AsyncSession, **kwargs):
         try:
             self.payed = kwargs.get('payed', self.payed)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
@@ -178,18 +179,33 @@ class Reservation(Base):
     total_quantity = Column(Integer)
     total_amount = Column(Float)
     total_payable = Column(Float)
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="reservation")
+    products = relationship("ReservationProducts", back_populates="reservation", lazy='selectin')
+
 
     @classmethod
-    def save(cls, db: AsyncSession, **kwargs):
+    async def save(cls, db: AsyncSession, **kwargs):
         try:
+            total_quantity = 0
+            total_amount = 0
+            total_payable = 0
+            res_products = []
             products = kwargs.pop('products')
-            reservation = cls(**kwargs)
-            db.add(reservation)
             for product in products:
-                res_product = ReservationProducts(**product)
-                reservation.products.append(res_product)
-            db.commit()
-            db.refresh(reservation)
+                prd = await get_or_404(Products, product['product_id'], db)
+                res_products.append(ReservationProducts(**product))
+                total_quantity += product['quantity']
+                total_amount += product['quantity'] * prd.price
+            total_payable = total_amount - total_amount * kwargs['discount'] / 100
+            reservation = cls(**kwargs,
+                                total_quantity = total_quantity,
+                                total_amount = total_amount,
+                                total_payable = total_payable)
+            db.add(reservation)
+            for p in res_products:
+                reservation.products.append(p)
+            await db.commit()
             return reservation
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -199,12 +215,11 @@ class ReservationProducts(Base):
     __tablename__ = "reservation_products"
 
     id = Column(Integer, primary_key=True)
-    product_name = Column(String)
     quantity = Column(Integer)
-    price = Column(Float)
-    discount_price = Column(Integer)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="reservaion_products", lazy='subquery')
     reservation_id = Column(Integer, ForeignKey("reservation.id"))
-    reservation = relationship("Reservation", backref="products")
+    reservation = relationship("Reservation", back_populates="products", lazy='subquery')
 
 
 class Wholesale(Base):
@@ -280,7 +295,7 @@ class Pharmacy(Base):
     classification_of_economic_activities = Column(String)
     VAT_payer_code = Column(String)
     pharmacy_director = Column(String)
-    discount = Column(Integer)
+    discount = Column(Integer, default=0)
     brand_name = Column(String, nullable=True)
     
     med_rep_id = Column(Integer, ForeignKey("users.id"))
@@ -338,20 +353,18 @@ class Pharmacy(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def attach_doctor(self, db: AsyncSession, **kwargs):
+    async def attach_doctor(self, db: AsyncSession, **kwargs):
         try:
-            doc = db.query(Pharmacy).filter(Pharmacy.doctors.any(Doctor.id==kwargs.get('doctor_id'))).first()
+            result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).filter(Pharmacy.doctors.any(Doctor.id==kwargs.get('doctor_id'))))
+            doc = result.scalars().first()
             if not doc:
-                product = Products.check_if_product_exists(kwargs.get('product_id'), db)
-                doctor = Doctor.check_if_doctor_exists(kwargs.get('doctor_id'), db)
                 association_entry = pharmacy_doctor.insert().values(
-                    doctor_id=doctor.id,
+                    doctor_id=kwargs.get('doctor_id'),
                     pharmacy_id=self.id,
-                    product_id=product.id
+                    product_id=kwargs.get('product_id')
                 )
-                db.execute(association_entry)
-                db.commit()
-                db.refresh(self)
+                await db.execute(association_entry)
+                await db.commit()
             else:
                 raise HTTPException(
                 status_code=400,

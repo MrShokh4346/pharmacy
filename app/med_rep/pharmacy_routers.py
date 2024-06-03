@@ -122,7 +122,7 @@ async def get_pharmacy_visit_plan_by_id(plan_id: int, db: AsyncSession = Depends
 
 
 @router.post('/reschedule-pharmacy-visit/{plan_id}', response_model=PharmacyVisitPlanOutSchema, description='date format: (%Y-%m-%d %H:%M)')
-async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db: AsyncSession = Depends(get_db)):
+async def reschedule_pharmacy_visit_date(plan_id: int, date: RescheduleSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).where(PharmacyPlan.id == plan_id))
     plan = result.scalars().first()
     if not plan:
@@ -140,72 +140,82 @@ async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSess
 
 @router.get('/get-pharmacy-doctors-list/{pharmacy_id}', response_model=List[DoctorListSchema])
 async def get_phatmacy_attached_doctors_list(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
-    pharmacy = db.query(Pharmacy).get(pharmacy_id)
-    return pharmacy.doctors
-    result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.pharmacy)).where(Pharmacy.id == doctor_id))
-    doctor = result.scalars().first()
-    if not doctor:
-        raise HTTPException(status_code=404, detail="Doctor not found")
-    return doctor.pharmacy
+    result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).where(Pharmacy.id == pharmacy_id))
+    pharmacy = result.scalars().first()
+    if not pharmacy:
+        raise HTTPException(status_code=404, detail="Pharmacy not found")
+    return pharmacy.doctors 
 
 
-@router.post('/attach-doctor-to-pharmacy/{pharmacy_id}')
+@router.post('/attach-doctor-to-pharmacy')
 async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: AsyncSession = Depends(get_db)):
-    pharmacy = db.query(Pharmacy).get(pharmacy_id)
-    pharmacy.attach_doctor(**att.dict(), db=db)
+    pharmacy = await get_or_404(Pharmacy, att.dict().get('pharmacy_id'), db)
+    await pharmacy.attach_doctor(**att.dict(), db=db)
     return {"msg":"Done"}
 
 
-@router.get('/search-pharmacy-doctors', response_model=List[DoctorListSchema])
-async def search_for_pharmacy_attached_doctors(search: str, user_id: int, db: AsyncSession = Depends(get_db)):
-    user = get_user(user_id, db)
-    doctors = db.query(Doctor).filter(Doctor.full_name.like(f"%{search}%"), Doctor.med_rep_id==user.id).all()
-    return doctors
+@router.get('/search-mr-doctors', response_model=List[DoctorListSchema])
+async def search_for_med_rep_attached_doctors(search: str, user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
+    result = await db.execute(select(Doctor).filter(Doctor.full_name.like(f"%{search}%"), Doctor.med_rep_id==user.id))
+    return result.scalars().all()
 
 
-@router.get('/search-mr-doctors/{pharmacy_id}', response_model=List[DoctorListSchema])
-async def search_for_med_rep_attached_doctors(pharmacy_id: int, search: str, db: AsyncSession = Depends(get_db)):
-    pharmacy = db.query(Pharmacy).filter(Pharmacy.id==pharmacy_id, Pharmacy.doctors.any(Doctor.full_name.like(f"%{search}%"))).all()
-    return pharmacy[0].doctors
-
-        
-@router.get('/get-doctor-attached-products/{doctor_id}', response_model=List[DoctorAttachedProductSchema])
-async def seatch_for_doctor_attached_products(doctor_id: int, search: str, db: AsyncSession = Depends(get_db)):
-    products = db.query(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==doctor_id).all()
-    return products 
+@router.get('/get-pharmacy-doctors/{pharmacy_id}', response_model=List[DoctorListSchema])
+async def get_pharmacy_attached_doctors(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
+    result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).filter(Pharmacy.id==pharmacy_id))
+    pharmacy = result.scalars().first()
+    if pharmacy:
+        return pharmacy.doctors
+    return []
 
 
 @router.post('/add-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
 async def add_debt(pharmacy_id: int, debt: DebtSchema, db: AsyncSession = Depends(get_db)):
     debt = Debt(**debt.dict(), pharmacy_id=pharmacy_id)
-    debt.save(db)
-    debts = db.query(Debt).filter(Debt.pharmacy_id==pharmacy_id).all()
-    return debts
+    await debt.save(db)
+    result = await db.execute(select(Debt).filter(Debt.pharmacy_id==pharmacy_id))
+    return result.scalars().all()
 
 
 @router.put('/update-debt-status/{debt_id}', response_model=DebtOutSchema)
 async def update_debt_status(debt_id: int, st: DebtUpdateSchema, db: AsyncSession = Depends(get_db)):
-    debt = db.query(Debt).get(debt_id)
-    debt.update(**st.dict(), db=db)
+    debt = await get_or_404(Debt, debt_id, db)
+    await debt.update(**st.dict(), db=db)
     return debt
 
 
 @router.get('/get-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
 async def get_debt(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
-    debts = db.query(Debt).filter(Debt.pharmacy_id==pharmacy_id).all()
-    return debts
+    result = await db.execute(select(Debt).filter(Debt.pharmacy_id==pharmacy_id))
+    debt = result.scalars().all()
+    if debt:
+        return debt
+    return []
 
-
-@router.post('/reservation', response_model=ReservationOutSchema)
-async def reservation(res: ReservationSchema, db: AsyncSession = Depends(get_db)):
-    reservation = Reservation.save(**res.dict(), db=db)
+@router.post('/reservation/{pharmacy_id}', response_model=ReservationOutSchema)
+async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession = Depends(get_db)):
+    pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
+    reservation = await Reservation.save(**res.dict(), db=db, pharmacy_id=pharmacy_id, discount=pharmacy.discount)
     return reservation
 
+from sqlalchemy.orm import defaultload
 
-@router.get('/get-reservations', response_model=ReservationOutSchema)
-async def get_reservation(db: AsyncSession = Depends(get_db)):
-    reservations = db.query(Reservation).all()
-    return reservations
+from sqlalchemy.orm import joinedload, lazyload
+
+
+@router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationOutSchema])
+async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.scalars(select(Reservation).options(lazyload(Reservation.products).lazyload(ReservationProducts.product)).filter(Reservation.pharmacy_id==pharmacy_id))
+    return result.all()
+
+
+@router.get('/get-reservation-products/{reservation_id}', response_model=List[ReservationProductOutSchema])
+async def get_reservation_products(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.scalars(select(ReservationProducts).options(selectinload(ReservationProducts.product)).filter(ReservationProducts.reservation_id==reservation_id))
+    return result.all()
+
 
 
 @router.get('/get-report/{reservation_id}')

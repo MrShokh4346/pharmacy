@@ -209,14 +209,3 @@ class Doctor(Base):
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    @classmethod
-    async def check_if_doctor_exists(cls, doctor_id: int, db: AsyncSession):
-        doctor = await db.get(cls, doctor_id)
-        if doctor:
-            return doctor
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail="This doctor don't exists"
-            )
