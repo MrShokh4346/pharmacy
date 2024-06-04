@@ -160,15 +160,6 @@ class Debt(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-class FactoryWarehouse(Base):
-    __tablename__ = "factory_warehouse"
-
-    id = Column(Integer, primary_key=True)
-    quantity = Column(Integer)
-    product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="products")
-
-
 class Reservation(Base):
     __tablename__ = "reservation"
 
@@ -220,63 +211,6 @@ class ReservationProducts(Base):
     product = relationship("Products", backref="reservaion_products", lazy='subquery')
     reservation_id = Column(Integer, ForeignKey("reservation.id"))
     reservation = relationship("Reservation", back_populates="products", lazy='subquery')
-
-
-class Wholesale(Base):
-    __tablename__ = "wholesale"
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    contact = Column(String)
-    region_id = Column(Integer, ForeignKey("region.id")) 
-    region = relationship("Region", backref="wholesales")
-
-    def save(self, db: AsyncSession):
-        try:
-            db.add(self)
-            db.commit()
-            db.refresh(self)
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    def update(self, db: AsyncSession, **kwargs):
-        try:
-            for key in list(kwargs.keys()):
-                kwargs.pop(key) if kwargs[key]==None else None 
-            self.name = kwargs.get('name', self.name)
-            self.contact = kwargs.get('contact', self.contact)
-            self.region_id = kwargs.get('region_id', self.region_id)
-            db.add(self)
-            db.commit()
-            db.refresh(self)
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    def attach(self, db: AsyncSession, **kwargs):
-        try:
-            WholesaleProduct.delete(id=self.id, db=db)
-            for product in kwargs['products']:
-                    wh_product = WholesaleProduct(**product, wholesale_id=self.id)
-                    db.add(wh_product)
-            db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-
-class WholesaleProduct(Base):
-    __tablename__ = "wholesaleproduct"
-
-    id = Column(Integer, primary_key=True)
-    product_name = Column(String)
-    price = Column(Integer)
-    quantity = Column(Integer)
-    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
-    wholesale = relationship("Wholesale", backref="products")
-
-    @classmethod
-    def delete(cls, id: int, db: AsyncSession):
-        db.query(cls).filter(cls.wholesale_id==id).delete()
-        db.commit()
 
 
 class Pharmacy(Base):

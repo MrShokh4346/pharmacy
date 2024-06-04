@@ -14,22 +14,3 @@ class WholesaleProductsSchema(BaseModel):
 class WholesaleProductsListSchema(BaseModel):
     products: List[WholesaleProductsSchema]
 
-
-class WholesaleSchema(BaseModel):
-    name: str 
-    contact: str 
-    region_id: int 
-
-
-class WholesaleUpdateSchema(BaseModel):
-    name: Optional[str] = None   
-    contact: Optional[str] = None   
-    region_id: Optional[int] = None    
-
-
-class WholesaleOutSchema(BaseModel):
-    id: int 
-    name: str 
-    contact: str 
-    region: RegionSchema 
-    products: List[WholesaleProductsSchema]

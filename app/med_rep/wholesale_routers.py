@@ -17,26 +17,6 @@ from sqlalchemy.orm import selectinload
 
 router = APIRouter()
 
-# @router.post('/add-wholesale', response_model=WholesaleOutSchema)
-# async def wholesale(wholesale: WholesaleSchema, db: AsyncSession = Depends(get_db)):
-#     wholesale = Wholesale(**wholesale.dict())
-#     wholesale.save(db)
-#     return wholesale
-
-
-# @router.patch('/update-wholesale/{wholesale_id}', response_model=WholesaleOutSchema)
-# async def update_wholesale(wholesale_id: int, data: WholesaleUpdateSchema, db: AsyncSession = Depends(get_db)):
-#     wholesale = db.query(Wholesale).get(wholesale_id)
-#     wholesale.update(**data.dict(), db=db)
-#     return wholesale
-
-
-# @router.post('/wholesale-attach-product/{wholesale_id}')
-# async def wholesale_attach_product(wholesale_id: int, product: WholesaleProductsListSchema, db: AsyncSession = Depends(get_db)):
-#     wholesale = db.query(Wholesale).get(wholesale_id)
-#     wholesale.attach(**product.dict(), db=db)
-#     return {"msg":"Done"}
-
 
 # @router.get('/search-wholesale-products', response_model=List[WholesaleOutSchema])
 # async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: AsyncSession = Depends(get_db)):

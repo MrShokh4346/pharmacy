@@ -9,7 +9,8 @@ from deputy_director.views import router as dd_router
 from director.views import router as d_router
 from models.database import engine, Base
 from med_rep.router import router as mr_router
-
+from head_of_orders.views import router as ho_router
+from warehouse.views import router as w_router
 
 app = FastAPI()
 
@@ -26,14 +27,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
-# app.include_router(pm_router)
-# app.include_router(common_router)
-# app.include_router(ffm_router)
-# app.include_router(rm_router)
-# app.include_router(dd_router)
-# app.include_router(d_router)
 
-# app.mount("/auth", auth_router)
 app.mount("/pm", pm_router)
 app.mount("/common", common_router)
 app.mount("/ffm", ffm_router)
@@ -41,6 +35,8 @@ app.mount("/rm", rm_router)
 app.mount("/dd", dd_router)
 app.mount("/d", d_router)
 app.mount("/mr", mr_router)
+app.mount("/head", ho_router)
+app.mount("/ws", w_router)
 
 
 
