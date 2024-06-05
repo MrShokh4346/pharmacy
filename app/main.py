@@ -10,7 +10,7 @@ from director.views import router as d_router
 from models.database import engine, Base
 from med_rep.router import router as mr_router
 from head_of_orders.views import router as ho_router
-from warehouse.views import router as w_router
+from wholesale.views import router as w_router
 
 app = FastAPI()
 

@@ -138,15 +138,6 @@ async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSess
     return {"msg":"Done"}
 
 
-@router.get('/get-pharmacy-doctors-list/{pharmacy_id}', response_model=List[DoctorListSchema])
-async def get_phatmacy_attached_doctors_list(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).where(Pharmacy.id == pharmacy_id))
-    pharmacy = result.scalars().first()
-    if not pharmacy:
-        raise HTTPException(status_code=404, detail="Pharmacy not found")
-    return pharmacy.doctors 
-
-
 @router.post('/attach-doctor-to-pharmacy')
 async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, att.dict().get('pharmacy_id'), db)
@@ -161,7 +152,7 @@ async def search_for_med_rep_attached_doctors(search: str, user_id: int, db: Asy
     return result.scalars().all()
 
 
-@router.get('/get-pharmacy-doctors/{pharmacy_id}', response_model=List[DoctorListSchema])
+@router.get('/get-pharmacy-doctors-list/{pharmacy_id}', response_model=List[DoctorListSchema])
 async def get_pharmacy_attached_doctors(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
     result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).filter(Pharmacy.id==pharmacy_id))

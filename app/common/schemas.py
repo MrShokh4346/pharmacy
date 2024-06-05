@@ -11,7 +11,7 @@ class UserOutSchema(BaseModel):
     username: str
     full_name: str
     status: str
-    region_id: int
+    region: RegionSchema
 
 
 class DoctorCategorySchema(BaseModel):
@@ -38,13 +38,20 @@ class MedicalOrganizationInSchema(BaseModel):
     region_id: int 
 
 
+class UserSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    status: str
+
+
 class MedicalOrganizationOutSchema(BaseModel):
     id: int
     name: str
     address: str 
     latitude: str 
     longitude: str 
-    med_rep: UserOutSchema
+    med_rep: UserSchema
     region: RegionSchema
 
 

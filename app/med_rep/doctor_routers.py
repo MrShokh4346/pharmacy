@@ -34,6 +34,13 @@ async def get_all_doctors(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.get('/get-doctors-by-med-rep/{med_rep_id}', response_model=List[DoctorListSchema])
+async def get_all_doctors_by_med_rep(med_rep_id: int, db: AsyncSession = Depends(get_db)):
+    med_rep = await get_user(med_rep_id, db)
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality)).filter(Doctor.med_rep_id==med_rep.id))
+    return result.scalars().all()
+
+
 @router.get('/filter-doctors', response_model=List[DoctorListSchema])
 async def filter_doctors(
     category_id: Optional[int] = None, 

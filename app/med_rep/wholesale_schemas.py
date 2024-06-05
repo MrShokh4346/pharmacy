@@ -14,3 +14,30 @@ class WholesaleProductsSchema(BaseModel):
 class WholesaleProductsListSchema(BaseModel):
     products: List[WholesaleProductsSchema]
 
+
+class WholesaleOutSchema(BaseModel):
+    id: int 
+    name: str 
+    contact: str 
+    region: RegionSchema 
+
+
+class WholesaleProductListSchema(BaseModel):
+    id: int 
+    wholesale: WholesaleOutSchema 
+    product: ProductOutSchema
+    amount: int
+
+
+class ManufacturedCompanySchema(BaseModel):
+    id: int 
+    name: str 
+
+
+class FactoryWarehouseOutSchema(BaseModel):
+    id: int 
+    factory: ManufacturedCompanySchema 
+    product: ProductOutSchema
+    amount: int
+
+

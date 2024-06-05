@@ -37,30 +37,6 @@ async def get_factory_warehouse(factory_id: int, db: AsyncSession = Depends(get_
     return result.scalars().all()
 
 
-@router.post('/add-wholesale', response_model=WholesaleOutSchema)
-async def wholesale(wholesale: WholesaleSchema, db: AsyncSession = Depends(get_db)):
-    wholesale = Wholesale(**wholesale.dict())
-    await wholesale.save(db)
-    return wholesale
 
-
-@router.get('/get-wholesales', response_model=List[WholesaleListSchema])
-async def wholesale(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Wholesale))  
-    return result.scalars().all()
-
-
-@router.patch('/update-wholesale/{wholesale_id}', response_model=WholesaleOutSchema)
-async def update_wholesale(wholesale_id: int, data: WholesaleUpdateSchema, db: AsyncSession = Depends(get_db)):
-    wholesale = await get_or_404(Wholesale, wholesale_id, db) 
-    await wholesale.update(**data.dict(), db=db)
-    return wholesale
-
-
-# @router.post('/wholesale-attach-product/{wholesale_id}')
-# async def wholesale_attach_product(wholesale_id: int, product: WholesaleProductsListSchema, db: AsyncSession = Depends(get_db)):
-#     wholesale = db.query(Wholesale).get(wholesale_id)
-#     wholesale.attach(**product.dict(), db=db)
-#     return {"msg":"Done"}
 
 
