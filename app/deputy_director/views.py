@@ -102,3 +102,17 @@ async def delete_notofications(notofication_id: int, db: AsyncSession = Depends(
     await db.commit()
     return {"msg":"Deleted"}
 
+
+@router.post('/add-user-product-plan', response_model=UserProductPlanOutSchema)
+async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession = Depends(get_db)):
+    plan = UserProductPlan(**plan.dict(), )
+    await plan.save(db)
+    return plan 
+
+
+@router.get('/get-user-product-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])
+async def add_user_product_plan(med_rep_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id))
+    return result.scalars().all() 
+
+

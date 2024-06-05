@@ -22,6 +22,11 @@ router = APIRouter()
 #     return notifications
 
 
+
+
+
+
+
 # UPDATE medical_organization 
 # SET med_rep_id = NULL 
 # WHERE med_rep_id IN (SELECT id FROM users WHERE status = 'medical_representative' AND id != 31 AND id != 32);

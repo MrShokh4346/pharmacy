@@ -33,6 +33,14 @@ class Region(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            self.name = kwargs.get('name', self.name)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 class ManufacturedCompany(Base):
     __tablename__ = "manufactured_company"
@@ -48,6 +56,15 @@ class ManufacturedCompany(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            self.name = kwargs.get('name', self.name)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
 
 class ProductCategory(Base):
     __tablename__ = "product_category"
@@ -62,6 +79,15 @@ class ProductCategory(Base):
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            self.name = kwargs.get('name', self.name)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 
 class Products(Base):
@@ -84,6 +110,20 @@ class Products(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
         
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            for key in list(kwargs.keys()):
+                kwargs.pop(key) if kwargs[key]==None else None 
+            self.name = kwargs.get('name', self.name)
+            self.price = kwargs.get('price', self.price)
+            self.discount_price = kwargs.get('discount_price', self.discount_price)
+            self.man_company_id = kwargs.get('man_company_id', self.man_company_id)
+            self.category_id = kwargs.get('category_id', self.category_id)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 class UserAttachedProduct(Base):
     __tablename__ = "user_attached_product"
@@ -268,10 +308,19 @@ class UserProductPlan(Base):
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
     date = Column(DateTime, default=datetime.now())
-    product = relationship("Products", backref="product_plan")
+    product = relationship("Products", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     med_rep = relationship("Users", backref="product_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"))
+
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 
 class Users(Base):

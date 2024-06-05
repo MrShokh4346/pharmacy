@@ -2,15 +2,15 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
-from .doctors import Doctor, pharmacy_doctor
-from datetime import date 
+from .doctors import Doctor, pharmacy_doctor, DoctorAttachedProduct
+from datetime import date , datetime
 from .users import Products
+from .warehouse import CurrentWholesaleWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-
-
 from .database import Base, get_db, get_or_404
+from sqlalchemy import and_ , extract, func, or_
 
 
 class IncomingStockProducts(Base):
@@ -29,10 +29,14 @@ class IncomingBalanceInStock(Base):
     __tablename__ = "incoming_balance_in_stock"
 
     id = Column(Integer, primary_key=True)
-    saler = Column(String)
+    # saler = Column(String)
     date = Column(DateTime, default=date.today())
     description = Column(String)
 
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
+    wholesale = relationship("Wholesale", backref='balanceinstock')
+    factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
+    factory = relationship("ManufacturedCompany", backref='balanceinstock')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref='balanceinstock')
 
@@ -41,10 +45,20 @@ class IncomingBalanceInStock(Base):
         try:
             products = kwargs.pop('products')
             stock = cls(**kwargs)
+            
             for product in products:
+                wareh = None
+                if kwargs.get('wholesale_id') is not None:
+                    result = await db.execute(select(CurrentWholesaleWarehouse).filter(CurrentWholesaleWarehouse.product_id==product['product_id'], CurrentWholesaleWarehouse.wholesale_id==kwargs['wholesale_id']))
+                    wareh = result.scalars().first()
+                    if (not wareh) or (wareh.amount < product['quantity']):
+                        raise HTTPException(status_code=404, detail='There is not enough product in wholesale warehouse')
+
                 stock_product = IncomingStockProducts(**product)
                 stock.products.append(stock_product)
                 current = await CurrentBalanceInStock.add(pharmacy_id=kwargs['pharmacy_id'], product_id=product['product_id'], amount=product['quantity'], db=db)
+                if wareh is not None:
+                    wareh.amount -= product['quantity']
             db.add(stock)
             await db.commit()
         except IntegrityError as e:
@@ -110,15 +124,47 @@ class CheckingBalanceInStock(Base):
                     raise HTTPException(status_code=404, detail="There isn't enough product in stock")
                 stock_product = CheckingStockProducts(**product, previous=current.amount, saled=current.amount-product['remainder'])
                 stock.products.append(stock_product)
-                print(current.amount)
-                print(stock_product.saled)
                 if stock_product.saled > current.amount:
                     raise HTTPException(status_code=400, detail="There isn't enough product in stock")
                 current.amount -= stock_product.saled
             db.add(stock)
             await db.commit()
+            for product in products:
+                await cls.fact(product_id=product['product_id'], pharmacy_id=current.pharmacy_id, db=db)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    @classmethod
+    async def fact(cls, product_id: int, pharmacy_id: int, db: AsyncSession):
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+
+        sum_fact_result = await db.execute(
+            select(func.sum(CheckingStockProducts.saled)).\
+                join(cls, CheckingStockProducts.stock_id == cls.id).\
+                filter(
+                    CheckingStockProducts.product_id == product_id,
+                    cls.pharmacy_id == pharmacy_id,
+                    extract('year', cls.date) == current_year,
+                    extract('month', cls.date) == current_month
+                )
+        )
+        sum_fact = sum_fact_result.scalar() or 0  # Ensure sum_fact is an integer, default to 0 if None
+
+        # Fetch the DoctorAttachedProduct entry
+        result = await db.execute(
+            select(DoctorAttachedProduct).\
+                join(Doctor, DoctorAttachedProduct.doctor_id == Doctor.id).\
+                join(pharmacy_doctor, pharmacy_doctor.c.doctor_id == Doctor.id).\
+                filter(
+                    pharmacy_doctor.c.pharmacy_id == pharmacy_id,
+                    DoctorAttachedProduct.product_id == product_id
+                )
+        )
+        attached = result.scalars().first()  # Get the first result or None if no result
+        if attached:
+            attached.fact = sum_fact
+            await db.commit()
 
 
 class PharmacyAttachedProducts(Base):
@@ -289,8 +335,16 @@ class Pharmacy(Base):
 
     async def attach_doctor(self, db: AsyncSession, **kwargs):
         try:
-            result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).filter(Pharmacy.doctors.any(Doctor.id==kwargs.get('doctor_id'))))
-            doc = result.scalars().first()
+            doctor_product_result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==kwargs.get('doctor_id'), DoctorAttachedProduct.product_id==kwargs.get('product_id')))
+            doctor_product = doctor_product_result.scalar()
+            if not doctor_product:
+                raise HTTPException(status_code=400, detail="This product not attached to a doctor")
+            
+            result = await db.execute(select(pharmacy_doctor).filter(
+                    or_(pharmacy_doctor.c.doctor_id == kwargs.get('doctor_id'),
+                        pharmacy_doctor.c.product_id == kwargs.get('product_id'))))
+            doc =  result.scalar()
+            
             if not doc:
                 association_entry = pharmacy_doctor.insert().values(
                     doctor_id=kwargs.get('doctor_id'),
@@ -300,18 +354,8 @@ class Pharmacy(Base):
                 await db.execute(association_entry)
                 await db.commit()
             else:
-                raise HTTPException(
-                status_code=400,
-                detail="This doctor already attached"
-            )
+                raise HTTPException(status_code=400, detail="This doctor already attached")
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-            
-
-
-
-    
-    
-
-
+          

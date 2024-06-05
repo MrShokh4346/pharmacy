@@ -29,6 +29,13 @@ async def add_doctor_category(name: str, db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.put('/update-product-category/{category_id}', response_model=ProductCategorySchema)
+async def update_product_category(category_id: int, name: str, db: AsyncSession = Depends(get_db)):
+    category = await get_or_404(ProductCategory, category_id, db)
+    await category.update(name=name, db=db)
+    return category
+
+
 @router.get('/get-product-category', response_model=List[ProductCategorySchema], description='using ProductCategorySchema')
 async def get_doctor_category(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ProductCategory))
@@ -49,12 +56,26 @@ async def add_region(name: str, db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.put('/update-region/{region_id}', response_model=RegionSchema)
+async def update_region(region_id: int, name: str, db: AsyncSession = Depends(get_db)):
+    region = await get_or_404(Region, region_id, db)
+    await region.update(name=name, db=db)
+    return region
+
+
 @router.post('/add-category', response_model=List[DoctorCategorySchema], description='using DoctorCategorySchema')
 async def add_doctor_category(name: str, db: AsyncSession = Depends(get_db)):
     category = DoctorCategory(name=name)
     await category.save(db)
     result = await db.execute(select(DoctorCategory))
     return result.scalars().all()
+
+
+@router.put('/update-category/{category_id}', response_model=DoctorCategorySchema)
+async def update_doctor_category(category_id: int, name: str, db: AsyncSession = Depends(get_db)):
+    category = await get_or_404(DoctorCategory, category_id, db)
+    await category.update(name=name, db=db)
+    return category
 
 
 @router.get('/get-category', response_model=List[DoctorCategorySchema], description='using DoctorCategorySchema')
@@ -71,6 +92,13 @@ async def add_doctor_speciality(name: str, db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.put('/update-speciality/{speciality_id}', response_model=DoctorCategorySchema)
+async def update_doctor_category(speciality_id: int, name: str, db: AsyncSession = Depends(get_db)):
+    speciality = await get_or_404(Speciality, speciality_id, db)
+    await speciality.update(name=name, db=db)
+    return speciality
+
+
 @router.get('/get-speciality', response_model=List[DoctorSpecialitySchema], description='using DoctorSpecialitySchema')
 async def get_doctor_speciality(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Speciality))
@@ -83,6 +111,13 @@ async def add_medical_organization(organization: MedicalOrganizationInSchema, db
     await new_organization.save(db)
     result = await db.execute(select(MedicalOrganization).options(selectinload(MedicalOrganization.med_rep), selectinload(MedicalOrganization.region)))
     return result.scalars().all()
+
+
+@router.put('/update-medical-organization/{organization_id}', response_model=MedicalOrganizationOutSchema)
+async def update_doctor_category(organization_id: int, organization: MedicalOrganizationUpdateSchema, db: AsyncSession = Depends(get_db)):
+    org = await get_or_404(MedicalOrganization, organization_id, db)
+    await org.update(**organization.dict(), db=db)
+    return org
 
 
 @router.get('/get-medical-organization', response_model=List[MedicalOrganizationOutSchema], description='using MedicalOrganizationOutSchema')
@@ -139,6 +174,13 @@ async def add_manufactured_company(name: str, db: AsyncSession = Depends(get_db)
     return result.scalars().all()
 
 
+@router.put('/update-manufactured-company/{company_id}', response_model=DoctorCategorySchema)
+async def update_doctor_category(company_id: int, name: str, db: AsyncSession = Depends(get_db)):
+    company = await get_or_404(ManufacturedCompany, company_id, db)
+    await company.update(name=name, db=db)
+    return company
+
+
 @router.get('/get-manufactured-company', response_model=List[ManufacturedCompanySchema])
 async def get_manufactured_company(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ManufacturedCompany))
@@ -151,6 +193,13 @@ async def add_medcine(product: ProductInSchema, db: AsyncSession = Depends(get_d
     await product.save(db)
     result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
     return result.scalars().all()
+
+
+@router.put('/update-product/{product_id}', response_model=ProductOutSchema)
+async def update_doctor_category(product_id: int, obj: ProductUpdateSchema, db: AsyncSession = Depends(get_db)):
+    product = await get_or_404(Products, product_id, db)
+    await product.update(**obj.dict(), db=db)
+    return product
     
 
 @router.get('/get-product', response_model=List[ProductOutSchema])

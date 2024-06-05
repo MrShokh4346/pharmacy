@@ -77,8 +77,10 @@ class StockOutSchema(BaseModel):
 class BalanceInStockSchema(BaseModel):
     products: List[StockProduct]
     pharmacy_id: int 
-    saler: str 
-    description: Optional[str] 
+    wholesale_id: Optional[int] = None
+    factory_id: Optional[int] = None
+    # saler: str 
+    description: Optional[str] = None 
 
 
 class CheckStockProduct(BaseModel):

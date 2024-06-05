@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 
 
 class RegionSchema(BaseModel):
@@ -38,6 +39,15 @@ class MedicalOrganizationInSchema(BaseModel):
     region_id: int 
 
 
+class MedicalOrganizationUpdateSchema(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None 
+    latitude: Optional[str] = None 
+    longitude: Optional[str] = None 
+    med_rep_id: Optional[int] = None 
+    region_id: Optional[int] = None 
+
+
 class UserSchema(BaseModel):
     id: int
     username: str
@@ -62,6 +72,14 @@ class ProductInSchema(BaseModel):
     man_company_id: int 
     category_id: int
 
+
+class ProductUpdateSchema(BaseModel):
+    name: Optional[str] = None  
+    price: Optional[int] = None  
+    discount_price: Optional[int] = None  
+    man_company_id: Optional[int] = None  
+    category_id: Optional[int] = None
+ 
 
 class ManufacturedCompanySchema(BaseModel):
     id: int 

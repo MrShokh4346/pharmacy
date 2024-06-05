@@ -5,6 +5,7 @@ from fastapi import FastAPI, Path
 from typing import List 
 from datetime import date, datetime
 from med_rep.doctor_schemas import DoctorListSchema
+from common.schemas import  ManufacturedCompanySchema, ProductCategorySchema
 
 
 class Status(str, Enum):
@@ -12,6 +13,8 @@ class Status(str, Enum):
     regional_manager = "regional_manager"
     ff_manager = "ff_manager"
     product_manager = "product_manager"
+    head_of_orders = "head_of_orders"
+    wholesale_manager = "wholesale_manager"
 
 
 class RegisterForDDSchema(BaseModel):
@@ -130,4 +133,23 @@ class NotificationListSchema(BaseModel):
     doctor: Optional[DoctorListSchema] = None
     pharmacy: Optional[PharmacyOutSchema] = None
     wholesale: Optional[WholesaleSchema] = None
+
+
+class ProductSchema(BaseModel):
+    id: int 
+    name: str 
+    man_company: ManufacturedCompanySchema 
+    category: ProductCategorySchema
+
+
+class UserProductPlanInSchema(BaseModel):
+    product_id: int 
+    amount: int 
+    med_rep_id: int
+
+
+class UserProductPlanOutSchema(BaseModel):
+    product: ProductSchema 
+    amount: int 
+    date: datetime
 

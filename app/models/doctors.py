@@ -9,6 +9,7 @@ from sqlalchemy.orm import validates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
+from sqlalchemy.schema import UniqueConstraint
 
 
 class Speciality(Base):
@@ -20,6 +21,14 @@ class Speciality(Base):
     async def save(self, db: AsyncSession):
         try:
             db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            self.name = kwargs.get('name', self.name)
             await db.commit()
             await db.refresh(self)
         except IntegrityError as e:
@@ -40,6 +49,14 @@ class DoctorCategory(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            self.name = kwargs.get('name', self.name)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 class MedicalOrganization(Base):
     __tablename__ = "medical_organization"
@@ -50,14 +67,29 @@ class MedicalOrganization(Base):
     latitude = Column(String)
     longitude = Column(String)
 
-    med_rep = relationship("Users",  backref="med_org")
+    med_rep = relationship("Users",  backref="med_org", lazy='selectin')
     med_rep_id = Column(Integer, ForeignKey("users.id"))
-    region = relationship("Region",  backref="med_org")
+    region = relationship("Region",  backref="med_org", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id")) 
 
     async def save(self, db: AsyncSession):
         try:
             db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            for key in list(kwargs.keys()):
+                kwargs.pop(key) if kwargs[key]==None else None 
+            self.name = kwargs.get('name', self.name)
+            self.address = kwargs.get('address', self.address)
+            self.latitude = kwargs.get('latitude', self.latitude)
+            self.longitude = kwargs.get('longitude', self.longitude)
+            self.med_rep_id = kwargs.get('med_rep_id', self.med_rep_id)
+            self.region_id = kwargs.get('region_id', self.region_id)
             await db.commit()
             await db.refresh(self)
         except IntegrityError as e:
@@ -140,7 +172,7 @@ pharmacy_doctor = Table(
     Base.metadata,
     Column("doctor_id", ForeignKey("doctor.id"), primary_key=True),
     Column("pharmacy_id", ForeignKey("pharmacy.id"), primary_key=True),
-    Column("product_id", ForeignKey("products.id"), primary_key=True),
+    Column("product_id", ForeignKey("products.id"), primary_key=True)
 )
 
 
