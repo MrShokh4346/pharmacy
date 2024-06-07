@@ -128,7 +128,7 @@ async def get_medical_organization(db: AsyncSession = Depends(get_db)):
 
 @router.get("/get-users", response_model=List[UserOutSchema])
 async def get_users(user: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: AsyncSession = Depends(get_db)):
-    query = select(Users).options(selectinload(Users.region))
+    query = select(Users).options(selectinload(Users.region), selectinload(Users.region_manager))
     if user.status == 'director':
         query = query.filter(Users.director_id == user.id)
     elif user.status == 'deputy_director':
@@ -149,7 +149,7 @@ async def get_users(user: Annotated[Users, Depends(get_current_user)], token: HT
 async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Users).filter(Users.username == username))
     user = result.scalar()
-    query = select(Users).options(selectinload(Users.region))
+    query = select(Users).options(selectinload(Users.region), selectinload(Users.region_manager))
     if (user) and (user.status == 'director'):
         query = query.filter(Users.director_id == user.id)
     elif (user) and (user.status == 'deputy_director'):

@@ -131,11 +131,11 @@ async def reschedule_pharmacy_visit_date(plan_id: int, date: RescheduleSchema, d
     return plan
 
 #######
-@router.post('/pharmacy-visit-info/{visit_id}')
-async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
-    plan = db.query(PharmacyPlan).get(visit_id)
-    plan.attach(**visit.dict(), db=db)
-    return {"msg":"Done"}
+# @router.post('/pharmacy-visit-info/{visit_id}')
+# async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
+#     plan = db.query(PharmacyPlan).get(visit_id)
+#     plan.attach(**visit.dict(), db=db)
+#     return {"msg":"Done"}
 
 
 @router.post('/attach-doctor-to-pharmacy')
@@ -196,16 +196,16 @@ from sqlalchemy.orm import defaultload
 from sqlalchemy.orm import joinedload, lazyload
 
 
-@router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationOutSchema])
+@router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
 async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.scalars(select(Reservation).options(lazyload(Reservation.products).lazyload(ReservationProducts.product)).filter(Reservation.pharmacy_id==pharmacy_id))
-    return result.all()
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
+    return result.scalars().all()
 
 
-@router.get('/get-reservation-products/{reservation_id}', response_model=List[ReservationProductOutSchema])
-async def get_reservation_products(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.scalars(select(ReservationProducts).options(selectinload(ReservationProducts.product)).filter(ReservationProducts.reservation_id==reservation_id))
-    return result.all()
+# @router.get('/get-reservation-products/{reservation_id}', response_model=List[ReservationProductOutSchema])
+# async def get_reservation_products(reservation_id: int, db: AsyncSession = Depends(get_db)):
+#     result = await db.scalars(select(ReservationProducts).options(selectinload(ReservationProducts.product)).filter(ReservationProducts.reservation_id==reservation_id))
+#     return result.all()
 
 
 ####

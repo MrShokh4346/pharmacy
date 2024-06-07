@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
+from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema, ManufacturedCompanySchema
 from datetime import date, datetime
 from enum import Enum
 
@@ -148,7 +148,7 @@ class ReservationProductSchema(BaseModel):
 
 
 class ReservationSchema(BaseModel):
-    company: str
+    manufactured_company_id: int
     products: List[ReservationProductSchema]
 
 
@@ -157,15 +157,31 @@ class ReservationProductOutSchema(BaseModel):
     quantity: int
 
 
-class ReservationOutSchema(BaseModel):
+class ReservationListSchema(BaseModel):
     id: int
     date: datetime 
-    # products: Optional[ReservationProductOutSchema] 
-    company: str
+    expire_date: datetime 
+    products: List[ReservationProductOutSchema] 
+    manufactured_company: ManufacturedCompanySchema
     discount: int
     total_quantity: float
     total_amount: float
     total_payable: float
+    checked: bool
+
+
+class ReservationOutSchema(BaseModel):
+    id: int
+    date: datetime 
+    expire_date: datetime 
+    # products: List[ReservationProductOutSchema] 
+    # manufactured_company: ManufacturedCompanySchema
+    discount: int
+    total_quantity: float
+    total_amount: float
+    total_payable: float
+    checked: bool
+
 
 
 class AttachDoctorToPharmacySchema(BaseModel):

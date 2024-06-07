@@ -125,16 +125,6 @@ class Products(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-class UserAttachedProduct(Base):
-    __tablename__ = "user_attached_product"
-
-    id = Column(Integer, primary_key=True)
-    product = relationship("Products", backref="attch_prd")
-    product_id = Column(Integer, ForeignKey("products.id"))
-    user = relationship("Users", backref="ur_attch_prd")
-    user_id = Column(Integer, ForeignKey("users.id"))
-
-
 class DoctorPlan(Base):
     __tablename__ = "doctor_plan"
 
@@ -307,6 +297,7 @@ class UserProductPlan(Base):
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
+    current_amount = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     product = relationship("Products", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))

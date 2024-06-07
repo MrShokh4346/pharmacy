@@ -7,11 +7,17 @@ class RegionSchema(BaseModel):
     name: str 
 
 
+class RegionManager(BaseModel):
+    username: str 
+    full_name: str
+
+
 class UserOutSchema(BaseModel):
     id: int
     username: str
     full_name: str
     status: str
+    region_manager: Optional[RegionManager] = None
     region: RegionSchema
 
 

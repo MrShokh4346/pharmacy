@@ -6,7 +6,7 @@ from .pharmacy_schemas import PharmacyListSchema
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.doctors import *
-from models.users import Users, DoctorPlan, Notification, DoctorVisitInfo
+from models.users import Users, DoctorPlan, Notification, DoctorVisitInfo, UserProductPlan
 from models.database import get_db, get_or_404
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
@@ -70,15 +70,28 @@ async def get_doctor_by_id(id: int, db: AsyncSession = Depends(get_db)):
 @router.post('/add-doctor', response_model=DoctorOutSchema)
 async def add_doctor(doctor: DoctorInSchema, user_id: int, db: AsyncSession = Depends(get_db)):
     med_rep = await get_user(user_id, db)
-    new_doctor = Doctor(**doctor.dict(), region_manager_id=med_rep.region_manager_id, ffm_id=med_rep.ffm_id, product_manager_id=med_rep.product_manager_id, deputy_director_id=med_rep.deputy_director_id, director_id=med_rep.director_id)
+    new_doctor = Doctor(**doctor.dict(),med_rep_id=med_rep.id, region_manager_id=med_rep.region_manager_id, ffm_id=med_rep.ffm_id, product_manager_id=med_rep.product_manager_id, deputy_director_id=med_rep.deputy_director_id, director_id=med_rep.director_id)
     await new_doctor.save(db=db)
     return new_doctor
 
 
 @router.post('/attach-products')
 async def attach_products_to_doctor(objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
-    products = [DoctorAttachedProduct(**obj.dict()) for obj in objects.items]
-    db.add_all(products)
+    doctor_products = []
+    for obj in objects.items:
+        result1 = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.product_id==obj.product_id, DoctorAttachedProduct.doctor_id==obj.doctor_id))
+        doctor = result1.scalar()
+        if doctor is not None:
+            raise HTTPException(status_code=404, detail='This product already attached to this doctor')
+        doctor_products.append(DoctorAttachedProduct(**obj.dict()))
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id).order_by(UserProductPlan.id.desc()))
+        user_product = result.scalars().first()
+        if user_product is None:
+            raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan')
+        if user_product.current_amount < obj.monthly_plan:
+            raise HTTPException(status_code=404, detail='You are trying to add more doctor plan than user plan for this product')
+        user_product.current_amount -= obj.monthly_plan
+    db.add_all(doctor_products)
     try:
         await db.commit()
     except IntegrityError as e:

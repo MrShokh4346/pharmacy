@@ -9,6 +9,7 @@ from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wh
 from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import selectinload
 
 
 router = FastAPI()
@@ -37,6 +38,24 @@ async def get_factory_warehouse(factory_id: int, db: AsyncSession = Depends(get_
     return result.scalars().all()
 
 
+@router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
+async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
+    return result.scalars().all()
+
+
+@router.post('/check-reservation/{reservation_id}')
+async def get_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.check_reservation(**obj.dict(), db=db)
+    return {"msg":"Done"}
+
+
+@router.post('/update-reservation-expire-date/{reservation_id}')
+async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.update_expire_date(date = obj.date, db=db)
+    return {"msg":"Done"}
 
 
 

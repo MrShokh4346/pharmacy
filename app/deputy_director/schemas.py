@@ -149,7 +149,34 @@ class UserProductPlanInSchema(BaseModel):
 
 
 class UserProductPlanOutSchema(BaseModel):
+    id: int 
+    product: ProductSchema 
+    amount: int 
+    date: datetime 
+
+
+
+class DoctorSchema(BaseModel):
+    id: int 
+    full_name: str 
+
+
+class AttachProductsOutSchema(BaseModel):
+    monthly_plan: int 
+    fact: int 
+    doctor: DoctorSchema
+
+
+class ProductAttechSchema(BaseModel):
+    id: int 
+    name: str 
+
+
+class UserProductPlanByIdSchema(BaseModel):
     product: ProductSchema 
     amount: int 
     date: datetime
+    doctor_plans: List[DoctorSchema]
+    vakant: int
+
 

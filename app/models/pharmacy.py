@@ -3,9 +3,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from .doctors import Doctor, pharmacy_doctor, DoctorAttachedProduct
-from datetime import date , datetime
+from datetime import date , datetime, timedelta
 from .users import Products
-from .warehouse import CurrentWholesaleWarehouse
+from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -205,13 +205,13 @@ class Debt(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-
+from datetime import date
 class Reservation(Base):
     __tablename__ = "reservation"
 
     id = Column(Integer, primary_key=True)
-    company = Column(String)
     date = Column(DateTime, default=date.today())
+    expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=10)))
     discount = Column(Float)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
@@ -219,7 +219,9 @@ class Reservation(Base):
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref="reservation")
     products = relationship("ReservationProducts", back_populates="reservation", lazy='selectin')
-
+    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
+    manufactured_company = relationship("ManufacturedCompany", backref="reservation", lazy='selectin')
+    checked = Column(Boolean, default=False)
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -231,6 +233,10 @@ class Reservation(Base):
             products = kwargs.pop('products')
             for product in products:
                 prd = await get_or_404(Products, product['product_id'], db)
+                result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id']))
+                wrh = result.scalar()
+                if (not wrh) or wrh.amount < product['quantity']: 
+                    raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in warehouse")
                 res_products.append(ReservationProducts(**product))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
@@ -247,6 +253,23 @@ class Reservation(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
+    async def check_reservation(self, check, db: AsyncSession):
+        self.ckeck = check
+        for product in self.products:
+            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
+            wrh = result.scalar()
+            if (not wrh) and wrh.amount < product.quantity: 
+                raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
+            wrh.amount -= product.quantity
+        await db.commit()
+
+    async def update_expire_date(self, date: date, db: AsyncSession):
+        try:
+            self.expire_date = date
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"
@@ -254,9 +277,9 @@ class ReservationProducts(Base):
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="reservaion_products", lazy='subquery')
+    product = relationship("Products", backref="reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id"))
-    reservation = relationship("Reservation", back_populates="products", lazy='subquery')
+    reservation = relationship("Reservation", back_populates="products")
 
 
 class Pharmacy(Base):
