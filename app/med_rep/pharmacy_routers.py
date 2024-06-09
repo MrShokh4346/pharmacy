@@ -148,18 +148,19 @@ async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: Async
 @router.get('/search-mr-doctors', response_model=List[DoctorListSchema])
 async def search_for_med_rep_attached_doctors(search: str, user_id: int, db: AsyncSession = Depends(get_db)):
     user = await get_user(user_id, db)
-    result = await db.execute(select(Doctor).filter(Doctor.full_name.like(f"%{search}%"), Doctor.med_rep_id==user.id))
+    result = await db.execute(select(Doctor).filter(Doctor.full_name.like(f"%{search}%"), Doctor.med_rep_id==user.id, Doctor.deleted == False))
     return result.scalars().all()
 
 
 @router.get('/get-pharmacy-doctors-list/{pharmacy_id}', response_model=List[DoctorListSchema])
 async def get_pharmacy_attached_doctors(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
-    result = await db.execute(select(Pharmacy).options(selectinload(Pharmacy.doctors)).filter(Pharmacy.id==pharmacy_id))
-    pharmacy = result.scalars().first()
-    if pharmacy:
-        return pharmacy.doctors
-    return []
+    result = await db.execute(select(Doctor).\
+            join(pharmacy_doctor, pharmacy_doctor.c.doctor_id == Doctor.id).filter(
+                    pharmacy_doctor.c.pharmacy_id == pharmacy_id,
+                    Doctor.deleted == False))
+    doctors = result.scalars().all()
+    return doctors
 
 
 @router.post('/add-debt/{pharmacy_id}', response_model=List[DebtOutSchema])
@@ -191,10 +192,6 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
     reservation = await Reservation.save(**res.dict(), db=db, pharmacy_id=pharmacy_id, discount=pharmacy.discount)
     return reservation
 
-from sqlalchemy.orm import defaultload
-
-from sqlalchemy.orm import joinedload, lazyload
-
 
 @router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
 async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
@@ -202,13 +199,7 @@ async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
-# @router.get('/get-reservation-products/{reservation_id}', response_model=List[ReservationProductOutSchema])
-# async def get_reservation_products(reservation_id: int, db: AsyncSession = Depends(get_db)):
-#     result = await db.scalars(select(ReservationProducts).options(selectinload(ReservationProducts.product)).filter(ReservationProducts.reservation_id==reservation_id))
-#     return result.all()
-
-
 ####
 @router.get('/get-report/{reservation_id}')
 async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    return write_excel(reservation_id, db)
+    return await write_excel(reservation_id, db)

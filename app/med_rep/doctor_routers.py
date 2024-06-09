@@ -30,14 +30,14 @@ async def get_doctor_notifications(doctor_id: int, db: AsyncSession = Depends(ge
 
 @router.get('/get-doctors', response_model=List[DoctorListSchema])
 async def get_all_doctors(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality)))
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality)).filter(Doctor.deleted==False))
     return result.scalars().all()
 
 
 @router.get('/get-doctors-by-med-rep/{med_rep_id}', response_model=List[DoctorListSchema])
 async def get_all_doctors_by_med_rep(med_rep_id: int, db: AsyncSession = Depends(get_db)):
     med_rep = await get_user(med_rep_id, db)
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality)).filter(Doctor.med_rep_id==med_rep.id))
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality)).filter(Doctor.med_rep_id==med_rep.id, Doctor.deleted==False))
     return result.scalars().all()
 
 
@@ -49,7 +49,7 @@ async def filter_doctors(
     product_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.medical_organization), selectinload(Doctor.category))
+    query = select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.medical_organization), selectinload(Doctor.category)).filter(Doctor.deleted==False)
     if category_id:
         query = query.filter(Doctor.category_id == category_id)
     if speciality_id:
@@ -64,7 +64,7 @@ async def filter_doctors(
 
 @router.get('/get-doctor/{id}', response_model=DoctorOutSchema)
 async def get_doctor_by_id(id: int, db: AsyncSession = Depends(get_db)):
-    return await get_or_404(Doctor, id, db)
+    return await get_doctor_or_404(id, db)
 
 
 @router.post('/add-doctor', response_model=DoctorOutSchema)
@@ -78,6 +78,7 @@ async def add_doctor(doctor: DoctorInSchema, user_id: int, db: AsyncSession = De
 @router.post('/attach-products')
 async def attach_products_to_doctor(objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
     doctor_products = []
+    doctor = await get_doctor_or_404(objects.items[0].doctor_id, db)
     for obj in objects.items:
         result1 = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.product_id==obj.product_id, DoctorAttachedProduct.doctor_id==obj.doctor_id))
         doctor = result1.scalar()
@@ -101,20 +102,28 @@ async def attach_products_to_doctor(objects: AttachProductsListSchema, db: Async
 
 @router.get('/doctor-attached-products/{doctor_id}', response_model=List[AttachProductsOutSchema])
 async def get_doctor_attached_products(doctor_id: int, db: AsyncSession = Depends(get_db)):
+    doctor = await get_doctor_or_404(doctor_id, db)
     result = await db.execute(select(DoctorAttachedProduct).options(selectinload(DoctorAttachedProduct.product)).filter(DoctorAttachedProduct.doctor_id==doctor_id))
     return result.scalars().all()
 
 
 @router.patch('/update-doctor/{id}', response_model=DoctorOutSchema)
 async def update_doctor(id: int, data: DoctorUpdateSchema, db: AsyncSession = Depends(get_db)):
-    doctor = await get_or_404(Doctor, id, db)
+    doctor = await get_doctor_or_404(id, db)
     await doctor.update(**data.dict(), db=db)
     return doctor
 
 
+@router.delete('/delete-doctor/{doctor_id}')
+async def delete_doctor(doctor_id: int, db: AsyncSession = Depends(get_db)):
+    doctor = await get_doctor_or_404(doctor_id, db)
+    await doctor.delete(db)
+    return {"msg":"Done"}
+
+
 @router.get('/get-doctor-pharmacies-list/{doctor_id}', response_model=List[PharmacyListSchema])
 async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.pharmacy)).where(Doctor.id == doctor_id))
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.pharmacy)).where(Doctor.id == doctor_id, Doctor.deleted==False))
     doctor = result.scalars().first()
     if not doctor:
         raise HTTPException(status_code=404, detail="Doctor not found")
@@ -123,6 +132,7 @@ async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession =
 
 @router.post('/add-bonus', response_model=List[BonusOutSchema])
 async def add_bonus_to_doctor(data: BonusSchema, db: AsyncSession = Depends(get_db)):
+    doctor = await get_doctor_or_404(data.doctor_id, db)
     data_dict = data.dict()
     products = data_dict.pop('products')
     bonus = Bonus(**data_dict)
@@ -146,6 +156,7 @@ async def delete_product_by_id_form_bonus(bonus_id:int, db: AsyncSession = Depen
 async def get_bonus_by_doctor_id(doctor_id: int, filter_bonus: FilterChoice, from_date: str, to_date: str, db: AsyncSession = Depends(get_db)):
     fr_date = datetime.strptime(from_date, '%Y-%m-%d') if from_date else None
     to_date = datetime.strptime(to_date, '%Y-%m-%d') if to_date else None
+    doctor = await get_doctor_or_404(doctor_id, db)
 
     query = select(Bonus).options(selectinload(Bonus.products)).filter(Bonus.doctor_id == doctor_id)
     if filter_bonus == 'payed':

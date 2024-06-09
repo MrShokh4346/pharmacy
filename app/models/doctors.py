@@ -186,6 +186,7 @@ class Doctor(Base):
     email = Column(String)
     latitude = Column(String)
     longitude = Column(String)
+    deleted = Column(Boolean, default=False)
 
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users",  backref="mr_doctor", foreign_keys=[med_rep_id], lazy='selectin')
@@ -242,3 +243,12 @@ class Doctor(Base):
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def delete(self, db: AsyncSession):
+        try:
+            self.deleted = True
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+

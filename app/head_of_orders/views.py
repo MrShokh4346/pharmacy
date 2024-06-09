@@ -5,6 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
+from models.pharmacy import Pharmacy
 from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale
 from models.dependencies import *
 from typing import Any, List
@@ -55,6 +56,13 @@ async def get_reservation_products(reservation_id: int, obj: CheckSchema, db: As
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
     reservation = await get_or_404(Reservation, reservation_id, db)
     await reservation.update_expire_date(date = obj.date, db=db)
+    return {"msg":"Done"}
+
+
+@router.post('/set-discount-to-pharmacy/{pharmacy_id}')
+async def set_discount_to_pharmacy(pharmacy_id: int, discount: float,  db: AsyncSession = Depends(get_db)):
+    pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
+    await pharmacy.set_discount(discount, db)
     return {"msg":"Done"}
 
 

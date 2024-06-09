@@ -151,7 +151,6 @@ class CheckingBalanceInStock(Base):
         )
         sum_fact = sum_fact_result.scalar() or 0  # Ensure sum_fact is an integer, default to 0 if None
 
-        # Fetch the DoctorAttachedProduct entry
         result = await db.execute(
             select(DoctorAttachedProduct).\
                 join(Doctor, DoctorAttachedProduct.doctor_id == Doctor.id).\
@@ -298,7 +297,7 @@ class Pharmacy(Base):
     classification_of_economic_activities = Column(String)
     VAT_payer_code = Column(String)
     pharmacy_director = Column(String)
-    discount = Column(Integer, default=0)
+    discount = Column(Float, default=0)
     brand_name = Column(String, nullable=True)
     
     med_rep_id = Column(Integer, ForeignKey("users.id"))
@@ -381,4 +380,10 @@ class Pharmacy(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-          
+    async def set_discount(self, discount: float, db: AsyncSession):
+        try:
+            self.discount = discount
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

@@ -6,7 +6,7 @@ from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
 from .users import Users, Products, Region
-from .doctors import DoctorCategory, Speciality, MedicalOrganization
+from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor
 from .pharmacy import Reservation
 from typing import Annotated
 from .database import get_db
@@ -16,6 +16,7 @@ import shutil
 from fastapi.responses import FileResponse
 import os
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 
 load_dotenv()
@@ -82,7 +83,7 @@ async def get_user(user_id: int, db: AsyncSession):
     return user 
 
 
-def write_excel(reservation_id: int, db: AsyncSession):
+async def write_excel(reservation_id: int, db: AsyncSession):
     source_excel_file = 'app/report/Book.xlsx'
     destination_excel_file = 'app/report/report.xlsx'
     sheet_name = 'Sheet1'
@@ -90,16 +91,19 @@ def write_excel(reservation_id: int, db: AsyncSession):
     destination_wb = load_workbook(destination_excel_file)
     destination_sheet = destination_wb[sheet_name]
 
-    reservation = db.query(Reservation).get(reservation_id)
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.pharmacy)).where(Reservation.id==reservation_id))
+    reservation = result.scalar()
+
+    destination_sheet['E2'] = reservation.pharmacy.discount
 
     count = 9
 
     for product in reservation.products:
         data_to_write = {
-            f'D{count}' : product.product_name,
+            f'D{count}' : product.product.name,
             f'E{count}' : product.quantity,
-            f'F{count}' : product.price,
-            f'H{count}' : product.quantity * product.price
+            f'F{count}' : product.product.price,
+            f'H{count}' : product.quantity * product.product.price
         }
         count += 1
         for cell_address, value in data_to_write.items():
@@ -110,4 +114,11 @@ def write_excel(reservation_id: int, db: AsyncSession):
     destination_wb.save(destination_excel_file)
     destination_wb.close()
     return FileResponse("app/report/report.xlsx")
+
+
+async def get_doctor_or_404(id, db):
+    obj = await db.get(Doctor, id)
+    if (not obj) or (obj.deleted == True):
+        raise HTTPException(status_code=404, detail=f"Doctor not found")
+    return obj
 
