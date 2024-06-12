@@ -132,7 +132,7 @@ class CurrentWholesaleWarehouse(Base):
     amount = Column(Integer)
     price = Column(Integer)
     wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
-    wholesale = relationship("Wholesale", back_populates="report_warehouse")
+    wholesale = relationship("Wholesale", back_populates="report_warehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="wholesale_current_warehouse", lazy='selectin')
 

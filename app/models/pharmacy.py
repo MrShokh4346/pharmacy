@@ -53,6 +53,11 @@ class IncomingBalanceInStock(Base):
                     wareh = result.scalars().first()
                     if (not wareh) or (wareh.amount < product['quantity']):
                         raise HTTPException(status_code=404, detail='There is not enough product in wholesale warehouse')
+                else:
+                    result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.product_id==product['product_id'], CurrentFactoryWarehouse.factory_id==kwargs['factory_id']))
+                    wareh = result.scalars().first()
+                    if (not wareh) or (wareh.amount < product['quantity']):
+                        raise HTTPException(status_code=404, detail='There is not enough product in warehouse')
 
                 stock_product = IncomingStockProducts(**product)
                 stock.products.append(stock_product)
@@ -216,7 +221,7 @@ class Reservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="reservation")
+    pharmacy = relationship("Pharmacy", backref="reservation", lazy='selectin')
     products = relationship("ReservationProducts", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     manufactured_company = relationship("ManufacturedCompany", backref="reservation", lazy='selectin')

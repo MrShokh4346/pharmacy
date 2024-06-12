@@ -1,5 +1,5 @@
 # from .main import ALGORITHM, SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 from dotenv.main import load_dotenv
@@ -109,11 +109,21 @@ async def write_excel(reservation_id: int, db: AsyncSession):
         for cell_address, value in data_to_write.items():
             destination_sheet[cell_address] = value
 
-    # destination_sheet["H9"] = 'sum'
+    destination_sheet['H31'] = reservation.total_amount
+
+    destination_sheet['G32'] = f"{reservation.pharmacy.discount}% скидка билан"
+    destination_sheet['H32'] = reservation.total_payable
+
+    destination_sheet['G33'] = "12% ндс билан"
+    destination_sheet['H33'] = reservation.total_payable + 0.12 * reservation.total_payable
+
+    
+
+    filename = reservation.pharmacy.company_name + '_' + reservation.pharmacy.inter_branch_turnover + '_' + str(date.today()) + '.xlsx'
 
     destination_wb.save(destination_excel_file)
     destination_wb.close()
-    return FileResponse("app/report/report.xlsx")
+    return FileResponse(filename=filename, path="app/report/report.xlsx")
 
 
 async def get_doctor_or_404(id, db):

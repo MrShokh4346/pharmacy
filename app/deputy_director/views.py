@@ -118,14 +118,14 @@ async def add_user_products_plan(med_rep_id: int, db: AsyncSession = Depends(get
     return result.scalars().all() 
 
 
-@router.get('/get-user-product-plan-by-plan-id/{plan_id}')
-async def add_user_product_plan_by_plan_id(plan_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
+@router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
+async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
     num_days = calendar.monthrange(year, month_number)[1]
     start_date = date(year, month_number, 1)
     end_date = date(year, month_number, num_days)
 
-    result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.date >= start_date, UserProductPlan.date <= end_date))
+    result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.date >= start_date, UserProductPlan.date <= end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
     for user_plan in user_plans:

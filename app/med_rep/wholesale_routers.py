@@ -19,6 +19,12 @@ from sqlalchemy import and_
 router = APIRouter()
 
 
+@router.get('/get-all-wholesale-products', response_model=List[WholesaleProductListSchema])
+async def get_all_wholesale_products(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(CurrentWholesaleWarehouse))
+    return result.scalars().all()
+
+
 @router.get('/search-wholesale-products', response_model=List[WholesaleProductListSchema])
 async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: AsyncSession = Depends(get_db)):
     query = (select(CurrentWholesaleWarehouse)
