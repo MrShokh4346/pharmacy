@@ -73,6 +73,7 @@ class AttachProductsSchema(BaseModel):
 
 
 class AttachProductsOutSchema(BaseModel):
+    id: int
     product: ProductOutSchema
     monthly_plan: int 
     fact: int 

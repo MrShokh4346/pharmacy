@@ -76,7 +76,8 @@ async def add_doctor(doctor: DoctorInSchema, user_id: int, db: AsyncSession = De
 
 
 @router.post('/attach-products')
-async def attach_products_to_doctor(objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
+async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
+    user = await get_or_404(Users, user_id, db)
     doctor_products = []
     doctor = await get_doctor_or_404(objects.items[0].doctor_id, db)
     for obj in objects.items:
@@ -85,7 +86,7 @@ async def attach_products_to_doctor(objects: AttachProductsListSchema, db: Async
         if doctor is not None:
             raise HTTPException(status_code=404, detail='This product already attached to this doctor')
         doctor_products.append(DoctorAttachedProduct(**obj.dict()))
-        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id).order_by(UserProductPlan.id.desc()))
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.med_rep_id==user_id).order_by(UserProductPlan.id.desc()))
         user_product = result.scalars().first()
         if user_product is None:
             raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan')
@@ -97,6 +98,14 @@ async def attach_products_to_doctor(objects: AttachProductsListSchema, db: Async
         await db.commit()
     except IntegrityError as e:
         raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+    return {"msg": "Done"}
+
+
+@router.put('/update-doctor-plan/{plan_id}')
+async def update_doctor_plan(plan_id: int, monthly_plan: int, user_id: int, db: AsyncSession = Depends(get_db)):
+    user = await get_or_404(Users, user_id, db)
+    obj = await get_or_404(DoctorAttachedProduct, plan_id, db)
+    await obj.update(monthly_plan, user_id, db)
     return {"msg": "Done"}
 
 

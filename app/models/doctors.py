@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
 from sqlalchemy.schema import UniqueConstraint
+from .users import UserProductPlan
 
 
 class Speciality(Base):
@@ -116,6 +117,18 @@ class DoctorAttachedProduct(Base):
         except:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
+    async def update(self, monthly_plan: int, user_id: int, db: AsyncSession):
+        self.monthly_plan = monthly_plan 
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==self.product_id, UserProductPlan.med_rep_id==user_id).order_by(UserProductPlan.id.desc()))
+        user_product = result.scalars().first()
+        if user_product is None:
+            raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan')
+        if user_product.current_amount < monthly_plan:
+            raise HTTPException(status_code=404, detail='You are trying to add more doctor plan than user plan for this product')
+        user_product.current_amount -= monthly_plan
+        await db.commit()
+
+
 
 class DoctorCompleatedPlan(Base):
     __tablename__ = "doctor_compleated_plan"
