@@ -102,13 +102,12 @@ class RescheduleSchema(BaseModel):
 
 
 class VisitInfoProductSchema(BaseModel):
-    product_name: str 
+    product_id: int 
     compleated: int 
 
 
 class VisitInfoDoctorSchema(BaseModel):
-    doctor_name: str
-    doctor_speciality: str 
+    doctor_id: int
     products: List[VisitInfoProductSchema] 
 
 
@@ -187,4 +186,4 @@ class ReservationOutSchema(BaseModel):
 class AttachDoctorToPharmacySchema(BaseModel):
     doctor_id: int 
     pharmacy_id: int 
-    product_id: int 
+    # product_id: int 

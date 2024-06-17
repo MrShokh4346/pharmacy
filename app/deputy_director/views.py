@@ -161,3 +161,8 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
         })
     return user_plan_data
 
+
+@router.get('/get-proccess-report', response_model=List[ReportSchema])
+async def get_proccess_report(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products)).filter(Doctor.deleted==False))
+    return result.scalars().all()

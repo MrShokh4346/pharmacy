@@ -88,7 +88,6 @@ class FilterChoice(str, Enum):
     debt = "debt"
     history = "history"
 
-
 class BonusProductSchema(BaseModel):
     product_name: str 
     monthly_plan: int

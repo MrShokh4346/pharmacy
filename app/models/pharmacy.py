@@ -134,8 +134,8 @@ class CheckingBalanceInStock(Base):
                 current.amount -= stock_product.saled
             db.add(stock)
             await db.commit()
-            for product in products:
-                await cls.fact(product_id=product['product_id'], pharmacy_id=current.pharmacy_id, db=db)
+            # for product in products:
+                # await cls.fact(product_id=product['product_id'], pharmacy_id=current.pharmacy_id, db=db)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
@@ -286,6 +286,37 @@ class ReservationProducts(Base):
     reservation = relationship("Reservation", back_populates="products")
 
 
+class PharmacyFact(Base):
+    __tablename__ = "pharmacy_fact"
+
+    id = Column(Integer, primary_key=True)
+    quantity = Column(Integer)
+    data = Column(DateTime, default=datetime.now())
+
+    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor = relationship("Doctor", backref="fact")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="fact")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="fact")
+
+    @classmethod
+    async def save(cls, db: AsyncSession, **kwargs):
+        try:
+            for doctor in kwargs['doctors']:
+                for product in doctor['products']:
+                    result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id == doctor['doctor_id'], DoctorAttachedProduct.product_id == product['product_id']))
+                    prod = result.scalars().first()
+                    if not prod:
+                        raise HTTPException(status_code=404, detail=f'This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})')
+                    prod.fact =  product['compleated']
+                    p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated']) 
+                    db.add(p_fact)
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
 class Pharmacy(Base):
     __tablename__ = "pharmacy"
 
@@ -362,26 +393,36 @@ class Pharmacy(Base):
 
     async def attach_doctor(self, db: AsyncSession, **kwargs):
         try:
-            doctor_product_result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==kwargs.get('doctor_id'), DoctorAttachedProduct.product_id==kwargs.get('product_id')))
-            doctor_product = doctor_product_result.scalar()
-            if not doctor_product:
-                raise HTTPException(status_code=400, detail="This product not attached to a doctor")
+            # doctor_product_result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==kwargs.get('doctor_id'), DoctorAttachedProduct.product_id==kwargs.get('product_id')))
+            # doctor_product = doctor_product_result.scalar()
+            # if not doctor_product:
+            #     raise HTTPException(status_code=400, detail="This product not attached to a doctor")
             
-            result = await db.execute(select(pharmacy_doctor).filter(
-                    or_(pharmacy_doctor.c.doctor_id == kwargs.get('doctor_id'),
-                        pharmacy_doctor.c.product_id == kwargs.get('product_id'))))
-            doc =  result.scalar()
+            # result = await db.execute(select(pharmacy_doctor).filter(
+            #         and_(or_(pharmacy_doctor.c.doctor_id == kwargs.get('doctor_id'),
+            #             pharmacy_doctor.c.product_id == kwargs.get('product_id')),
+            #             pharmacy_doctor.c.pharmacy_id == kwargs.get('pharmacy_id')
+            #             )))
+            # doc =  result.scalar()
             
-            if not doc:
-                association_entry = pharmacy_doctor.insert().values(
-                    doctor_id=kwargs.get('doctor_id'),
-                    pharmacy_id=self.id,
-                    product_id=kwargs.get('product_id')
-                )
-                await db.execute(association_entry)
-                await db.commit()
-            else:
-                raise HTTPException(status_code=400, detail="This doctor already attached")
+            # if not doc:
+            # association_entry = pharmacy_doctor.insert().values(
+            #     doctor_id=kwargs.get('doctor_id'),
+            #     pharmacy_id=self.id,
+            #     product_id=kwargs.get('product_id')
+            # )
+            # await db.execute(association_entry)
+            doctor = await db.get(Doctor, kwargs.get('doctor_id'))
+            if (not doctor) or (doctor.deleted == True):
+                raise HTTPException(status_code=404, detail=f"Doctor not found")
+            # await self.doctors.append(doctor)
+            association_entry = pharmacy_doctor.insert().values(
+                doctor_id=kwargs.get('doctor_id'),
+                pharmacy_id=self.id,
+            )
+            await db.commit()
+            # else:
+                # raise HTTPException(status_code=400, detail="This doctor already attached")
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 

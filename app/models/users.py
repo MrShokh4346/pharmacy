@@ -208,10 +208,12 @@ class PharmacyPlan(Base):
 
     async def update(self, db: AsyncSession, **kwargs):
         try:
-            self.date = datetime.strptime(str(kwargs.get('date')), '%Y-%m-%d %H:%M') 
-            self.postpone = kwargs.get('postpone')
-            self.description = kwargs.get('description')
-            self.theme = kwargs.get('theme')
+            for key in list(kwargs.keys()):
+                kwargs.pop(key) if kwargs[key]==None else None
+            self.date = datetime.strptime(str(kwargs.get('date', str(self.date)[:-3])), '%Y-%m-%d %H:%M') 
+            self.postpone = kwargs.get('postpone', self.postpone)
+            self.description = kwargs.get('description', self.description)
+            self.theme = kwargs.get('theme', self.theme)
             db.add(self)
             await db.commit()
             await db.refresh(self)

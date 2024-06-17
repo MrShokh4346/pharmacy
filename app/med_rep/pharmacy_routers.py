@@ -131,11 +131,12 @@ async def reschedule_pharmacy_visit_date(plan_id: int, date: RescheduleSchema, d
     return plan
 
 #######
-# @router.post('/pharmacy-visit-info/{visit_id}')
-# async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
-#     plan = db.query(PharmacyPlan).get(visit_id)
-#     plan.attach(**visit.dict(), db=db)
-#     return {"msg":"Done"}
+@router.post('/pharmacy-visit-info/{visit_id}')
+async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(PharmacyPlan, visit_id, db)
+    await plan.update(description=visit.description, db=db)
+    fact = await PharmacyFact.save(**visit.dict(), pharmacy_id=plan.pharmacy_id, db=db)
+    return {"msg":"Done"}
 
 
 @router.post('/attach-doctor-to-pharmacy')

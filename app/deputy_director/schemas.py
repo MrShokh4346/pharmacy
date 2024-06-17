@@ -6,6 +6,7 @@ from typing import List
 from datetime import date, datetime
 from med_rep.doctor_schemas import DoctorListSchema
 from common.schemas import  ManufacturedCompanySchema, ProductCategorySchema
+from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 
 
 class Status(str, Enum):
@@ -36,7 +37,7 @@ class UserOutSchema(BaseModel):
 
 
 class DoctorVisitPlanSchema(BaseModel):
-    date: date
+    date: datetime
     doctor_id: int 
     description: Optional[str] = None
     theme: Optional[str] = None 
@@ -61,7 +62,7 @@ class DoctorVisitPlanOutSchema(BaseModel):
 
 
 class PharmacyVisitPlanSchema(BaseModel):
-    date: date
+    date: datetime
     pharmacy_id: int 
     description: Optional[str] = None
     theme: Optional[str] = None 
@@ -180,3 +181,37 @@ class UserProductPlanByIdSchema(BaseModel):
     vakant: int
 
 
+class UserSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    status: str
+
+
+class MedicalOrganizationSchema(BaseModel):
+    id: int
+    name: str
+    address: str 
+
+
+class AttachProductsSchema(BaseModel):
+    id: int
+    product: ProductOutSchema
+    monthly_plan: int 
+    fact: int 
+
+
+class ReportSchema(BaseModel):
+    id: int 
+    full_name: str 
+    contact1: str 
+    contact2: Optional[str] = None   
+    email: str 
+    latitude: str 
+    longitude: str 
+    med_rep: UserSchema
+    category: DoctorCategorySchema 
+    speciality: DoctorSpecialitySchema 
+    medical_organization: MedicalOrganizationSchema
+    doctor_attached_products: List[AttachProductsSchema]
+    # region: RegionSchema 

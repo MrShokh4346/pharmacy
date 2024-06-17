@@ -104,9 +104,9 @@ class DoctorAttachedProduct(Base):
     monthly_plan = Column(Integer)
     fact = Column(Integer, default=0)
 
-    product = relationship("Products",  backref="doctorattachedproduct")
+    product = relationship("Products",  backref="doctorattachedproduct", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    doctor = relationship("Doctor",  backref="doctorattachedproduct")
+    doctor = relationship("Doctor",  back_populates="doctor_attached_products")
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
 
     async def save(self, db: AsyncSession):
@@ -185,7 +185,7 @@ pharmacy_doctor = Table(
     Base.metadata,
     Column("doctor_id", ForeignKey("doctor.id"), primary_key=True),
     Column("pharmacy_id", ForeignKey("pharmacy.id"), primary_key=True),
-    Column("product_id", ForeignKey("products.id"), primary_key=True)
+    # Column("product_id", ForeignKey("products.id"), primary_key=True)
 )
 
 
@@ -222,6 +222,8 @@ class Doctor(Base):
     category_id = Column(Integer, ForeignKey("doctor_category.id"))
     medical_organization = relationship("MedicalOrganization",  backref="doctor", lazy='selectin')
     medical_organization_id = Column(Integer, ForeignKey("medical_organization.id")) 
+    doctor_attached_products = relationship("DoctorAttachedProduct",  back_populates="doctor")
+
 
     async def save(self, db: AsyncSession):
         try:
