@@ -217,6 +217,7 @@ class Reservation(Base):
     date = Column(DateTime, default=date.today())
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=10)))
     discount = Column(Float)
+    discountable = Column(Boolean)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
     total_payable = Column(Float)
@@ -244,7 +245,7 @@ class Reservation(Base):
                 res_products.append(ReservationProducts(**product))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
-            total_payable = total_amount - total_amount * kwargs['discount'] / 100
+            total_payable = total_amount - total_amount * kwargs['discount'] / 100 if kwargs['discountable'] == True else total_amount
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
@@ -291,14 +292,15 @@ class PharmacyFact(Base):
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
-    data = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now())
+    monthly_plan = Column(Integer)
 
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="fact")
+    doctor = relationship("Doctor", backref="fact", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="fact")
+    product = relationship("Products", backref="fact", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="fact")
+    pharmacy = relationship("Pharmacy", backref="fact", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -308,9 +310,9 @@ class PharmacyFact(Base):
                     result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id == doctor['doctor_id'], DoctorAttachedProduct.product_id == product['product_id']))
                     prod = result.scalars().first()
                     if not prod:
-                        raise HTTPException(status_code=404, detail=f'This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})')
+                        raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})")
                     prod.fact =  product['compleated']
-                    p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated']) 
+                    p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
                     db.add(p_fact)
             await db.commit()
         except IntegrityError as e:

@@ -20,6 +20,7 @@ from deputy_director.schemas import NotificationOutSchema, NotificationListSchem
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import cast, Date
+import calendar
 
 
 router = APIRouter()
@@ -130,13 +131,29 @@ async def reschedule_pharmacy_visit_date(plan_id: int, date: RescheduleSchema, d
     await plan.update(**date.dict(), db=db)
     return plan
 
-#######
+
 @router.post('/pharmacy-visit-info/{visit_id}')
 async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(PharmacyPlan, visit_id, db)
     await plan.update(description=visit.description, db=db)
     fact = await PharmacyFact.save(**visit.dict(), pharmacy_id=plan.pharmacy_id, db=db)
     return {"msg":"Done"}
+
+
+@router.get('/pharmacy-visit-report', response_model=List[PharmacyFactSchema])
+async def pharmacy_visit_report(month_number: int, db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    num_days = calendar.monthrange(year, month_number)[1]
+    start_date = date(year, month_number, 1)
+    end_date = date(year, month_number, num_days)
+    fact = await db.execute(select(PharmacyFact).filter(PharmacyFact.date >= start_date, PharmacyFact.date <= end_date))
+    return fact.scalars().all()
+
+
+@router.get('/pharmacy-visit-report-by-pharmacy-id/{pharmacy_id}', response_model=List[PharmacyFactSchema])
+async def pharmacy_visit_report_by_pharmacy_id(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+    fact = await db.execute(select(PharmacyFact).filter(PharmacyFact.pharmacy_id==pharmacy_id))
+    return fact.scalars().all()
 
 
 @router.post('/attach-doctor-to-pharmacy')

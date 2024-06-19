@@ -39,6 +39,7 @@ class PharmacyOutSchema(BaseModel):
     latitude: str
     longitude: str 
     address: str 
+    discount: float
     bank_account_number: str 
     inter_branch_turnover: str 
     classification_of_economic_activities: str 
@@ -116,6 +117,31 @@ class VisitInfoSchema(BaseModel):
     doctors: List[VisitInfoDoctorSchema]
 
 
+class DoctorSchema(BaseModel):
+    id: int
+    full_name: str
+
+
+class ProductSchema(BaseModel):
+    id: int
+    name: str
+
+
+class PharmacySchema(BaseModel):
+    id: int
+    company_name: str
+
+
+class PharmacyFactSchema(BaseModel):
+    id: int 
+    quantity: int 
+    date: datetime 
+    monthly_plan: int
+    doctor: DoctorSchema
+    product: ProductSchema
+    pharmacy: PharmacySchema
+
+
 class DebtSchema(BaseModel):
     description: str 
     amount: int 
@@ -148,6 +174,7 @@ class ReservationProductSchema(BaseModel):
 
 class ReservationSchema(BaseModel):
     manufactured_company_id: int
+    discountable: bool 
     products: List[ReservationProductSchema]
 
 
@@ -175,7 +202,7 @@ class ReservationOutSchema(BaseModel):
     expire_date: datetime 
     # products: List[ReservationProductOutSchema] 
     # manufactured_company: ManufacturedCompanySchema
-    discount: int
+    discount: float
     total_quantity: float
     total_amount: float
     total_payable: float
