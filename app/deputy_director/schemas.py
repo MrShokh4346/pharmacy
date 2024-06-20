@@ -117,6 +117,7 @@ class NotificationOutSchema(BaseModel):
     author: str 
     theme: Optional[str] = None 
     description: Optional[str] = None 
+    description2: Optional[str] = None 
     date: date 
     unread: bool
     doctor: Optional[DoctorListSchema] = None

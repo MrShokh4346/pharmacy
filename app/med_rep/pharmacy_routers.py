@@ -217,7 +217,14 @@ async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
-####
 @router.get('/get-report/{reservation_id}')
 async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
     return await write_excel(reservation_id, db)
+
+
+@router.post('/reply-notification/{notification_id}', response_model=NotificationOutSchema)
+async def reply_notification(notification_id: int, reply: ReplyNotification, db: AsyncSession = Depends(get_db)):
+    notification = await get_or_404(Notification, notification_id, db)
+    await notification.reply(reply.description2, db)
+    return notification
+

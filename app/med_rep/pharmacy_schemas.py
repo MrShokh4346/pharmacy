@@ -214,3 +214,7 @@ class AttachDoctorToPharmacySchema(BaseModel):
     doctor_id: int 
     pharmacy_id: int 
     # product_id: int 
+
+
+class ReplyNotification(BaseModel):
+    description2: str 

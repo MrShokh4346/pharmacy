@@ -262,6 +262,7 @@ class Notification(Base):
     author = Column(String)
     theme = Column(String)
     description = Column(String)
+    description2 = Column(String)
     date = Column(DateTime, default=date.today())
     unread = Column(Boolean, default=True)
     med_rep_id = Column(Integer, ForeignKey("users.id"))
@@ -289,7 +290,12 @@ class Notification(Base):
 
     async def read(self, db: AsyncSession):
         self.unread = False
-        db.add(self)
+        await db.commit()
+        await db.refresh(self)
+    
+    async def reply(self, desc: str, db: AsyncSession):
+        print(desc)
+        self.description2 = desc
         await db.commit()
         await db.refresh(self)
 

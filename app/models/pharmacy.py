@@ -311,6 +311,11 @@ class PharmacyFact(Base):
                     prod = result.scalars().first()
                     if not prod:
                         raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})")
+                    result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==kwargs['pharmacy_id'], CurrentBalanceInStock.product_id==product['product_id']))
+                    current_stock = result.scalar()
+                    if (not current_stock) or (current_stock.amount < product['compleated']):
+                        raise HTTPException(status_code=404, detail=f"There is nt enough product(id={product['product_id']}) in this pharmacy(id={kwargs['pharmacy_id']})")
+                    current_stock.amount -= product['compleated']
                     prod.fact =  product['compleated']
                     p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
                     db.add(p_fact)
