@@ -20,7 +20,7 @@ class IncomingStockProducts(Base):
     quantity = Column(Integer)
 
     stock_id = Column(Integer, ForeignKey("incoming_balance_in_stock.id"))
-    stock = relationship("IncomingBalanceInStock", backref="products")
+    stock = relationship("IncomingBalanceInStock", back_populates="products")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="incomingstockproducts")
 
@@ -39,6 +39,7 @@ class IncomingBalanceInStock(Base):
     factory = relationship("ManufacturedCompany", backref='balanceinstock')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref='balanceinstock')
+    products = relationship("IncomingStockProducts", back_populates="stock", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):

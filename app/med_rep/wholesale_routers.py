@@ -49,3 +49,9 @@ async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: A
 async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.product.has(Products.name.like(f"%{search}%"))))
     return result.scalars().all()
+
+
+@router.get('/wholesale-report', response_model=List[WholesaleReportSchema])
+async def wholesale_report(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id != None))
+    return result.scalars().all()
