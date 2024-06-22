@@ -147,7 +147,7 @@ class ProductSchema(BaseModel):
 class UserProductPlanInSchema(BaseModel):
     product_id: int 
     amount: int 
-    # month: int 
+    month: int 
     med_rep_id: int
 
 

@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
-from datetime import datetime
+from datetime import datetime, date 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -11,6 +11,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
 from sqlalchemy.schema import UniqueConstraint
 from .users import UserProductPlan
+import calendar
 
 
 class Speciality(Base):
@@ -119,7 +120,12 @@ class DoctorAttachedProduct(Base):
             
     async def update(self, monthly_plan: int, user_id: int, db: AsyncSession):
         self.monthly_plan = monthly_plan 
-        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==self.product_id, UserProductPlan.med_rep_id==user_id).order_by(UserProductPlan.id.desc()))
+        year = datetime.now().year
+        month = datetime.now().month
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)  
+        end_date = date(year, month, num_days)
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==self.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
         user_product = result.scalars().first()
         if user_product is None:
             raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan')

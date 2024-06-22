@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date 
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
@@ -107,13 +107,37 @@ async def delete_notofications(notofication_id: int, db: AsyncSession = Depends(
 
 @router.post('/add-user-product-plan', response_model=UserProductPlanOutSchema)
 async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession = Depends(get_db)):
-    # year = datetime.now().year
-    # day = datetime.now().day 
-    # date = date(year, plan.month, day)
+    year = datetime.now().year
+    day = datetime.now().day 
+    num_days = calendar.monthrange(year, plan.month)[1]
+    start_date = date(year, plan.month, 1)  
+    end_date = date(year, plan.month, num_days)
+    plan_date = date(year, plan.month, day)
+    data = plan.dict()
+    del data['month']
+    result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==plan.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==plan.med_rep_id))
+    user_product = result.scalars().first()
+    if user_product:
+        raise HTTPException(status_code=404, detail='Plan already exists for this product in this month')
 
-    plan = UserProductPlan(**plan.dict(), current_amount=plan.amount, month=date)
+    plan = UserProductPlan(**data, current_amount=plan.amount, plan_month=plan_date)
     await plan.save(db)
     return plan 
+
+
+@router.put('/update-user-product-plan/{plan_id}', response_model=UserProductPlanOutSchema)
+async def add_user_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(UserProductPlan, plan_id, db)
+    await plan.update(amount, db)
+    return plan 
+
+
+@router.delete('/delete-user-product-plan/{plan_id}')
+async def add_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(UserProductPlan, plan_id, db)
+    await db.delete(plan)
+    await db.commit()
+    return {"msg":"Deleted"} 
 
 
 @router.get('/get-user-products-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])

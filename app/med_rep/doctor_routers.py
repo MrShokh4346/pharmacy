@@ -17,6 +17,7 @@ from sqlalchemy import text
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import cast, Date
+import calendar
 
 
 router = APIRouter()
@@ -76,17 +77,22 @@ async def add_doctor(doctor: DoctorInSchema, user_id: int, db: AsyncSession = De
 
 
 @router.post('/attach-products')
-async def attach_products_to_doctor(user_id: int, month_number: int, objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
+async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
     user = await get_or_404(Users, user_id, db)
     doctor_products = []
     doctor = await get_doctor_or_404(objects.items[0].doctor_id, db)
+    year = datetime.now().year
+    month = datetime.now().month
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
     for obj in objects.items:
         result1 = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.product_id==obj.product_id, DoctorAttachedProduct.doctor_id==obj.doctor_id))
         doctor = result1.scalar()
         if doctor is not None:
             raise HTTPException(status_code=404, detail='This product already attached to this doctor')
         doctor_products.append(DoctorAttachedProduct(**obj.dict()))
-        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.month==month_number, UserProductPlan.med_rep_id==user_id))
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
         user_product = result.scalars().first()
         if user_product is None:
             raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan')

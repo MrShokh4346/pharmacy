@@ -307,7 +307,7 @@ class UserProductPlan(Base):
     amount = Column(Integer)
     current_amount = Column(Integer)
     date = Column(DateTime, default=datetime.now())
-    month = Column(Date)
+    plan_month = Column(DateTime)
     product = relationship("Products", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     med_rep = relationship("Users", backref="product_plan")
@@ -321,6 +321,18 @@ class UserProductPlan(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    async def update(self, amount: int, db: AsyncSession):
+        try:
+            difference = amount - self.amount
+            self.amount = amount
+            self.current_amount += difference
+            if self.current_amount < 0:
+                raise HTTPException(status_code=404, detail="Current amount should be grater than 0")
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class Users(Base):
