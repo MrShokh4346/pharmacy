@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -307,6 +307,7 @@ class UserProductPlan(Base):
     amount = Column(Integer)
     current_amount = Column(Integer)
     date = Column(DateTime, default=datetime.now())
+    month = Column(Date)
     product = relationship("Products", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     med_rep = relationship("Users", backref="product_plan")

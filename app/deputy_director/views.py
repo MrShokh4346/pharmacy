@@ -107,7 +107,11 @@ async def delete_notofications(notofication_id: int, db: AsyncSession = Depends(
 
 @router.post('/add-user-product-plan', response_model=UserProductPlanOutSchema)
 async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession = Depends(get_db)):
-    plan = UserProductPlan(**plan.dict(), current_amount=plan.amount)
+    # year = datetime.now().year
+    # day = datetime.now().day 
+    # date = date(year, plan.month, day)
+
+    plan = UserProductPlan(**plan.dict(), current_amount=plan.amount, month=date)
     await plan.save(db)
     return plan 
 
@@ -120,12 +124,13 @@ async def add_user_products_plan(med_rep_id: int, db: AsyncSession = Depends(get
 
 @router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
 async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    num_days = calendar.monthrange(year, month_number)[1]
-    start_date = date(year, month_number, 1)
-    end_date = date(year, month_number, num_days)
+    # year = datetime.now().year
+    # num_days = calendar.monthrange(year, month_number)[1]
+    # start_date = date(year, month_number, 1)
+    # end_date = date(year, month_number, num_days)
 
-    result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.date >= start_date, UserProductPlan.date <= end_date, UserProductPlan.med_rep_id==med_rep_id))
+    # result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.date >= start_date, UserProductPlan.date <= end_date, UserProductPlan.med_rep_id==med_rep_id))
+    result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.month == month_number, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
     for user_plan in user_plans:

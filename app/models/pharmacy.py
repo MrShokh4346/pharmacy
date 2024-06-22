@@ -242,7 +242,7 @@ class Reservation(Base):
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id']))
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
-                    raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in warehouse")
+                    raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
                 res_products.append(ReservationProducts(**product))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
@@ -314,6 +314,8 @@ class PharmacyFact(Base):
                         raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})")
                     result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==kwargs['pharmacy_id'], CurrentBalanceInStock.product_id==product['product_id']))
                     current_stock = result.scalar()
+                    # if prod.monthly_plan < product['compleated']:
+                        # raise HTTPException(status_code=404, detail=f"You are trying to add more product than doctor's monthly plan")
                     if (not current_stock) or (current_stock.amount < product['compleated']):
                         raise HTTPException(status_code=404, detail=f"There is nt enough product(id={product['product_id']}) in this pharmacy(id={kwargs['pharmacy_id']})")
                     current_stock.amount -= product['compleated']
@@ -428,6 +430,7 @@ class Pharmacy(Base):
                 doctor_id=kwargs.get('doctor_id'),
                 pharmacy_id=self.id,
             )
+            await db.execute(association_entry)
             await db.commit()
             # else:
                 # raise HTTPException(status_code=400, detail="This doctor already attached")
