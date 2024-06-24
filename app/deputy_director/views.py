@@ -148,47 +148,46 @@ async def add_user_products_plan(med_rep_id: int, db: AsyncSession = Depends(get
 
 @router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
 async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
-    # year = datetime.now().year
-    # num_days = calendar.monthrange(year, month_number)[1]
-    # start_date = date(year, month_number, 1)
-    # end_date = date(year, month_number, num_days)
-
-    # result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.date >= start_date, UserProductPlan.date <= end_date, UserProductPlan.med_rep_id==med_rep_id))
-    result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.month == month_number, UserProductPlan.med_rep_id==med_rep_id))
+    year = datetime.now().year
+    num_days = calendar.monthrange(year, month_number)[1]
+    start_date = date(year, month_number, 1)
+    end_date = date(year, month_number, num_days)
+    result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
     for user_plan in user_plans:
-        # result = await db.execute(
-        #             select(DoctorAttachedProduct).options(selectinload(DoctorAttachedProduct.doctor)).\
-        #                 join(Doctor, DoctorAttachedProduct.doctor_id == Doctor.id).\
-        #                 filter(
-        #                     DoctorAttachedProduct.product_id==user_plan.product_id,
-        #                     Doctor.med_rep_id == user_plan.med_rep_id
-        #                 )
-        #             )
-
         query = select(DoctorAttachedProduct).join(Doctor).options(
                             joinedload(DoctorAttachedProduct.doctor)
                         ).where(Doctor.med_rep_id == user_plan.med_rep_id).where(DoctorAttachedProduct.product_id == user_plan.product_id)
         result = await db.execute(query)
         doctor_att = []
         doctor_plans = result.scalars().all() 
+        fact = 0
+        fact_price = 0
         for doctor_plan in doctor_plans:
             doctor_att.append({
                 'monthly_plan' : doctor_plan.monthly_plan,
                 'fact' : doctor_plan.fact,
-                'doctor_name' : doctor_plan.doctor.full_name
+                'doctor_name' : doctor_plan.doctor.full_name,
+                'doctor_id' : doctor_plan.doctor.id
             })
-
+            fact +=  doctor_plan.fact
+            fact_price += doctor_plan.fact *  user_plan.product.price
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
-            "amount": user_plan.amount,
+            "product_id": user_plan.product.id,
+            "plan_amount": user_plan.amount,
             "date": user_plan.date,
             "doctor_plans": doctor_att,
             "vakant": user_plan.current_amount
         })
-    return user_plan_data
+    data = {
+        'plan' : user_plan_data,
+        'fact' : fact,
+        'fact_price' : fact_price
+    }
+    return data
 
 
 @router.get('/get-proccess-report', response_model=List[ReportSchema])

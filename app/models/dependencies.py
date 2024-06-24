@@ -87,7 +87,10 @@ async def write_excel(reservation_id: int, db: AsyncSession):
     source_excel_file = 'app/report/Book.xlsx'
     destination_excel_file = 'app/report/report.xlsx'
     sheet_name = 'Sheet1'
-    shutil.copy2(source_excel_file, destination_excel_file)
+    # shutil.copy2(source_excel_file, destination_excel_file)
+    import subprocess
+    subprocess.call(['cp', 'app/report/Book.xlsx', 'app/report/report.xlsx'])
+
     destination_wb = load_workbook(destination_excel_file)
     destination_sheet = destination_wb[sheet_name]
 

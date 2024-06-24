@@ -210,7 +210,8 @@ class PharmacyPlan(Base):
         try:
             for key in list(kwargs.keys()):
                 kwargs.pop(key) if kwargs[key]==None else None
-            self.date = datetime.strptime(str(kwargs.get('date', str(self.date)[:-3])), '%Y-%m-%d %H:%M') 
+            
+            self.date = datetime.strptime(str(kwargs.get('date', str(self.date).rsplit(":", 1)[0])), '%Y-%m-%d %H:%M') 
             self.postpone = kwargs.get('postpone', self.postpone)
             self.description = kwargs.get('description', self.description)
             self.theme = kwargs.get('theme', self.theme)
