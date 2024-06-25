@@ -58,3 +58,10 @@ class WholesaleReportSchema(BaseModel):
     products: List[IncomingBalanceInStockProductSchema]
 
 
+class WholesaleOutputSchema(BaseModel):
+    product_id: int 
+    amount: int 
+    pharmacy: str 
+    
+
+

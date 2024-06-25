@@ -155,6 +155,8 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
+    fact = 0
+    fact_price = 0
     for user_plan in user_plans:
         query = select(DoctorAttachedProduct).join(Doctor).options(
                             joinedload(DoctorAttachedProduct.doctor)
@@ -162,8 +164,6 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
         result = await db.execute(query)
         doctor_att = []
         doctor_plans = result.scalars().all() 
-        fact = 0
-        fact_price = 0
         for doctor_plan in doctor_plans:
             doctor_att.append({
                 'monthly_plan' : doctor_plan.monthly_plan,
@@ -194,3 +194,8 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
 async def get_proccess_report(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products)).filter(Doctor.deleted==False))
     return result.scalars().all()
+
+
+@router.get('/get-proccess-report-ecxel')
+async def get_proccess_report(db: AsyncSession = Depends(get_db)):
+    return await write_proccess_to_excel(db)

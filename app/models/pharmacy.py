@@ -101,6 +101,7 @@ class CheckingStockProducts(Base):
     previous = Column(Integer)
     saled = Column(Integer)
     remainder = Column(Integer)
+    chack = Column(Boolean, default=False)
 
     stock_id = Column(Integer, ForeignKey("checking_balance_in_stock.id"))
     stock = relationship("CheckingBalanceInStock", backref="products")
@@ -288,6 +289,19 @@ class ReservationProducts(Base):
     reservation = relationship("Reservation", back_populates="products")
 
 
+class PharmacyHotSale(Base):
+    __tablename__ = "pharmacy_hot_sale"
+
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="hot_sale_products", lazy='selectin')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="hot_sale", lazy='selectin')
+
+
 class PharmacyFact(Base):
     __tablename__ = "pharmacy_fact"
 
@@ -306,22 +320,30 @@ class PharmacyFact(Base):
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
         try:
+            product_dict = dict()
             for doctor in kwargs['doctors']:
                 for product in doctor['products']:
                     result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id == doctor['doctor_id'], DoctorAttachedProduct.product_id == product['product_id']))
                     prod = result.scalars().first()
                     if not prod:
                         raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})")
-                    result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==kwargs['pharmacy_id'], CurrentBalanceInStock.product_id==product['product_id']))
-                    current_stock = result.scalar()
-                    # if prod.monthly_plan < product['compleated']:
-                        # raise HTTPException(status_code=404, detail=f"You are trying to add more product than doctor's monthly plan")
-                    if (not current_stock) or (current_stock.amount < product['compleated']):
-                        raise HTTPException(status_code=404, detail=f"There is nt enough product(id={product['product_id']}) in this pharmacy(id={kwargs['pharmacy_id']})")
-                    current_stock.amount -= product['compleated']
                     prod.fact =  product['compleated']
                     p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
                     db.add(p_fact)
+                    if product_dict.get(product['product_id']):
+                        product_dict[product['product_id']] += product['compleated'] 
+                    else:
+                        product_dict[product['product_id']] = product['compleated'] 
+            for key, value in product_dict.items():
+                result = await db.execute(select(CheckingStockProducts).filter(CheckingStockProducts.chack==False, CheckingStockProducts.product_id==key).order_by(CheckingStockProducts.id.desc()))
+                checking = result.scalars().first()
+                if checking is None:
+                    raise HTTPException(status_code=404, detail=f"Balance should be chacked before adding fact")
+                if checking.saled < value:
+                    raise HTTPException(status_code=404, detail=f"You are trying to add more product than saled for this product (id={key})")
+                hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
+                checking.chack = True
+                db.add(hot_sale)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -347,7 +369,7 @@ class Pharmacy(Base):
     brand_name = Column(String, nullable=True)
     
     med_rep_id = Column(Integer, ForeignKey("users.id"))
-    med_rep = relationship("Users", backref="mr_pharmacy", foreign_keys=[med_rep_id])
+    med_rep = relationship("Users", backref="mr_pharmacy", foreign_keys=[med_rep_id], lazy='selectin')
     region_manager_id = Column(Integer, ForeignKey("users.id"))
     region_manager = relationship("Users", backref="rm_pharmacy", foreign_keys=[region_manager_id])
     ffm_id = Column(Integer, ForeignKey("users.id"))

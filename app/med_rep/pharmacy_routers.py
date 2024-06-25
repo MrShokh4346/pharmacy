@@ -225,6 +225,6 @@ async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
 @router.post('/reply-notification/{notification_id}', response_model=NotificationOutSchema)
 async def reply_notification(notification_id: int, reply: ReplyNotification, db: AsyncSession = Depends(get_db)):
     notification = await get_or_404(Notification, notification_id, db)
-    await notification.reply(reply.description2, db)
+    await notification.reply(**reply.dict(), db=db)
     return notification
 

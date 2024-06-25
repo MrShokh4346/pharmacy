@@ -218,3 +218,4 @@ class AttachDoctorToPharmacySchema(BaseModel):
 
 class ReplyNotification(BaseModel):
     description2: str 
+    unread: bool 

@@ -55,3 +55,10 @@ async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(
 async def wholesale_report(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id != None))
     return result.scalars().all()
+
+
+@router.post('/wholesale-output')
+async def warehouse_output(data: WholesaleOutputSchema, db: AsyncSession = Depends(get_db)):
+    output = WholesaleOutput(**data.dict())
+    output.save(db)
+    return output

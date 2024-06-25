@@ -6,6 +6,7 @@ from passlib.context import CryptContext
 from datetime import date, datetime 
 from sqlalchemy.exc import IntegrityError
 from .database import Base, get_db, get_or_404
+from sqlalchemy.future import select
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -294,9 +295,9 @@ class Notification(Base):
         await db.commit()
         await db.refresh(self)
     
-    async def reply(self, desc: str, db: AsyncSession):
-        print(desc)
-        self.description2 = desc
+    async def reply(self, db: AsyncSession, **kwargs):
+        self.description2 = kwargs.get('description2')
+        self.unread = kwargs.get('unread')
         await db.commit()
         await db.refresh(self)
 
@@ -375,11 +376,12 @@ class Users(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    def update(self, db: AsyncSession,  **kwargs):
+    async def update(self, db: AsyncSession,  **kwargs):
         try:
             self.full_name = kwargs.get('full_name', self.full_name)
             if kwargs.get('username') and kwargs.get('username') != self.username:
-                user = db.query(Users).filter(Users.username == kwargs.get('username')).first()
+                result = await db.execute(select(Users).filter(Users.username == kwargs.get('username')))
+                user = result.scalars().first()
                 if user:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -390,7 +392,7 @@ class Users(Base):
             if kwargs.get('password'):
                 self.password = kwargs.get('password')
             self.region_id =  kwargs.get('region_id', self.region_id)
-            db.commit()
-            db.refresh(self)
+            await db.commit()
+            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

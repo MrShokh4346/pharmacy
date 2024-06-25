@@ -237,3 +237,9 @@ async def notifications(user_id: int, user_status: str, db: AsyncSession = Depen
         return result.scalars().all()
     raise HTTPException(status_code=400, detail="User status incorrect")
 
+
+@router.put('/update-user/{user_id}', response_model=UserSchema)
+async def update_user(user_id: int, crd: UserUpdateSchema, db: AsyncSession = Depends(get_db)):
+    user = await get_or_404(Users, user_id, db)
+    await user.update(**crd.dict(), db=db)
+    return user

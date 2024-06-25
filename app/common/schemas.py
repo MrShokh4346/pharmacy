@@ -18,7 +18,22 @@ class UserOutSchema(BaseModel):
     full_name: str
     status: str
     region_manager: Optional[RegionManager] = None
-    region: RegionSchema
+    region: Optional[RegionSchema] = None
+
+
+class UserUpdateSchema(BaseModel):
+    full_name: str
+    username: str
+    password: str 
+
+
+class UserSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    status: str
+    region_manager: Optional[RegionManager] = None
+    region: Optional[RegionSchema] = None
 
 
 class DoctorCategorySchema(BaseModel):

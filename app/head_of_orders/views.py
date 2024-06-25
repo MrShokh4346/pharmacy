@@ -11,6 +11,7 @@ from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import selectinload
+from sqlalchemy import update
 
 
 router = FastAPI()
@@ -28,6 +29,12 @@ async def get_current_factory_warehouse(factory_id: int, db: AsyncSession = Depe
     return result.scalars().all()
 
 
+@router.get('/get-all-current-factory-warehouse', response_model=List[FactoryWarehouseOutSchema])
+async def get_current_factory_warehouse(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(CurrentFactoryWarehouse))
+    return result.scalars().all()
+
+
 @router.get('/get-factory-warehouse/{id}', response_model=FactoryWarehouseIncomeOutSchema)
 async def get_factory_warehouse(id: int, db: AsyncSession = Depends(get_db)):
     return await get_or_404(ReportFactoryWerehouse, id, db) 
@@ -42,6 +49,12 @@ async def get_factory_warehouse(factory_id: int, db: AsyncSession = Depends(get_
 @router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
 async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
+    return result.scalars().all()
+
+
+@router.get('/get-all-reservations', response_model=List[ReservationListSchema])
+async def get_reservation(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.products)))
     return result.scalars().all()
 
 
@@ -63,6 +76,13 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
 async def set_discount_to_pharmacy(pharmacy_id: int, discount: float,  db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
     await pharmacy.set_discount(discount, db)
+    return {"msg":"Done"}
+
+
+@router.post('/set-discount-to-all-pharmacies')
+async def set_discount_to_all_pharmacies(discount: float,  db: AsyncSession = Depends(get_db)):
+    await db.execute(update(Pharmacy).values(discount=discount))
+    await db.commit()
     return {"msg":"Done"}
 
 

@@ -147,3 +147,23 @@ class CurrentWholesaleWarehouse(Base):
             current.amount += kwargs['amount']
             current.price = kwargs['price']
         return current
+
+
+# class WholesaleOutput(Base):
+#     __tablename__ = "wholesale_output"
+
+#     id = Column(Integer, primary_key=True)
+
+#     amount = Column(String)
+#     date = Column(DateTime, default)
+#     pharmacy = Column(String)
+#     product_id = Column(Integer, ForeignKey("products.id"))
+#     product = relationship("Products", backref="wholesale_output", lazy='selectin')
+
+#     async def save(self, db: AsyncSession):
+#         try:
+#             db.add(self)
+#             await db.commit()
+#             await db.refresh(self)
+#         except IntegrityError as e:
+#             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
