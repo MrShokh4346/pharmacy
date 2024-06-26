@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Annotated
 from enum import Enum
 from fastapi import FastAPI, Path
 from common.schemas import ManufacturedCompanySchema, ProductOutSchema, RegionSchema, ProductCategorySchema
@@ -34,7 +34,7 @@ class WholesaleProductsSchema(BaseModel):
 
 class WholesaleProductsInSchema(BaseModel):
     product_id: int 
-    quantity: int 
+    quantity: Annotated[int, Path(title="", ge=0)]
     factory_id: int
     price: int
  

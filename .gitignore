@@ -181,3 +181,4 @@ migrations/
 instance/
 alembic/
 alembic.ini
+app/report/.~lock.base_doctor.xlsx#

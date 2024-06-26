@@ -35,6 +35,8 @@ class PharmacyListSchema(BaseModel):
     brand_name: str | None = None
     pharmacy_director: str
     inter_branch_turnover: str
+    latitude: str 
+    longitude: str
     discount: float 
     region: RegionSchema
     med_rep: UserOutSchema

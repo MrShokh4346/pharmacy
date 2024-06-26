@@ -72,7 +72,9 @@ class PharmacyOutSchema(BaseModel):
     id: int
     company_name: str 
     contact1: str 
-    contact2: Optional[str] = None   
+    contact2: Optional[str] = None  
+    latitude: str
+    longitude: str  
     email: str 
     brand_name: str | None = None
     pharmacy_director: str

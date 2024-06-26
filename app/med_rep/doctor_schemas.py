@@ -61,6 +61,8 @@ class SpecialitySchema(BaseModel):
 class DoctorListSchema(BaseModel):
     id: int 
     full_name: str 
+    latitude: str
+    longitude: str
     speciality: Optional[SpecialitySchema] = None
     medical_organization: Optional[MedOrgSchema] = None
     category: Optional[DoctorCategorySchema] = None
