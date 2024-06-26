@@ -54,7 +54,7 @@ class ReservationListSchema(BaseModel):
     discount: float
     # total_quantity: float
     # total_amount: float
-    total_payable: float
+    total_payable_with_nds: float
     checked: bool
 
 

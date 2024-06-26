@@ -223,6 +223,7 @@ class Reservation(Base):
     total_quantity = Column(Integer)
     total_amount = Column(Float)
     total_payable = Column(Float)
+    total_payable_with_nds = Column(Float)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
     pharmacy = relationship("Pharmacy", backref="reservation", lazy='selectin')
     products = relationship("ReservationProducts", back_populates="reservation", lazy='selectin')
@@ -252,7 +253,9 @@ class Reservation(Base):
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
-                                total_payable = total_payable)
+                                total_payable = total_payable,
+                                total_payable_with_nds = total_payable + total_payable * 0.12
+                                )
             db.add(reservation)
             for p in res_products:
                 reservation.products.append(p)
