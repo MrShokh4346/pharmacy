@@ -211,7 +211,7 @@ class Debt(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-from datetime import date
+
 class Reservation(Base):
     __tablename__ = "reservation"
 
@@ -240,11 +240,12 @@ class Reservation(Base):
             products = kwargs.pop('products')
             for product in products:
                 prd = await get_or_404(Products, product['product_id'], db)
-                result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id']))
+                result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
                 res_products.append(ReservationProducts(**product))
+                wrh.amount -= product['quantity']
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
             total_payable = total_amount - total_amount * kwargs['discount'] / 100 if kwargs['discountable'] == True else total_amount
@@ -260,8 +261,8 @@ class Reservation(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
-    async def check_reservation(self, check, db: AsyncSession):
-        self.ckeck = check
+    async def check_reservation(self, db: AsyncSession, **kwargs):
+        self.checked = kwargs.get('checked')
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
             wrh = result.scalar()
@@ -276,6 +277,17 @@ class Reservation(Base):
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def delete(self, db: AsyncSession):
+        if self.checked == True:
+            raise HTTPException(status_code=404, detail="This reservstion confirmed")
+        for product in self.products:
+            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
+            wrh = result.scalars().first()
+            wrh.amount += product.quantity
+        await db.delete(self)
+        await db.commit()
+
 
 
 class ReservationProducts(Base):

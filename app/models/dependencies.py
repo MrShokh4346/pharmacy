@@ -96,12 +96,15 @@ async def write_excel(reservation_id: int, db: AsyncSession):
     result = await db.execute(select(Reservation).options(selectinload(Reservation.pharmacy)).where(Reservation.id==reservation_id))
     reservation = result.scalar()
     destination_sheet['E2'] = reservation.pharmacy.discount
+    destination_sheet['E6'] = reservation.pharmacy.company_name
+    destination_sheet['E7'] = reservation.pharmacy.inter_branch_turnover
     count = 9
     for product in reservation.products:
         data_to_write = {
             f'D{count}' : product.product.name,
             f'E{count}' : product.quantity,
             f'F{count}' : product.product.price,
+            f'G{count}' : product.product.discount_price,
             f'H{count}' : product.quantity * product.product.price
         }
         count += 1
@@ -112,7 +115,7 @@ async def write_excel(reservation_id: int, db: AsyncSession):
     destination_sheet['H32'] = reservation.total_payable
     destination_sheet['G33'] = "12% ндс билан"
     destination_sheet['H33'] = reservation.total_payable + 0.12 * reservation.total_payable
-    filename = reservation.pharmacy.company_name + '_' + reservation.pharmacy.inter_branch_turnover + '_' + str(date.today()) + '.xlsx'
+    filename = reservation.pharmacy.company_name + '_' + reservation.pharmacy.inter_branch_turnover + '_' + str(date.today()) + "_" + reservation.manufactured_company.name + '.xlsx'
     destination_wb.save(destination_excel_file)
     destination_wb.close()
     return FileResponse(filename=filename, path="app/report/report.xlsx")

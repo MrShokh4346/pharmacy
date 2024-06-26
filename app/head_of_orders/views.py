@@ -65,6 +65,13 @@ async def get_reservation_products(reservation_id: int, obj: CheckSchema, db: As
     return {"msg":"Done"}
 
 
+@router.delete('/delete-reservation/{reservation_id}')
+async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.delete(db=db)
+    return {"msg":"Done"}
+
+
 @router.post('/update-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
     reservation = await get_or_404(Reservation, reservation_id, db)

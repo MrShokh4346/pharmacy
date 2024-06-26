@@ -22,11 +22,22 @@ class PharmacyAddSchema(BaseModel):
     region_id: int
 
 
+class UserOutSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    status: str
+
+
 class PharmacyListSchema(BaseModel):
     id: Optional[int] 
     company_name: str 
     brand_name: str | None = None
     pharmacy_director: str
+    inter_branch_turnover: str
+    discount: float 
+    region: RegionSchema
+    med_rep: UserOutSchema
 
 
 class PharmacyOutSchema(BaseModel):
@@ -68,6 +79,7 @@ class PharmacyUpdateSchema(BaseModel):
 class StockProduct(BaseModel):
     product_id: int 
     quantity: int 
+    
 
 class StockOutSchema(BaseModel):
     id: int 
@@ -114,7 +126,7 @@ class VisitInfoDoctorSchema(BaseModel):
 
 class VisitInfoSchema(BaseModel):
     description: str 
-    doctors: List[VisitInfoDoctorSchema]
+    doctors: Optional[List[VisitInfoDoctorSchema]] = None 
 
 
 class DoctorSchema(BaseModel):

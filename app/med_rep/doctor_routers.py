@@ -200,6 +200,13 @@ async def filter_doctor_visit_plan_by_date(user_id: int, date: date, db: AsyncSe
     return result.scalars().all()
 
 
+@router.get('/filter-doctor-visit-plan-by-date-interval', response_model=List[DoctorVisitPlanListSchema])
+async def filter_doctor_visit_plan_by_date(user_id: int, from_date: date, to_date: date, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
+    result = await db.execute(select(DoctorPlan).options(selectinload(DoctorPlan.doctor)).filter(DoctorPlan.med_rep_id == user.id, cast(DoctorPlan.date, Date) >= from_date, cast(DoctorPlan.date, Date) <= to_date))
+    return result.scalars().all()
+
+
 @router.get('/get-doctor-visit-plan/{plan_id}', response_model=DoctorVisitPlanOutSchema)
 async def get_doctor_visit_plan_by_id(plan_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(DoctorPlan).options(selectinload(DoctorPlan.doctor)).where(DoctorPlan.id == plan_id))

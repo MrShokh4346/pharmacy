@@ -59,7 +59,7 @@ class ReservationListSchema(BaseModel):
 
 
 class CheckSchema(BaseModel):
-    check: bool 
+    checked: bool 
 
 
 class ExpireDateSchema(BaseModel):

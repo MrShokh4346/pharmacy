@@ -113,6 +113,13 @@ async def get_pharmacy_visit_plan(user_id: int, date: date, db: AsyncSession = D
     return result.scalars().all()
 
 
+@router.get('/filter-pharmacy-visit-plan-by-date-interval', response_model=List[PharmacyVisitPlanListSchema])
+async def get_pharmacy_visit_plan(user_id: int, from_date: date, to_date: date, db: AsyncSession = Depends(get_db)):
+    user = await get_user(user_id, db)
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).filter(PharmacyPlan.med_rep_id == user.id, cast(PharmacyPlan.date, Date) >= from_date, cast(PharmacyPlan.date, Date) <= to_date))
+    return result.scalars().all()
+
+
 @router.get('/get-pharmacy-visit-plan/{plan_id}', response_model=PharmacyVisitPlanOutSchema)
 async def get_pharmacy_visit_plan_by_id(plan_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).where(PharmacyPlan.id==plan_id))
@@ -135,8 +142,9 @@ async def reschedule_pharmacy_visit_date(plan_id: int, date: RescheduleSchema, d
 @router.post('/pharmacy-visit-info/{visit_id}')
 async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(PharmacyPlan, visit_id, db)
-    await plan.update(description=visit.description, db=db)
-    fact = await PharmacyFact.save(**visit.dict(), pharmacy_id=plan.pharmacy_id, db=db)
+    await plan.update(description=visit.description, status=True, db=db)
+    if visit.doctors is not None:
+        fact = await PharmacyFact.save(**visit.dict(), pharmacy_id=plan.pharmacy_id, db=db)
     return {"msg":"Done"}
 
 
@@ -204,6 +212,7 @@ async def get_debt(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
         return debt
     return []
 
+
 @router.post('/reservation/{pharmacy_id}', response_model=ReservationOutSchema)
 async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
@@ -211,10 +220,10 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
     return reservation
 
 
-@router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
-async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
-    return result.scalars().all()
+# @router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
+# async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
+#     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
+#     return result.scalars().all()
 
 
 @router.get('/get-report/{reservation_id}')

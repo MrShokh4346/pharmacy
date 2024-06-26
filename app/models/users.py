@@ -216,6 +216,7 @@ class PharmacyPlan(Base):
             self.postpone = kwargs.get('postpone', self.postpone)
             self.description = kwargs.get('description', self.description)
             self.theme = kwargs.get('theme', self.theme)
+            self.status = kwargs.get('status', self.status)
             db.add(self)
             await db.commit()
             await db.refresh(self)
