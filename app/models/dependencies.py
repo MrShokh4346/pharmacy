@@ -103,9 +103,9 @@ async def write_excel(reservation_id: int, db: AsyncSession):
         data_to_write = {
             f'D{count}' : product.product.name,
             f'E{count}' : product.quantity,
-            f'F{count}' : product.product.price,
-            f'G{count}' : product.product.discount_price,
-            f'H{count}' : product.quantity * product.product.price
+            f'F{count}' : product.reservation_price,
+            f'G{count}' : product.reservation_discount_price,
+            f'H{count}' : product.quantity * product.reservation_price
         }
         count += 1
         for cell_address, value in data_to_write.items():
@@ -122,27 +122,33 @@ async def write_excel(reservation_id: int, db: AsyncSession):
 
 
 PRODUCT_EXCEL_DICT = {
-        "24" : "R",
-        "23" : "Q",
-        "22" : "P",
-        "21" : "O",
-        "20" : "N",
-        "19" : "M",
-        "18" : "L",
-        "17" : "AF",
-        "16" : "AE",
-        "15" : "AD",
-        "14" : "AC",
-        "13" : "AB",
-        "12" : "AA",
-        "11" : "Z",
-        "10" : "X",
-        "9" : "W",
+        "6" : "R",
+        "7" : "s",
+        "25" : "T",
         "8" : "U",
-        "7" : "T",
-        "6" : "S",
+        "4" : "V",
+        "9" : "W",
+        "10" : "X",
         "5" : "Y",
-        "4" : "V"
+        "11" : "Z",
+        "12" : "AA",
+        "13" : "AB",
+        "26" : "AC",
+        "27" : "AD",
+        "14" : "AE",
+        "15" : "AF",
+        "18" : "AG",
+        "28" : "AH",
+        "19" : "AI",
+        "20" : "AJ",
+        "21" : "AK",
+        "22" : "AL",
+        "29" : "AM",
+        "23" : "AN",
+        "30" : "AO",
+        "24" : "AP",
+        "16" : "AQ",
+        "17" : "AR"
 }
 
 

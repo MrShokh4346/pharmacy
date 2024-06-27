@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from .doctors import Doctor, pharmacy_doctor
-from datetime import date 
+from datetime import date, datetime 
 from .users import Products
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -149,21 +149,28 @@ class CurrentWholesaleWarehouse(Base):
         return current
 
 
-# class WholesaleOutput(Base):
-#     __tablename__ = "wholesale_output"
+class WholesaleOutput(Base):
+    __tablename__ = "wholesale_output"
 
-#     id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
-#     amount = Column(String)
-#     date = Column(DateTime, default)
-#     pharmacy = Column(String)
-#     product_id = Column(Integer, ForeignKey("products.id"))
-#     product = relationship("Products", backref="wholesale_output", lazy='selectin')
+    amount = Column(Integer)
+    date = Column(DateTime, default=date.today())
+    pharmacy = Column(String)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="wholesale_output", lazy='selectin')
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
+    wholesale = relationship("Wholesale", backref="warehouse_output", lazy='selectin')
 
-#     async def save(self, db: AsyncSession):
-#         try:
-#             db.add(self)
-#             await db.commit()
-#             await db.refresh(self)
-#         except IntegrityError as e:
-#             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+    async def save(self, wholesale_id: int, db: AsyncSession):
+        try:
+            result = await db.execute(select(CurrentWholesaleWarehouse).filter(CurrentWholesaleWarehouse.wholesale_id==wholesale_id))
+            current = result.scalars().first()
+            if (not current) or (current.amount < self.amount):
+                raise HTTPException(status_code=404, detail='THere is not enough product in wholesale warehouse')
+            current.amount -= self.amount
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

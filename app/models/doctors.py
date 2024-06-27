@@ -136,15 +136,15 @@ class DoctorAttachedProduct(Base):
 
 
 
-class DoctorCompleatedPlan(Base):
-    __tablename__ = "doctor_compleated_plan"
+class DoctorMonthlyPlan(Base):
+    __tablename__ = "doctor_monthly_plan"
 
     id = Column(Integer, primary_key=True)
-    amount = Column(Integer)
+    plan = Column(Integer)
     date = Column(DateTime, default=datetime.now())
-    product = relationship("Products",  backref="doctorcompleatedplan")
+    product = relationship("Products",  backref="doctormonthlyplan")
     product_id = Column(Integer, ForeignKey("products.id"))
-    doctor = relationship("Doctor",  backref="doctorcompleatedplan")
+    doctor = relationship("Doctor",  backref="doctormonthlyplan")
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
 
     async def save(self, db: AsyncSession):
@@ -273,3 +273,12 @@ class Doctor(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+
+
+
+# lst = [{'name':'doctor',
+#             'pharmacy':['pharmacy1', 'pharmacy2']},
+#             {'name':'doctor2',
+#                 'pharmacy':['pharmacy1', 'pharmacy2']},
+#        {'name':'doctor3',
+#                 'pharmacy':['pharmacy1', 'pharmacy2']}]

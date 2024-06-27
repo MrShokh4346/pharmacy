@@ -14,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import and_
+import calendar
 
 
 router = APIRouter()
@@ -51,14 +52,18 @@ async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(
     return result.scalars().all()
 
 
-@router.get('/wholesale-report', response_model=List[WholesaleReportSchema])
-async def wholesale_report(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id != None))
+# @router.get('/wholesale-report', response_model=List[WholesaleReportSchema])
+# async def wholesale_report(db: AsyncSession = Depends(get_db)):
+#     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id != None))
+#     return result.scalars().all()
+
+
+@router.get('/wholesale-report-by-wholesale-id/{wholesale_id}', response_model=List[WholesaleReportSchema])
+async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    num_days = calendar.monthrange(year, month_number)[1]
+    start_date = date(year, month_number, 1)
+    end_date = date(year, month_number, num_days)
+    result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id == wholesale_id, IncomingBalanceInStock.date >= start_date, IncomingBalanceInStock.date <= end_date))
     return result.scalars().all()
 
-
-@router.post('/wholesale-output')
-async def warehouse_output(data: WholesaleOutputSchema, db: AsyncSession = Depends(get_db)):
-    output = WholesaleOutput(**data.dict())
-    output.save(db)
-    return output

@@ -245,7 +245,7 @@ class Reservation(Base):
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                res_products.append(ReservationProducts(**product))
+                res_products.append(ReservationProducts(**product, reservation_price=prd.price, reservation_discount_price=prd.discount_price))
                 wrh.amount -= product['quantity']
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
@@ -292,13 +292,14 @@ class Reservation(Base):
         await db.commit()
 
 
-
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
+    reservation_price = Column(Integer)
+    reservation_discount_price = Column(Integer)
     product = relationship("Products", backref="reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id"))
     reservation = relationship("Reservation", back_populates="products")

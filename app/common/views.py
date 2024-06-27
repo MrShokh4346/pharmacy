@@ -166,6 +166,12 @@ async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_d
     return result.scalars().all()
 
 
+@router.get("/get-medical-representatives", response_model=List[UserOutSchema])
+async def get_medical_representatives(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Users).options(selectinload(Users.region), selectinload(Users.region_manager)).filter(Users.status == 'medical_representative'))
+    return result.scalars().all()
+
+
 @router.post('/add-manufactured-company', response_model=List[ManufacturedCompanySchema])
 async def add_manufactured_company(name: str, db: AsyncSession = Depends(get_db)):
     comp = ManufacturedCompany(name=name)

@@ -41,9 +41,16 @@ class FactoryWarehouseOutSchema(BaseModel):
     amount: int
 
 
+class UserOutSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+
+
 class PharmacySchema(BaseModel):
     id: int
     company_name: str
+    med_rep: UserOutSchema
 
 
 class IncomingBalanceInStockProductSchema(BaseModel):
@@ -58,10 +65,7 @@ class WholesaleReportSchema(BaseModel):
     products: List[IncomingBalanceInStockProductSchema]
 
 
-class WholesaleOutputSchema(BaseModel):
-    product_id: int 
-    amount: int 
-    pharmacy: str 
+
     
 
 

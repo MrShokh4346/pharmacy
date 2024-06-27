@@ -5,7 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
-from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse, ReportWholesaleWarehouse
+from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse, ReportWholesaleWarehouse, WholesaleOutput
 from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -57,4 +57,17 @@ async def get_wholesale_products(wholesale_id: int, db: AsyncSession = Depends(g
 @router.get('/get-wholesale-warehouse-incomes/{wholesale_id}', response_model=List[WholesaleWarehouseIncomeOutSchema])
 async def get_wholesale_warehouse_incomes(wholesale_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ReportWholesaleWarehouse).filter(ReportWholesaleWarehouse.wholesale_id==wholesale_id))  
+    return result.scalars().all()
+
+
+@router.post('/wholesale-output', response_model=WholesaleOutputOutSchema)
+async def warehouse_output(data: WholesaleOutputSchema, db: AsyncSession = Depends(get_db)):
+    output = WholesaleOutput(**data.dict())
+    await output.save(data.wholesale_id, db)
+    return output
+
+
+@router.get('/get-wholesale-outputs', response_model=List[WholesaleOutputOutSchema])
+async def get_wholesale_outputs(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleOutput))
     return result.scalars().all()

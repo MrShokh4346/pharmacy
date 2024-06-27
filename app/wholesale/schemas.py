@@ -62,3 +62,18 @@ class WholesaleWarehouseIncomeOutSchema(BaseModel):
     date: date
     price: Optional[int]
 
+
+class WholesaleOutputSchema(BaseModel):
+    product_id: int 
+    amount: int 
+    pharmacy: str 
+    wholesale_id: int 
+
+
+class WholesaleOutputOutSchema(BaseModel):
+    id: int 
+    amount: int 
+    date: date 
+    pharmacy: str 
+    product: ProductOutSchema
+    wholesale: WholesaleListSchema

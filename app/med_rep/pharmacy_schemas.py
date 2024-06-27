@@ -220,6 +220,7 @@ class ReservationOutSchema(BaseModel):
     total_quantity: float
     total_amount: float
     total_payable: float
+    total_payable_with_nds: float
     checked: bool
 
 
