@@ -50,6 +50,7 @@ class UserOutSchema(BaseModel):
 class PharmacySchema(BaseModel):
     id: int
     company_name: str
+    inter_branch_turnover: str 
     med_rep: UserOutSchema
 
 

@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
 from sqlalchemy.schema import UniqueConstraint
-from .users import UserProductPlan
+from .users import UserProductPlan, Products
 import calendar
 
 
@@ -144,6 +144,8 @@ class DoctorMonthlyPlan(Base):
     date = Column(DateTime, default=datetime.now())
     product = relationship("Products",  backref="doctormonthlyplan")
     product_id = Column(Integer, ForeignKey("products.id"))
+    price = Column(Integer)
+    discount_price = Column(Integer)
     doctor = relationship("Doctor",  backref="doctormonthlyplan")
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
 
@@ -161,6 +163,8 @@ class DoctorFact(Base):
 
     id = Column(Integer, primary_key=True)
     fact = Column(Integer)
+    price = Column(Integer)
+    discount_price = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
     doctor = relationship("Doctor", backref="fact")
@@ -176,10 +180,11 @@ class DoctorFact(Base):
         num_days = calendar.monthrange(year, month)[1]
         start_date = date(year, month, 1)  
         end_date = date(year, month, num_days)
+        product = await get_or_404(Products, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
-            month_fact = cls(doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'])
+            month_fact = cls(doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['compleated']

@@ -207,8 +207,8 @@ async def get_proccess_report(db: AsyncSession = Depends(get_db)):
 
 
 @router.get('/get-proccess-report-ecxel')
-async def get_proccess_report(db: AsyncSession = Depends(get_db)):
-    return await write_proccess_to_excel(db)
+async def get_proccess_report(month: int, db: AsyncSession = Depends(get_db)):
+    return await write_proccess_to_excel(month, db)
 
 
 @router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)

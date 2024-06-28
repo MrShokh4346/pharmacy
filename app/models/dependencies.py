@@ -6,7 +6,7 @@ from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
 from .users import Users, Products, Region
-from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor
+from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
 from .pharmacy import Reservation
 from typing import Annotated
 from .database import get_db
@@ -18,6 +18,7 @@ import os
 import subprocess
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
+import calendar
 
 
 load_dotenv()
@@ -122,60 +123,113 @@ async def write_excel(reservation_id: int, db: AsyncSession):
 
 
 PRODUCT_EXCEL_DICT = {
-        "6" : "R",
-        "7" : "s",
-        "25" : "T",
-        "8" : "U",
-        "4" : "V",
-        "9" : "W",
-        "10" : "X",
-        "5" : "Y",
-        "11" : "Z",
-        "12" : "AA",
-        "13" : "AB",
-        "26" : "AC",
-        "27" : "AD",
-        "14" : "AE",
-        "15" : "AF",
-        "18" : "AG",
-        "28" : "AH",
-        "19" : "AI",
-        "20" : "AJ",
-        "21" : "AK",
-        "22" : "AL",
-        "29" : "AM",
-        "23" : "AN",
-        "30" : "AO",
-        "24" : "AP",
-        "16" : "AQ",
-        "17" : "AR"
+        6 : "N",
+        7 : "O",
+        25 : "P",
+        8 : "Q",
+        4 : "R",
+        9 : "S",
+        10 : "T",
+        5 : "U",
+        11 : "V",
+        12 : "W",
+        13 : "X",
+        26 : "Y",
+        27 : "Z",
+        14 : "AA",
+        15 : "AB",
+        18 : "AC",
+        28 : "AD",
+        19 : "AE",
+        20 : "AF",
+        21 : "AG",
+        22 : "AH",
+        29 : "AI",
+        23 : "AJ",
+        30 : "AK",
+        24 : "AL",
+        16 : "AM",
+        17 : "AN"
+}
+
+PRODUCT_EXCEL_DICT2 = {
+        6 : "AP",
+        7 : "AQ",
+        25 : "AR",
+        8 : "AS",
+        4 : "AT",
+        9 : "AU",
+        10 : "AV",
+        5 : "AW",
+        11 : "AX",
+        12 : "AY",
+        13 : "AZ",
+        26 : "BA",
+        27 : "BB",
+        14 : "BC",
+        15 : "BD",
+        18 : "BE",
+        28 : "BF",
+        19 : "BG",
+        20 : "BH",
+        21 : "BI",
+        22 : "BJ",
+        29 : "BK",
+        23 : "BL",
+        30 : "BM",
+        24 : "BN",
+        16 : "BO",
+        17 : "BP"
 }
 
 
-
-async def write_proccess_to_excel(db: AsyncSession):
-    source_excel_file = 'app/report/BASE_DOCTOR.xlsx'
+async def write_proccess_to_excel(month: int, db: AsyncSession):
+    year = datetime.now().year
+    month = datetime.now().month if month is None else month
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
+    source_excel_file = 'app/report/Base_Doc.xlsx'
     destination_excel_file = 'app/report/base_doctor.xlsx'
-    sheet_name = 'БАЗА ВРАЧЕЙ'
+    sheet_name = 'База Врачей Актуальная'
     subprocess.call(['cp', source_excel_file, destination_excel_file])
     destination_wb = load_workbook(destination_excel_file)
     destination_sheet = destination_wb[sheet_name]
-    count = 4
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products)).filter(Doctor.deleted==False))
+    count = 7
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products), selectinload(Doctor.pharmacy)).filter(Doctor.deleted==False))
     for doctor in result.scalars().all():
-        data_to_write = {
-            f'C{count}' : doctor.med_rep.full_name,
-            f'D{count}' : doctor.full_name,
-            f'E{count}' : doctor.speciality.name,
-            f'F{count}' : doctor.medical_organization.name,
-            f'G{count}' : doctor.medical_organization.region.name,
-            f'H{count}' : f"{doctor.contact1} \n{doctor.contact2}",
-            f'I{count}' : doctor.category.name,
-            f'AH{count}' : doctor.category.name, #plan
-            f'AI{count}' : doctor.category.name, #fact
-            f'AJ{count}' : doctor.category.name # %
-        }
-        count += 1
+        for pharmacy in doctor.pharmacy:
+            result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+            doctor_plan = dict()
+            doctor_plan_sum = 0
+            for product in result.scalars().all():
+                doctor_plan[f"{PRODUCT_EXCEL_DICT[product.product_id]}{count}"] = product.monthly_plan
+                doctor_plan_sum += product.monthly_plan * product.price
+                print(doctor.id, product.id, pharmacy.id)
+                result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id == doctor.id, DoctorFact.product_id == product.id, DoctorFact.pharmacy_id == pharmacy.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
+                tmp = result.scalar()
+                doctor_fact = None
+                print(tmp)
+                if tmp is not None:
+                    doctor_fact = tmp
+            data_to_write = {
+                f'C{count}' : doctor.med_rep.full_name,
+                f'D{count}' : doctor.full_name,
+                f'E{count}' : doctor.contact1,
+                f'F{count}' : doctor.speciality.name,
+                f'G{count}' : doctor.medical_organization.name,
+                f'H{count}' : doctor.medical_organization.region.name,
+                f'I{count}' : count-6,
+                f'J{count}' : doctor.category.name,
+                f'K{count}' : pharmacy.company_name,
+                f'L{count}' : pharmacy.contact1,
+                f'AO{count}' : doctor_plan_sum,
+            }
+            data_to_write.update(doctor_plan)
+            if doctor_fact:
+                data_to_write[f'{PRODUCT_EXCEL_DICT2[doctor_fact.product_id]}{count}'] = doctor_fact.fact
+                data_to_write[f'BQ{count}'] = doctor_fact.fact * doctor_fact.price,
+            count += 1
         for cell_address, value in data_to_write.items():
             destination_sheet[cell_address] = value
     destination_wb.save(destination_excel_file)

@@ -31,7 +31,7 @@ class DoctorOutSchema(BaseModel):
     email: str 
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
-    medical_organization: MedOrgSchema
+    medical_organization: MedicalOrganizationOutSchema
     # region: RegionSchema 
     
 
@@ -56,7 +56,7 @@ class DoctorListSchema(BaseModel):
     id: int 
     full_name: str 
     speciality: Optional[SpecialitySchema] = None
-    medical_organization: Optional[MedOrgSchema] = None
+    medical_organization: Optional[MedicalOrganizationOutSchema] = None
     category: Optional[DoctorCategorySchema] = None
     
 
