@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .doctor_schemas import DoctorListSchema, DoctorAttachedProductSchema
 from .pharmacy_schemas import *
-from models.doctors import Doctor, DoctorAttachedProduct
+from models.doctors import Doctor
 from models.users import Products
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession

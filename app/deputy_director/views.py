@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
 from models.users import *
-from models.doctors import DoctorAttachedProduct, Doctor
+from models.doctors import DoctorFact, Doctor
 from models.database import get_db
 from models.dependencies import *
 from typing import Any
@@ -119,7 +119,6 @@ async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession 
     user_product = result.scalars().first()
     if user_product:
         raise HTTPException(status_code=404, detail='Plan already exists for this product in this month')
-
     plan = UserProductPlan(**data, current_amount=plan.amount, plan_month=plan_date)
     await plan.save(db)
     return plan 
@@ -158,9 +157,9 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
     fact = 0
     fact_price = 0
     for user_plan in user_plans:
-        query = select(DoctorAttachedProduct).join(Doctor).options(
-                            joinedload(DoctorAttachedProduct.doctor)
-                        ).where(Doctor.med_rep_id == user_plan.med_rep_id).where(DoctorAttachedProduct.product_id == user_plan.product_id)
+        query = select(DoctorFact).join(Doctor).options(
+                            joinedload(DoctorFact.doctor)
+                        ).where(Doctor.med_rep_id == user_plan.med_rep_id).where(DoctorFact.product_id == user_plan.product_id).where(DoctorFact.date >= start_date, DoctorFact.date <= end_date)
         result = await db.execute(query)
         doctor_att = []
         doctor_plans = result.scalars().all() 
@@ -190,6 +189,17 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
     return data
 
 
+@router.get('/get-user-current-month-product-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])
+async def get_user_current_month_plan(med_rep_id: int, db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    month = datetime.now().month
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)
+    end_date = date(year, month, num_days)
+    result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id, UserProductPlan.plan_month >= start_date, UserProductPlan.plan_month <= end_date))
+    return result.scalars().all() 
+
+
 @router.get('/get-proccess-report', response_model=List[ReportSchema])
 async def get_proccess_report(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products)).filter(Doctor.deleted==False))
@@ -199,3 +209,16 @@ async def get_proccess_report(db: AsyncSession = Depends(get_db)):
 @router.get('/get-proccess-report-ecxel')
 async def get_proccess_report(db: AsyncSession = Depends(get_db)):
     return await write_proccess_to_excel(db)
+
+
+@router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)
+async def set_product_expenses(product_id: int, marketing_expenses: int | None = None, salary_expenses: int | None = None, db: AsyncSession = Depends(get_db)):
+    product = await get_or_404(Products, product_id, db)
+    await product.update(marketing_expenses=marketing_expenses, salary_expenses=salary_expenses, db=db)
+    return product
+
+
+@router.get('/get-products', response_model=List[ProductExpensesSchema])
+async def get_medcine(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
+    return result.scalars().all()

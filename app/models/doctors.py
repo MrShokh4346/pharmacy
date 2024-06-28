@@ -140,7 +140,7 @@ class DoctorMonthlyPlan(Base):
     __tablename__ = "doctor_monthly_plan"
 
     id = Column(Integer, primary_key=True)
-    plan = Column(Integer)
+    monthly_plan = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     product = relationship("Products",  backref="doctormonthlyplan")
     product_id = Column(Integer, ForeignKey("products.id"))
@@ -154,6 +154,35 @@ class DoctorMonthlyPlan(Base):
             await db.refresh(self)
         except:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
+class DoctorFact(Base):
+    __tablename__ = "doctor_fact"
+
+    id = Column(Integer, primary_key=True)
+    fact = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor = relationship("Doctor", backref="fact")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    pharmacy = relationship("Pharmacy", backref="doctorfact")
+    product = relationship("Products",  backref="doctorfact")
+    product_id = Column(Integer, ForeignKey("products.id"))
+
+    @classmethod
+    async def set_fact(cls, db: AsyncSession, **kwargs):
+        year = datetime.now().year
+        month = datetime.now().month  
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)  
+        end_date = date(year, month, num_days)
+        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        month_fact = result.scalars().first()
+        if month_fact is None:
+            month_fact = cls(doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'])
+            db.add(month_fact)
+        else:
+            month_fact.fact += kwargs['compleated']
 
 
 class Bonus(Base):

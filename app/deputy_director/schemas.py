@@ -211,11 +211,20 @@ class ReportSchema(BaseModel):
     contact1: str 
     contact2: Optional[str] = None   
     email: str 
-    latitude: str 
-    longitude: str 
     med_rep: UserSchema
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
     medical_organization: MedicalOrganizationSchema
     doctor_attached_products: List[AttachProductsSchema]
     # region: RegionSchema 
+
+
+class ProductExpensesSchema(BaseModel):
+    id: int 
+    name: str 
+    price: int 
+    discount_price: int 
+    marketing_expenses: Optional[int] = None
+    salary_expenses: Optional[int] = None 
+    man_company: ManufacturedCompanySchema 
+    category: ProductCategorySchema

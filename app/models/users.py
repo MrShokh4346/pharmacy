@@ -98,6 +98,8 @@ class Products(Base):
     name = Column(String, unique=True)
     price = Column(Integer)
     discount_price = Column(Integer)
+    marketing_expenses = Column(Integer)
+    salary_expenses = Column(Integer)
     man_company = relationship("ManufacturedCompany", backref="product", lazy='selectin')
     man_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     category = relationship("ProductCategory", backref="product", lazy='selectin')
@@ -120,6 +122,8 @@ class Products(Base):
             self.discount_price = kwargs.get('discount_price', self.discount_price)
             self.man_company_id = kwargs.get('man_company_id', self.man_company_id)
             self.category_id = kwargs.get('category_id', self.category_id)
+            self.marketing_expenses = kwargs.get('marketing_expenses', self.marketing_expenses)
+            self.salary_expenses = kwargs.get('salary_expenses', self.salary_expenses)
             await db.commit()
             await db.refresh(self)
         except IntegrityError as e:

@@ -6,10 +6,10 @@ from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
 from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse, ReportWholesaleWarehouse, WholesaleOutput
+from models.pharmacy import CurrentBalanceInStock
 from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
 
 
 router = FastAPI()
@@ -71,3 +71,21 @@ async def warehouse_output(data: WholesaleOutputSchema, db: AsyncSession = Depen
 async def get_wholesale_outputs(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(WholesaleOutput))
     return result.scalars().all()
+
+
+@router.post('/return-product/{wholesale_id}')
+async def return_wholesale(wholesale_id: int, obj: ReturnProductSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==obj.pharmacy_id, CurrentBalanceInStock.product_id==obj.product_id))
+    balance = result.scalars().first()
+    if (balance is None) or (balance.amount < obj.amount):
+        raise HTTPException(status_code=404, detail="There is not enough product in pharmacy")
+    balance.amount -= obj.amount
+    result = await db.execute(select(CurrentWholesaleWarehouse).filter(CurrentWholesaleWarehouse.wholesale_id==wholesale_id, CurrentWholesaleWarehouse.product_id==obj.product_id))
+    wholesale_warehouse = result.scalars().first()
+    if wholesale_warehouse is None:
+        raise HTTPException(status_code=404, detail="There is not this product in wholesale")
+    wholesale_warehouse.amount += obj.amount
+    await db.commit()
+    return {"msg":"Done"}
+
+

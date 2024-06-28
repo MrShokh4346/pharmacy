@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
-from .doctors import Doctor, pharmacy_doctor, DoctorAttachedProduct
+from .doctors import Doctor, pharmacy_doctor, DoctorAttachedProduct, DoctorFact, DoctorMonthlyPlan
 from datetime import date , datetime, timedelta
 from .users import Products
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
@@ -11,6 +11,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from .database import Base, get_db, get_or_404
 from sqlalchemy import and_ , extract, func, or_
+import calendar
 
 
 class IncomingStockProducts(Base):
@@ -141,36 +142,36 @@ class CheckingBalanceInStock(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    @classmethod
-    async def fact(cls, product_id: int, pharmacy_id: int, db: AsyncSession):
-        current_year = datetime.now().year
-        current_month = datetime.now().month
+    # @classmethod
+    # async def fact(cls, product_id: int, pharmacy_id: int, db: AsyncSession):
+    #     current_year = datetime.now().year
+    #     current_month = datetime.now().month
 
-        sum_fact_result = await db.execute(
-            select(func.sum(CheckingStockProducts.saled)).\
-                join(cls, CheckingStockProducts.stock_id == cls.id).\
-                filter(
-                    CheckingStockProducts.product_id == product_id,
-                    cls.pharmacy_id == pharmacy_id,
-                    extract('year', cls.date) == current_year,
-                    extract('month', cls.date) == current_month
-                )
-        )
-        sum_fact = sum_fact_result.scalar() or 0  # Ensure sum_fact is an integer, default to 0 if None
+    #     sum_fact_result = await db.execute(
+    #         select(func.sum(CheckingStockProducts.saled)).\
+    #             join(cls, CheckingStockProducts.stock_id == cls.id).\
+    #             filter(
+    #                 CheckingStockProducts.product_id == product_id,
+    #                 cls.pharmacy_id == pharmacy_id,
+    #                 extract('year', cls.date) == current_year,
+    #                 extract('month', cls.date) == current_month
+    #             )
+    #     )
+    #     sum_fact = sum_fact_result.scalar() or 0  # Ensure sum_fact is an integer, default to 0 if None
 
-        result = await db.execute(
-            select(DoctorAttachedProduct).\
-                join(Doctor, DoctorAttachedProduct.doctor_id == Doctor.id).\
-                join(pharmacy_doctor, pharmacy_doctor.c.doctor_id == Doctor.id).\
-                filter(
-                    pharmacy_doctor.c.pharmacy_id == pharmacy_id,
-                    DoctorAttachedProduct.product_id == product_id
-                )
-        )
-        attached = result.scalars().first()  # Get the first result or None if no result
-        if attached:
-            attached.fact = sum_fact
-            await db.commit()
+    #     result = await db.execute(
+    #         select(DoctorAttachedProduct).\
+    #             join(Doctor, DoctorAttachedProduct.doctor_id == Doctor.id).\
+    #             join(pharmacy_doctor, pharmacy_doctor.c.doctor_id == Doctor.id).\
+    #             filter(
+    #                 pharmacy_doctor.c.pharmacy_id == pharmacy_id,
+    #                 DoctorAttachedProduct.product_id == product_id
+    #             )
+    #     )
+    #     attached = result.scalars().first()  # Get the first result or None if no result
+    #     if attached:
+    #         attached.fact = sum_fact
+    #         await db.commit()
 
 
 class PharmacyAttachedProducts(Base):
@@ -327,25 +328,38 @@ class PharmacyFact(Base):
     monthly_plan = Column(Integer)
 
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="fact", lazy='selectin')
+    doctor = relationship("Doctor", backref="pharmacyfact", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="fact", lazy='selectin')
+    product = relationship("Products", backref="pharmacyfact", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="fact", lazy='selectin')
+    pharmacy = relationship("Pharmacy", backref="pharmacyfact", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
         try:
+            year = datetime.now().year
+            month = datetime.now().month  
+            num_days = calendar.monthrange(year, month)[1]
+            start_date = date(year, month, 1)  
+            end_date = date(year, month, num_days)
             product_dict = dict()
             for doctor in kwargs['doctors']:
+                result = await db.execute(select(pharmacy_doctor).filter(
+                            pharmacy_doctor.c.doctor_id == doctor.get('doctor_id'),
+                            pharmacy_doctor.c.pharmacy_id == kwargs.get('pharmacy_id')
+                            ))
+                doc =  result.scalar()
+                if doc is None:
+                    raise HTTPException(status_code=404, detail=f"This doctor(id={doctor['doctor_id']}) is not attached to this pharmacy(id={kwargs.get('pharmacy_id')})")
                 for product in doctor['products']:
-                    result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id == doctor['doctor_id'], DoctorAttachedProduct.product_id == product['product_id']))
+                    result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor['doctor_id'], DoctorMonthlyPlan.product_id == product['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
                     prod = result.scalars().first()
                     if not prod:
-                        raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']})")
+                        raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']}) for this month")
                     prod.fact =  product['compleated']
                     p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
                     db.add(p_fact)
+                    await DoctorFact.set_fact(pharmacy_id=kwargs['pharmacy_id'], doctor_id=doctor['doctor_id'], product_id=product['product_id'], compleated=product['compleated'], db=db)                    
                     if product_dict.get(product['product_id']):
                         product_dict[product['product_id']] += product['compleated'] 
                     else:
@@ -441,37 +455,15 @@ class Pharmacy(Base):
 
     async def attach_doctor(self, db: AsyncSession, **kwargs):
         try:
-            # doctor_product_result = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.doctor_id==kwargs.get('doctor_id'), DoctorAttachedProduct.product_id==kwargs.get('product_id')))
-            # doctor_product = doctor_product_result.scalar()
-            # if not doctor_product:
-            #     raise HTTPException(status_code=400, detail="This product not attached to a doctor")
-            
-            # result = await db.execute(select(pharmacy_doctor).filter(
-            #         and_(or_(pharmacy_doctor.c.doctor_id == kwargs.get('doctor_id'),
-            #             pharmacy_doctor.c.product_id == kwargs.get('product_id')),
-            #             pharmacy_doctor.c.pharmacy_id == kwargs.get('pharmacy_id')
-            #             )))
-            # doc =  result.scalar()
-            
-            # if not doc:
-            # association_entry = pharmacy_doctor.insert().values(
-            #     doctor_id=kwargs.get('doctor_id'),
-            #     pharmacy_id=self.id,
-            #     product_id=kwargs.get('product_id')
-            # )
-            # await db.execute(association_entry)
             doctor = await db.get(Doctor, kwargs.get('doctor_id'))
             if (not doctor) or (doctor.deleted == True):
                 raise HTTPException(status_code=404, detail=f"Doctor not found")
-            # await self.doctors.append(doctor)
             association_entry = pharmacy_doctor.insert().values(
                 doctor_id=kwargs.get('doctor_id'),
                 pharmacy_id=self.id,
             )
             await db.execute(association_entry)
             await db.commit()
-            # else:
-                # raise HTTPException(status_code=400, detail="This doctor already attached")
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 

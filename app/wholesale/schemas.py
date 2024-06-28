@@ -77,3 +77,9 @@ class WholesaleOutputOutSchema(BaseModel):
     pharmacy: str 
     product: ProductOutSchema
     wholesale: WholesaleListSchema
+
+
+class ReturnProductSchema(BaseModel):
+    pharmacy_id: int 
+    product_id: int 
+    amount: int 

@@ -47,7 +47,7 @@ async def filter_doctors(
     category_id: Optional[int] = None, 
     speciality_id: Optional[int] = None, 
     region_id: Optional[int] = None, 
-    product_id: Optional[int] = None,
+    # product_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.medical_organization), selectinload(Doctor.category)).filter(Doctor.deleted==False)
@@ -57,8 +57,8 @@ async def filter_doctors(
         query = query.filter(Doctor.speciality_id == speciality_id)
     if region_id:
         query = query.filter(Doctor.region_id == region_id)
-    if product_id:
-        query = query.filter(Doctor.doctorattachedproduct.any(DoctorAttachedProduct.product_id == product_id))
+    # if product_id:
+        # query = query.filter(Doctor.doctorattachedproduct.any(DoctorAttachedProduct.product_id == product_id))
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -87,11 +87,11 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
     start_date = date(year, month, 1)  
     end_date = date(year, month, num_days)
     for obj in objects.items:
-        result1 = await db.execute(select(DoctorAttachedProduct).filter(DoctorAttachedProduct.product_id==obj.product_id, DoctorAttachedProduct.doctor_id==obj.doctor_id))
+        result1 = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.product_id==obj.product_id, DoctorMonthlyPlan.doctor_id==obj.doctor_id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
         doctor = result1.scalar()
         if doctor is not None:
-            raise HTTPException(status_code=404, detail='This product already attached to this doctor')
-        doctor_products.append(DoctorAttachedProduct(**obj.dict()))
+            raise HTTPException(status_code=404, detail='This product already attached to doctor for this month')
+        doctor_products.append(DoctorMonthlyPlan(**obj.dict()))
         result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
         user_product = result.scalars().first()
         if user_product is None:
@@ -107,19 +107,50 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
     return {"msg": "Done"}
 
 
-@router.put('/update-doctor-plan/{plan_id}')
-async def update_doctor_plan(plan_id: int, monthly_plan: int, user_id: int, db: AsyncSession = Depends(get_db)):
-    user = await get_or_404(Users, user_id, db)
-    obj = await get_or_404(DoctorAttachedProduct, plan_id, db)
-    await obj.update(monthly_plan, user_id, db)
-    return {"msg": "Done"}
+# @router.put('/update-doctor-plan/{plan_id}')
+# async def update_doctor_plan(plan_id: int, monthly_plan: int, user_id: int, db: AsyncSession = Depends(get_db)):
+#     user = await get_or_404(Users, user_id, db)
+#     obj = await get_or_404(DoctorAttachedProduct, plan_id, db)
+#     await obj.update(monthly_plan, user_id, db)
+#     return {"msg": "Done"}
 
+from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 
-@router.get('/doctor-attached-products/{doctor_id}', response_model=List[AttachProductsOutSchema])
-async def get_doctor_attached_products(doctor_id: int, db: AsyncSession = Depends(get_db)):
+@router.get('/doctor-attached-products/{doctor_id}')
+async def get_doctor_attached_products(doctor_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
     doctor = await get_doctor_or_404(doctor_id, db)
-    result = await db.execute(select(DoctorAttachedProduct).options(selectinload(DoctorAttachedProduct.product)).filter(DoctorAttachedProduct.doctor_id==doctor_id))
-    return result.scalars().all()
+    year = datetime.now().year
+    month = datetime.now().month if month is None else month 
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
+    result = await db.execute(select(DoctorMonthlyPlan).options(selectinload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.doctor_id==doctor_id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+    data = []
+    fact = 0
+    for obj in result.scalars().all():
+        result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_id, DoctorFact.product_id==obj.product.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
+        for f in result.scalars().all():
+            fact += f.fact 
+        data.append({
+            "id":obj.id,
+            "product":{
+                    "id": obj.product.id,
+                    "name": obj.product.name,
+                    "price": obj.product.price,
+                    "discount_price": obj.product.discount_price,
+                    "man_company": {
+                        "id": obj.product.man_company.id,
+                        "name": obj.product.man_company.name
+                    },
+                    "category": {
+                        "id": obj.product.category.id,
+                        "name": obj.product.category.name
+                    }
+            },
+            "monthly_plan":obj.monthly_plan,
+            "fact":fact
+        })
+    return data
 
 
 @router.patch('/update-doctor/{id}', response_model=DoctorOutSchema)

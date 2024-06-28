@@ -59,6 +59,7 @@ class PharmacyOutSchema(BaseModel):
     VAT_payer_code: str 
     pharmacy_director: str
     region: Optional[RegionSchema]
+    med_rep: UserOutSchema
 
 
 class PharmacyUpdateSchema(BaseModel):
