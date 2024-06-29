@@ -65,5 +65,20 @@ async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSessio
     start_date = date(year, month_number, 1)
     end_date = date(year, month_number, num_days)
     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id == wholesale_id, IncomingBalanceInStock.date >= start_date, IncomingBalanceInStock.date <= end_date))
-    return result.scalars().all()
+    objects = result.scalars().all()
+    data = []
+    for obj in objects:
+        prd_list = []
+        for product in obj.products:
+            print(obj.pharmacy.id, product.product.id)
+            result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==obj.pharmacy.id, CurrentBalanceInStock.product_id==product.product.id))
+            current_amount = result.scalars().first()
+            prd_list.append({**product.__dict__, "current_amount":current_amount.amount})
+        data.append({
+            "date" : obj.date,
+            "wholesale": {**obj.wholesale.__dict__},
+            "pharmacy": {**obj.pharmacy.__dict__},
+            "products": prd_list
+        })
+    return data
 

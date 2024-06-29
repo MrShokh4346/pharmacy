@@ -57,6 +57,7 @@ class PharmacySchema(BaseModel):
 class IncomingBalanceInStockProductSchema(BaseModel):
     product: ProductOutSchema
     quantity: int 
+    current_amount: int | None = None
 
 
 class WholesaleReportSchema(BaseModel):

@@ -5,7 +5,7 @@ from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
-from .users import Users, Products, Region
+from .users import Users, Products, Region, UserProductPlan
 from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
 from .pharmacy import Reservation
 from typing import Annotated
@@ -123,65 +123,33 @@ async def write_excel(reservation_id: int, db: AsyncSession):
 
 
 PRODUCT_EXCEL_DICT = {
-        6 : "N",
-        7 : "O",
-        25 : "P",
-        8 : "Q",
-        4 : "R",
-        9 : "S",
-        10 : "T",
-        5 : "U",
-        11 : "V",
-        12 : "W",
-        13 : "X",
-        26 : "Y",
-        27 : "Z",
-        14 : "AA",
-        15 : "AB",
-        18 : "AC",
-        28 : "AD",
-        19 : "AE",
-        20 : "AF",
-        21 : "AG",
-        22 : "AH",
-        29 : "AI",
-        23 : "AJ",
-        30 : "AK",
-        24 : "AL",
-        16 : "AM",
-        17 : "AN"
+        1 : "N",        2 : "O",        6 : "N",        7 : "O",        25 : "P",
+        8 : "Q",        4 : "R",        9 : "S",        10 : "T",        5 : "U",
+        11 : "V",        12 : "W",        13 : "X",        26 : "Y",        27 : "Z",
+        14 : "AA",        15 : "AB",        18 : "AC",        28 : "AD",        19 : "AE",
+        20 : "AF",        21 : "AG",        22 : "AH",        29 : "AI",        23 : "AJ",
+        30 : "AK",        24 : "AL",        16 : "AM",        17 : "AN"
 }
 
 PRODUCT_EXCEL_DICT2 = {
-        6 : "AP",
-        7 : "AQ",
-        25 : "AR",
-        8 : "AS",
-        4 : "AT",
-        9 : "AU",
-        10 : "AV",
-        5 : "AW",
-        11 : "AX",
-        12 : "AY",
-        13 : "AZ",
-        26 : "BA",
-        27 : "BB",
-        14 : "BC",
-        15 : "BD",
-        18 : "BE",
-        28 : "BF",
-        19 : "BG",
-        20 : "BH",
-        21 : "BI",
-        22 : "BJ",
-        29 : "BK",
-        23 : "BL",
-        30 : "BM",
-        24 : "BN",
-        16 : "BO",
-        17 : "BP"
+        1 : "AP",        2 : "AQ",        6 : "AP",        7 : "AQ",        25 : "AR",
+        8 : "AS",        4 : "AT",        9 : "AU",        10 : "AV",        5 : "AW",
+        11 : "AX",        12 : "AY",        13 : "AZ",        26 : "BA",        27 : "BB",
+        14 : "BC",        15 : "BD",        18 : "BE",        28 : "BF",        19 : "BG",
+        20 : "BH",        21 : "BI",        22 : "BJ",        29 : "BK",        23 : "BL",
+        30 : "BM",        24 : "BN",        16 : "BO",        17 : "BP"
 }
 
+# PRODUCT_EXCEL_DICT2 = {
+#         "AP" : 0,        "AQ" : 0,        "AP" : 0,        "AQ" : 0,        "AR" : 0,
+#         "AS" : 0,        "AT" : 0,        "AU" : 0,        "AV" : 0,        "AW" : 0,
+#         "AX" : 0,        "AY" : 0,        "AZ" : 0,        "BA" : 0,        "BB" : 0,
+#         "BC" : 0,        "BD" : 0,        "BE" : 0,        "BF" : 0,        "BG" : 0,
+#         "BH" : 0,        "BI" : 0,        "BJ" : 0,        "BK" : 0,        "BL" : 0,
+#         "BM" : 0,        "BN" : 0,        "BO" : 0,        "BP" : 0
+# }
+
+from pprint import pprint
 
 async def write_proccess_to_excel(month: int, db: AsyncSession):
     year = datetime.now().year
@@ -196,42 +164,65 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
     destination_wb = load_workbook(destination_excel_file)
     destination_sheet = destination_wb[sheet_name]
     count = 7
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products), selectinload(Doctor.pharmacy)).filter(Doctor.deleted==False))
-    for doctor in result.scalars().all():
-        for pharmacy in doctor.pharmacy:
-            result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
-            doctor_plan = dict()
-            doctor_plan_sum = 0
-            for product in result.scalars().all():
-                doctor_plan[f"{PRODUCT_EXCEL_DICT[product.product_id]}{count}"] = product.monthly_plan
-                doctor_plan_sum += product.monthly_plan * product.price
-                print(doctor.id, product.id, pharmacy.id)
-                result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id == doctor.id, DoctorFact.product_id == product.id, DoctorFact.pharmacy_id == pharmacy.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
-                tmp = result.scalar()
-                doctor_fact = None
-                print(tmp)
-                if tmp is not None:
-                    doctor_fact = tmp
-            data_to_write = {
-                f'C{count}' : doctor.med_rep.full_name,
-                f'D{count}' : doctor.full_name,
-                f'E{count}' : doctor.contact1,
-                f'F{count}' : doctor.speciality.name,
-                f'G{count}' : doctor.medical_organization.name,
-                f'H{count}' : doctor.medical_organization.region.name,
-                f'I{count}' : count-6,
-                f'J{count}' : doctor.category.name,
-                f'K{count}' : pharmacy.company_name,
-                f'L{count}' : pharmacy.contact1,
-                f'AO{count}' : doctor_plan_sum,
-            }
-            data_to_write.update(doctor_plan)
-            if doctor_fact:
-                data_to_write[f'{PRODUCT_EXCEL_DICT2[doctor_fact.product_id]}{count}'] = doctor_fact.fact
-                data_to_write[f'BQ{count}'] = doctor_fact.fact * doctor_fact.price,
-            count += 1
-        for cell_address, value in data_to_write.items():
-            destination_sheet[cell_address] = value
+    data_to_write = {}
+    result = await db.execute(select(Users).options(selectinload(Users.region)).filter(Users.status=="medical_representative"))
+    for user in result.scalars().all():
+        USER_PLAN_COMPLEATED = {
+                "AP" : 0,        "AQ" : 0,        "AP" : 0,        "AQ" : 0,        "AR" : 0,
+                "AS" : 0,        "AT" : 0,        "AU" : 0,        "AV" : 0,        "AW" : 0,
+                "AX" : 0,        "AY" : 0,        "AZ" : 0,        "BA" : 0,        "BB" : 0,
+                "BC" : 0,        "BD" : 0,        "BE" : 0,        "BF" : 0,        "BG" : 0,
+                "BH" : 0,        "BI" : 0,        "BJ" : 0,        "BK" : 0,        "BL" : 0,
+                "BM" : 0,        "BN" : 0,        "BO" : 0,        "BP" : 0
+        }
+        data_to_write[f"C{count}"] = user.full_name
+        data_to_write[f"H{count}"] = user.region.name
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id))
+        user_plan = {}
+        for prd in result.scalars().all():
+            user_plan[f"{PRODUCT_EXCEL_DICT[prd.product_id]}{count}"] = prd.amount
+        data_to_write.update(user_plan)
+        med_rep_count = count 
+        count += 1
+        result = await db.execute(select(Doctor).options(selectinload(Doctor.pharmacy)).filter(Doctor.med_rep_id==user.id))
+        for doctor in result.scalars().all():
+            for pharmacy in doctor.pharmacy:
+                result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+                doctor_plan = dict()
+                doctor_plan_sum = 0
+                s = ''
+                for product in result.scalars().all():
+                    doctor_plan[f"{PRODUCT_EXCEL_DICT[product.product_id]}{count}"] = product.monthly_plan
+                    doctor_plan_sum += product.monthly_plan * product.price
+                    s+=f'{doctor.id}:{product.id}:{pharmacy.id}-'
+                    result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id == doctor.id, DoctorFact.product_id == product.id, DoctorFact.pharmacy_id == pharmacy.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
+                    tmp = result.scalars().first()
+                    doctor_fact = None
+                    if tmp is not None:
+                        doctor_fact = tmp
+                        USER_PLAN_COMPLEATED[f"{PRODUCT_EXCEL_DICT2[product.id]}"] += doctor_fact
+                data_to_write[f'D{count}'] = doctor.full_name
+                data_to_write[f'E{count}'] = doctor.contact1
+                data_to_write[f'F{count}'] = doctor.speciality.name
+                data_to_write[f'G{count}'] = doctor.medical_organization.name
+                data_to_write[f'H{count}'] = doctor.medical_organization.region.name
+                # data_to_write[f'I{count}'] = count-6
+                data_to_write[f'J{count}'] = doctor.category.name
+                data_to_write[f'K{count}'] = pharmacy.company_name
+                data_to_write[f'L{count}'] = pharmacy.contact1
+                data_to_write[f'AO{count}'] = doctor_plan_sum
+                data_to_write.update(doctor_plan)
+                if doctor_fact:
+                    data_to_write[f'{PRODUCT_EXCEL_DICT2[doctor_fact.product_id]}{count}'] = doctor_fact.fact
+                    data_to_write[f'BQ{count}'] = doctor_fact.fact * doctor_fact.price
+                count += 1
+        for key in USER_PLAN_COMPLEATED.keys():
+            data_to_write[f"{key}{med_rep_count}"] = USER_PLAN_COMPLEATED[key]
+    data_to_write = dict(sorted(data_to_write.items()))
+    pprint(data_to_write)
+    print(s)
+    for cell_address, value in data_to_write.items():
+        destination_sheet[cell_address] = value
     destination_wb.save(destination_excel_file)
     destination_wb.close()
     filename = 'BASE_DOCTOR.xlsx'
