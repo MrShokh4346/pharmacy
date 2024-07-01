@@ -6,7 +6,6 @@ from .doctors import Doctor, pharmacy_doctor
 from datetime import date, datetime 
 from .users import Products
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
 from .database import Base, get_db, get_or_404

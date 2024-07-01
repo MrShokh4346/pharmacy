@@ -140,16 +140,6 @@ PRODUCT_EXCEL_DICT2 = {
         30 : "BM",        24 : "BN",        16 : "BO",        17 : "BP"
 }
 
-# PRODUCT_EXCEL_DICT2 = {
-#         "AP" : 0,        "AQ" : 0,        "AP" : 0,        "AQ" : 0,        "AR" : 0,
-#         "AS" : 0,        "AT" : 0,        "AU" : 0,        "AV" : 0,        "AW" : 0,
-#         "AX" : 0,        "AY" : 0,        "AZ" : 0,        "BA" : 0,        "BB" : 0,
-#         "BC" : 0,        "BD" : 0,        "BE" : 0,        "BF" : 0,        "BG" : 0,
-#         "BH" : 0,        "BI" : 0,        "BJ" : 0,        "BK" : 0,        "BL" : 0,
-#         "BM" : 0,        "BN" : 0,        "BO" : 0,        "BP" : 0
-# }
-
-from pprint import pprint
 
 async def write_proccess_to_excel(month: int, db: AsyncSession):
     year = datetime.now().year
@@ -166,6 +156,7 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
     count = 7
     data_to_write = {}
     result = await db.execute(select(Users).options(selectinload(Users.region)).filter(Users.status=="medical_representative"))
+    doctor_count = 0
     for user in result.scalars().all():
         USER_PLAN_COMPLEATED = {
                 "AP" : 0,        "AQ" : 0,        "AP" : 0,        "AQ" : 0,        "AR" : 0,
@@ -177,50 +168,59 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
         }
         data_to_write[f"C{count}"] = user.full_name
         data_to_write[f"H{count}"] = user.region.name
-        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id))
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
         user_plan = {}
+        user_plan_sum = 0
+        user_plan_compleated_sum = 0
         for prd in result.scalars().all():
             user_plan[f"{PRODUCT_EXCEL_DICT[prd.product_id]}{count}"] = prd.amount
+            user_plan_sum += prd.amount * prd.price
         data_to_write.update(user_plan)
         med_rep_count = count 
         count += 1
         result = await db.execute(select(Doctor).options(selectinload(Doctor.pharmacy)).filter(Doctor.med_rep_id==user.id))
         for doctor in result.scalars().all():
-            for pharmacy in doctor.pharmacy:
+            pharmacies = doctor.pharmacy
+            pharmacy_quantity = len(pharmacies)
+            for pharmacy in pharmacies:
+                doctor_fact = None
                 result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
                 doctor_plan = dict()
                 doctor_plan_sum = 0
-                s = ''
                 for product in result.scalars().all():
-                    doctor_plan[f"{PRODUCT_EXCEL_DICT[product.product_id]}{count}"] = product.monthly_plan
-                    doctor_plan_sum += product.monthly_plan * product.price
-                    s+=f'{doctor.id}:{product.id}:{pharmacy.id}-'
-                    result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id == doctor.id, DoctorFact.product_id == product.id, DoctorFact.pharmacy_id == pharmacy.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
+                    doctor_count += 1
+                    doctor_plan[f"{PRODUCT_EXCEL_DICT[product.product_id]}{count}"] = product.monthly_plan / pharmacy_quantity  
+                    doctor_plan_sum += product.monthly_plan / pharmacy_quantity * product.price
+                    result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id == doctor.id, DoctorFact.product_id == product.product_id, DoctorFact.pharmacy_id == pharmacy.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
                     tmp = result.scalars().first()
-                    doctor_fact = None
                     if tmp is not None:
                         doctor_fact = tmp
-                        USER_PLAN_COMPLEATED[f"{PRODUCT_EXCEL_DICT2[product.id]}"] += doctor_fact
+                        USER_PLAN_COMPLEATED[f"{PRODUCT_EXCEL_DICT2[product.product_id]}"] += doctor_fact.fact
+                        user_plan_compleated_sum += doctor_fact.fact * doctor_fact.price
                 data_to_write[f'D{count}'] = doctor.full_name
                 data_to_write[f'E{count}'] = doctor.contact1
                 data_to_write[f'F{count}'] = doctor.speciality.name
                 data_to_write[f'G{count}'] = doctor.medical_organization.name
                 data_to_write[f'H{count}'] = doctor.medical_organization.region.name
-                # data_to_write[f'I{count}'] = count-6
+                # data_to_write[f'I{count}'] = doctor_count
                 data_to_write[f'J{count}'] = doctor.category.name
                 data_to_write[f'K{count}'] = pharmacy.company_name
                 data_to_write[f'L{count}'] = pharmacy.contact1
                 data_to_write[f'AO{count}'] = doctor_plan_sum
                 data_to_write.update(doctor_plan)
-                if doctor_fact:
+                if doctor_fact is not None:
                     data_to_write[f'{PRODUCT_EXCEL_DICT2[doctor_fact.product_id]}{count}'] = doctor_fact.fact
                     data_to_write[f'BQ{count}'] = doctor_fact.fact * doctor_fact.price
+                    data_to_write[f"BR{count}"] = round(doctor_fact.fact * doctor_fact.price / doctor_plan_sum, 2)
+                    print(doctor_fact.fact * doctor_fact.price / doctor_plan_sum)
                 count += 1
         for key in USER_PLAN_COMPLEATED.keys():
             data_to_write[f"{key}{med_rep_count}"] = USER_PLAN_COMPLEATED[key]
-    data_to_write = dict(sorted(data_to_write.items()))
-    pprint(data_to_write)
-    print(s)
+        data_to_write[f"AO{med_rep_count}"] = user_plan_sum
+        data_to_write[f"BQ{med_rep_count}"] = user_plan_compleated_sum
+        data_to_write[f"BR{med_rep_count}"] = round(user_plan_compleated_sum / user_plan_sum if user_plan_sum else 0, 2)
+        print(user_plan_compleated_sum / user_plan_sum if user_plan_sum else 0)
+
     for cell_address, value in data_to_write.items():
         destination_sheet[cell_address] = value
     destination_wb.save(destination_excel_file)

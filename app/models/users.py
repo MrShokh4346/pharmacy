@@ -7,6 +7,7 @@ from datetime import date, datetime
 from sqlalchemy.exc import IntegrityError
 from .database import Base, get_db, get_or_404
 from sqlalchemy.future import select
+from sqlalchemy import update
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -120,6 +121,8 @@ class Products(Base):
             self.name = kwargs.get('name', self.name)
             self.price = kwargs.get('price', self.price)
             self.discount_price = kwargs.get('discount_price', self.discount_price)
+            if kwargs.get('price', None) or kwargs.get('discount_price', None):
+                await db.execute(update(UserProductPlan).where(UserProductPlan.plan_month >= datetime.now()).values(price=kwargs.get('price', self.price), discount_price=kwargs.get('discount_price', self.discount_price)))
             self.man_company_id = kwargs.get('man_company_id', self.man_company_id)
             self.category_id = kwargs.get('category_id', self.category_id)
             self.marketing_expenses = kwargs.get('marketing_expenses', self.marketing_expenses)
@@ -315,6 +318,8 @@ class UserProductPlan(Base):
     current_amount = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     plan_month = Column(DateTime)
+    price = Column(Integer)
+    discount_price = Column(Integer)
     product = relationship("Products", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     med_rep = relationship("Users", backref="product_plan")
@@ -322,6 +327,9 @@ class UserProductPlan(Base):
 
     async def save(self, db: AsyncSession):
         try:
+            product = await get_or_404(Products, self.product_id, db)
+            self.price = product.price
+            self.discount_price = product.discount_price
             db.add(self)
             await db.commit()
             await db.refresh(self)
