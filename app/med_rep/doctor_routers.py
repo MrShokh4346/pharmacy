@@ -127,8 +127,8 @@ async def get_doctor_attached_products(doctor_id: int, month: int | None = None,
     end_date = date(year, month, num_days)
     result = await db.execute(select(DoctorMonthlyPlan).options(selectinload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.doctor_id==doctor_id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
     data = []
-    fact = 0
     for obj in result.scalars().all():
+        fact = 0
         result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_id, DoctorFact.product_id==obj.product.id, DoctorFact.date>=start_date, DoctorFact.date<=end_date))
         for f in result.scalars().all():
             fact += f.fact 
@@ -177,18 +177,18 @@ async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession =
     return doctor.pharmacy
 
 
-@router.post('/add-bonus', response_model=List[BonusOutSchema])
+@router.post('/add-bonus', response_model=BonusOutSchema)
 async def add_bonus_to_doctor(data: BonusSchema, db: AsyncSession = Depends(get_db)):
     doctor = await get_doctor_or_404(data.doctor_id, db)
-    data_dict = data.dict()
-    products = data_dict.pop('products')
-    bonus = Bonus(**data_dict)
-    await bonus.save(db)
-    bonus_products = [BonusProduct(**product, bonus_id=bonus.id) for product in products]
-    db.add_all(bonus_products)
-    await db.commit()
-    result = await db.execute(select(Bonus).options(selectinload(Bonus.products)).filter(Bonus.doctor_id == data_dict['doctor_id']).order_by(Bonus.id.desc()))
-    return result.scalars().all()
+    bonus_id = await Bonus.save(**data.dict(), db=db)
+    return await db.get(Bonus, bonus_id)
+
+
+@router.post('/paying-bonus/{bonus_id}', response_model=BonusOutSchema)
+async def paying_bonus(bonus_id: int, amount: int, db: AsyncSession = Depends(get_db)):
+    bonus = await get_or_404(Bonus, bonus_id, db)
+    await bonus.paying_bonus(amount, db)    
+    return bonus
 
 
 @router.delete('/delete-bonus/{bonus_id}')
@@ -200,17 +200,12 @@ async def delete_product_by_id_form_bonus(bonus_id:int, db: AsyncSession = Depen
 
 
 @router.get('/get-bonus/{doctor_id}', response_model=List[BonusOutSchema])
-async def get_bonus_by_doctor_id(doctor_id: int, filter_bonus: FilterChoice, from_date: str, to_date: str, db: AsyncSession = Depends(get_db)):
+async def get_bonus_by_doctor_id(doctor_id: int, from_date: str, to_date: str, db: AsyncSession = Depends(get_db)):
     fr_date = datetime.strptime(from_date, '%Y-%m-%d') if from_date else None
     to_date = datetime.strptime(to_date, '%Y-%m-%d') if to_date else None
     doctor = await get_doctor_or_404(doctor_id, db)
 
     query = select(Bonus).options(selectinload(Bonus.products)).filter(Bonus.doctor_id == doctor_id)
-    if filter_bonus == 'payed':
-        query = query.filter(Bonus.payed == True)
-    elif filter_bonus == 'debt':
-        query = query.filter(Bonus.payed == False)
-    
     if fr_date and to_date:
         query = query.filter(Bonus.date.between(fr_date, to_date))
 

@@ -195,11 +195,59 @@ class Bonus(Base):
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
-    payed = Column(Boolean, default=False)
     description = Column(String)
     amount = Column(Integer)
+    remainder = Column(Integer, default=0)
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
     doctor = relationship("Doctor", backref="bonus")
+    products = relationship("BonusProduct", back_populates="bonus", lazy='selectin', cascade="all, delete")
+    pated_bonus = relationship("BonusPayed", back_populates="bonus", cascade="all, delete")
+
+    @classmethod
+    async def save(cls, db: AsyncSession, **kwargs):
+        try:
+            products = kwargs.pop('products')
+            bonus_products = []
+            sum = 0
+            for product in products:
+                prd = await get_or_404(Products, product['product_id'], db)
+                sum += prd.marketing_expenses * product['quantity']
+                bonus_products.append(BonusProduct(**product))
+            bonus = cls(**kwargs, amount=sum, remainder=sum)
+            bonus.products.extend(bonus_products)
+            db.add(bonus)
+            await db.commit()
+            await db.refresh(bonus)
+            return bonus.id
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def paying_bonus(self, amount: int, db: AsyncSession):
+        payed = BonusPayed(payed=amount, bonus_id=self.id)
+        payed.save(db)
+        self.remainder -= amount
+        await db.commit()
+
+
+class BonusProduct(Base):
+    __tablename__ = "bonus_product"
+
+    id = Column(Integer, primary_key=True)
+    quantity = Column(Integer)
+    bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
+    bonus = relationship("Bonus", back_populates="products", cascade="all, delete")
+    product = relationship("Products",  backref="bonusproduct", lazy='selectin')
+    product_id = Column(Integer, ForeignKey("products.id"))
+
+
+class BonusPayed(Base):
+    __tablename__ = "bonus_payed"
+
+    id = Column(Integer, primary_key=True)
+    date = Column(DateTime, default=datetime.now())
+    payed = Column(Integer)
+    bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
+    bonus = relationship("Bonus", back_populates="pated_bonus", cascade="all, delete")
 
     async def save(self, db: AsyncSession):
         try:
@@ -209,15 +257,6 @@ class Bonus(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-
-class BonusProduct(Base):
-    __tablename__ = "bonus_product"
-
-    id = Column(Integer, primary_key=True)
-    product_name = Column(String)
-    monthly_plan = Column(Integer)
-    bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
-    bonus = relationship("Bonus", backref="products", cascade="all, delete")
 
 
 pharmacy_doctor = Table(

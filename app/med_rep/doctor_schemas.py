@@ -82,26 +82,29 @@ class FilterChoice(str, Enum):
     debt = "debt"
     history = "history"
 
+
 class BonusProductSchema(BaseModel):
-    product_name: str 
-    monthly_plan: int
+    product_id: int 
+    quantity: int
 
 
 class BonusSchema(BaseModel):
-    date: date
-    payed: bool 
     description: str 
-    amount: int 
     doctor_id: int
     products: List[BonusProductSchema]
 
 
-class BonusProductOutSchema(BonusProductSchema):
-    id: int
+class BonusProductOutSchema(BaseModel):
+    product: ProductOutSchema
+    quantity: int 
 
 
 class BonusOutSchema(BonusSchema):
     id: int
+    date: datetime
+    description: str 
+    amount: int 
+    remainder: int 
     products: List[BonusProductOutSchema]
 
 
