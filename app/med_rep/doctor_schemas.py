@@ -94,18 +94,12 @@ class BonusSchema(BaseModel):
     products: List[BonusProductSchema]
 
 
-class BonusProductOutSchema(BaseModel):
-    product: ProductOutSchema
-    quantity: int 
-
-
-class BonusOutSchema(BonusSchema):
+class BonusOutSchema(BaseModel):
     id: int
     date: datetime
-    description: str 
     amount: int 
-    remainder: int 
-    products: List[BonusProductOutSchema]
+    payed: int 
+    product: ProductOutSchema
 
 
 class RescheduleSchema(BaseModel):

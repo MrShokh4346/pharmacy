@@ -177,11 +177,11 @@ async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession =
     return doctor.pharmacy
 
 
-@router.post('/add-bonus', response_model=BonusOutSchema)
-async def add_bonus_to_doctor(data: BonusSchema, db: AsyncSession = Depends(get_db)):
-    doctor = await get_doctor_or_404(data.doctor_id, db)
-    bonus_id = await Bonus.save(**data.dict(), db=db)
-    return await db.get(Bonus, bonus_id)
+# @router.post('/add-bonus', response_model=BonusOutSchema)
+# async def add_bonus_to_doctor(data: BonusSchema, db: AsyncSession = Depends(get_db)):
+#     doctor = await get_doctor_or_404(data.doctor_id, db)
+#     bonus_id = await Bonus.save(**data.dict(), db=db)
+#     return await db.get(Bonus, bonus_id)
 
 
 @router.post('/paying-bonus/{bonus_id}', response_model=BonusOutSchema)
@@ -200,16 +200,14 @@ async def delete_product_by_id_form_bonus(bonus_id:int, db: AsyncSession = Depen
 
 
 @router.get('/get-bonus/{doctor_id}', response_model=List[BonusOutSchema])
-async def get_bonus_by_doctor_id(doctor_id: int, from_date: str, to_date: str, db: AsyncSession = Depends(get_db)):
-    fr_date = datetime.strptime(from_date, '%Y-%m-%d') if from_date else None
-    to_date = datetime.strptime(to_date, '%Y-%m-%d') if to_date else None
+async def get_bonus_by_doctor_id(doctor_id: int, month: int, db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    month = datetime.now().month if month is None else month 
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
     doctor = await get_doctor_or_404(doctor_id, db)
-
-    query = select(Bonus).options(selectinload(Bonus.products)).filter(Bonus.doctor_id == doctor_id)
-    if fr_date and to_date:
-        query = query.filter(Bonus.date.between(fr_date, to_date))
-
-    result = await db.execute(query.order_by(Bonus.id.desc()))
+    result = await db.execute(select(Bonus).options(selectinload(Bonus.product)).filter(Bonus.doctor_id == doctor_id, Bonus.date >= start_date, Bonus.date <= end_date))
     return result.scalars().all()
 
 

@@ -157,21 +157,28 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
     fact = 0
     fact_price = 0
     for user_plan in user_plans:
-        query = select(DoctorFact).join(Doctor).options(
-                            joinedload(DoctorFact.doctor)
-                        ).where(Doctor.med_rep_id == user_plan.med_rep_id).where(DoctorFact.product_id == user_plan.product_id).where(DoctorFact.date >= start_date, DoctorFact.date <= end_date)
+        # query = select(DoctorFact).join(Doctor).options(
+                            # joinedload(DoctorFact.doctor)
+                        # ).where(Doctor.med_rep_id == user_plan.med_rep_id).where(DoctorFact.product_id == user_plan.product_id).where(DoctorFact.date >= start_date, DoctorFact.date <= end_date)
+        query = select(DoctorMonthlyPlan).join(Doctor).options(joinedload(DoctorMonthlyPlan.doctor)).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorMonthlyPlan.product_id == user_plan.product_id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
         result = await db.execute(query)
         doctor_att = []
         doctor_plans = result.scalars().all() 
         for doctor_plan in doctor_plans:
+            print(user_plan.product_id)
+            result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
+            fact_d = 0
+            for f in result.scalars().all():
+                fact_d += f.fact
+            print(fact_d)
             doctor_att.append({
                 'monthly_plan' : doctor_plan.monthly_plan,
-                'fact' : doctor_plan.fact,
+                'fact' : fact_d,
                 'doctor_name' : doctor_plan.doctor.full_name,
                 'doctor_id' : doctor_plan.doctor.id
             })
-            fact +=  doctor_plan.fact
-            fact_price += doctor_plan.fact *  user_plan.product.price
+            fact +=  fact_d
+            fact_price += fact_d *  user_plan.product.price
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
