@@ -99,6 +99,7 @@ class BonusOutSchema(BaseModel):
     date: datetime
     amount: int 
     payed: int 
+    product_quantity: int 
     product: ProductOutSchema
 
 

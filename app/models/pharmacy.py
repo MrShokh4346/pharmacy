@@ -130,11 +130,12 @@ class CheckingBalanceInStock(Base):
                 current = result.scalars().first()
                 if (not current) or (current.amount < product['remainder']) :
                     raise HTTPException(status_code=404, detail="There isn't enough product in stock")
-                stock_product = CheckingStockProducts(**product, previous=current.amount, saled=current.amount-product['remainder'])
+                saled_product_amount = current.amount-product['remainder']
+                stock_product = CheckingStockProducts(**product, previous=current.amount, saled=saled_product_amount)
                 stock.products.append(stock_product)
                 if stock_product.saled > current.amount:
                     raise HTTPException(status_code=400, detail="There isn't enough product in stock")
-                current.amount -= stock_product.saled
+                current.amount -= saled_product_amount
             db.add(stock)
             await db.commit()
             # for product in products:
@@ -266,6 +267,8 @@ class Reservation(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
     async def check_reservation(self, db: AsyncSession, **kwargs):
+        if self.checked == True:
+            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         self.checked = kwargs.get('checked')
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
@@ -290,6 +293,16 @@ class Reservation(Base):
             wrh = result.scalars().first()
             wrh.amount += product.quantity
         await db.delete(self)
+        await db.commit()
+
+    async def update_discount(self, discount: int, db: AsyncSession):
+        if self.checked == True:
+            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+        for product in self.products:
+            product.reservation_price = product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100)
+        self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
+        self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
+        self.discount = discount
         await db.commit()
 
 

@@ -24,5 +24,3 @@ async def get_or_404(model, id, db):
 async def check_exists(model, field, value, db):
     exists = await db.execute(select(model).filter(field == value))
     return exists.scalar_one_or_none()
-
-

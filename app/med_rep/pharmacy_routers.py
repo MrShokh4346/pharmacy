@@ -95,7 +95,7 @@ async def checking_balance_in_stock(balance: CheckBalanceInStockSchema, db: Asyn
 
 @router.get('/get-balnce-in-stock/{pharmacy_id}', response_model=List[StockOutSchema])
 async def get_balance_in_stock(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(CurrentBalanceInStock).options(selectinload(CurrentBalanceInStock.product)).filter(CurrentBalanceInStock.pharmacy_id==pharmacy_id))
+    result = await db.execute(select(CurrentBalanceInStock).options(selectinload(CurrentBalanceInStock.product)).filter(CurrentBalanceInStock.pharmacy_id==pharmacy_id, CurrentBalanceInStock.amount > 0))
     return result.scalars().all()
 
 

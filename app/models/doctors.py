@@ -198,6 +198,7 @@ class Bonus(Base):
     date = Column(DateTime, default=datetime.now())
     amount = Column(Integer)
     payed = Column(Integer, default=0)
+    product_quantity = Column(Integer)
     doctor_id = Column(Integer, ForeignKey("doctor.id"))
     doctor = relationship("Doctor", backref="bonus")
     product = relationship("Products",  backref="bonus", lazy='selectin')
@@ -219,10 +220,11 @@ class Bonus(Base):
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_bonus = result.scalars().first()
         if month_bonus is None:
-            month_bonus = cls(doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], amount=amount)
+            month_bonus = cls(doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=amount)
             db.add(month_bonus)
         else:
-            month_bonus.fact += amount
+            month_bonus.amount += amount
+            month_bonus.product_quantity += kwargs['compleated']
 
 
 # class BonusProduct(Base):

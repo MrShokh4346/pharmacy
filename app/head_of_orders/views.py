@@ -93,4 +93,8 @@ async def set_discount_to_all_pharmacies(discount: float,  db: AsyncSession = De
     return {"msg":"Done"}
 
 
-
+@router.post('/update-reservation-discount/{reservation_id}')
+async def get_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.update_discount(discount = discount, db=db)
+    return {"msg":"Done"}

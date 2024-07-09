@@ -96,7 +96,7 @@ async def write_excel(reservation_id: int, db: AsyncSession):
     destination_sheet = destination_wb[sheet_name]
     result = await db.execute(select(Reservation).options(selectinload(Reservation.pharmacy)).where(Reservation.id==reservation_id))
     reservation = result.scalar()
-    destination_sheet['E2'] = reservation.pharmacy.discount
+    destination_sheet['E2'] = reservation.discount
     destination_sheet['E6'] = reservation.pharmacy.company_name
     destination_sheet['E7'] = reservation.pharmacy.inter_branch_turnover
     count = 9
@@ -112,7 +112,7 @@ async def write_excel(reservation_id: int, db: AsyncSession):
         for cell_address, value in data_to_write.items():
             destination_sheet[cell_address] = value
     destination_sheet['H31'] = reservation.total_amount
-    destination_sheet['G32'] = f"{reservation.pharmacy.discount}% скидка билан"
+    destination_sheet['G32'] = f"{reservation.discount}% скидка билан"
     destination_sheet['H32'] = reservation.total_payable
     destination_sheet['G33'] = "12% ндс билан"
     destination_sheet['H33'] = reservation.total_payable + 0.12 * reservation.total_payable

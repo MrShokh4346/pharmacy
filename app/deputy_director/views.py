@@ -4,8 +4,8 @@ from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
 from models.users import *
-from models.doctors import DoctorFact, Doctor
-from models.database import get_db
+from models.doctors import DoctorFact, Doctor, Bonus
+from models.database import get_db, get_or_404
 from models.dependencies import *
 from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -146,7 +146,7 @@ async def add_user_products_plan(med_rep_id: int, db: AsyncSession = Depends(get
 
 
 @router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
-async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
+async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
     num_days = calendar.monthrange(year, month_number)[1]
     start_date = date(year, month_number, 1)
@@ -157,20 +157,15 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
     fact = 0
     fact_price = 0
     for user_plan in user_plans:
-        # query = select(DoctorFact).join(Doctor).options(
-                            # joinedload(DoctorFact.doctor)
-                        # ).where(Doctor.med_rep_id == user_plan.med_rep_id).where(DoctorFact.product_id == user_plan.product_id).where(DoctorFact.date >= start_date, DoctorFact.date <= end_date)
         query = select(DoctorMonthlyPlan).join(Doctor).options(joinedload(DoctorMonthlyPlan.doctor)).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorMonthlyPlan.product_id == user_plan.product_id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
         result = await db.execute(query)
         doctor_att = []
         doctor_plans = result.scalars().all() 
         for doctor_plan in doctor_plans:
-            print(user_plan.product_id)
             result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
             fact_d = 0
             for f in result.scalars().all():
                 fact_d += f.fact
-            print(fact_d)
             doctor_att.append({
                 'monthly_plan' : doctor_plan.monthly_plan,
                 'fact' : fact_d,
@@ -184,6 +179,7 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
             "product": user_plan.product.name,
             "product_id": user_plan.product.id,
             "plan_amount": user_plan.amount,
+            "plan_price" : user_plan.amount * user_plan.product.price,
             "date": user_plan.date,
             "doctor_plans": doctor_att,
             "vakant": user_plan.current_amount
@@ -194,6 +190,82 @@ async def add_user_product_plan_by_plan_id(med_rep_id: int, month_number: int, d
         'fact_price' : fact_price
     }
     return data
+
+
+@router.get('/get-doctor-bonus-by-med-rep-id/{med_rep_id}')
+async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int,  db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    num_days = calendar.monthrange(year, month_number)[1]
+    start_date = date(year, month_number, 1)
+    end_date = date(year, month_number, num_days)
+    user = await get_or_404(Users, med_rep_id, db)
+    query = select(DoctorMonthlyPlan).join(Doctor).join(MedicalOrganization).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(Doctor.med_rep_id == user.id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
+    # if region_id:
+        # query = query.filter(MedicalOrganization.region_id == region_id)
+    # if product_id:
+        # query = query.filter(DoctorMonthlyPlan.product_id == product_id)
+    result = await db.execute(query)
+    doctor_att = []
+    doctor_plans = result.scalars().all() 
+    for doctor_plan in doctor_plans:
+        result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==doctor_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
+        fact_d = 0
+        for f in result.scalars().all():
+            fact_d += f.fact
+        result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==doctor_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
+        bonus = result.scalars().first()
+        doctor_att.append({
+            'monthly_plan' : doctor_plan.monthly_plan,
+            'fact' : fact_d,
+            'doctor_name' : doctor_plan.doctor.full_name,
+            'doctor_id' : doctor_plan.doctor.id,
+            'product_name' : doctor_plan.product.name,
+            'bonus_id' : bonus.id if bonus else None,
+            'bonus_amount': bonus.amount if bonus else 0,
+            'bonus_payed' : bonus.payed if bonus else 0
+        })
+    return doctor_att
+
+
+@router.get('/get-fact')
+async def get_fact(month_number: int, med_rep_id: int | None = None, region_id: int | None = None, product_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    num_days = calendar.monthrange(year, month_number)[1]
+    start_date = date(year, month_number, 1)
+    end_date = date(year, month_number, num_days)
+    # user = await get_or_404(Users, med_rep_id, db)
+    query = select(DoctorMonthlyPlan).join(Doctor).join(MedicalOrganization).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
+    if med_rep_id:
+        query = query.filter(Doctor.med_rep_id == med_rep_id)
+    if region_id:
+        query = query.filter(MedicalOrganization.region_id == region_id)
+    if product_id:
+        query = query.filter(DoctorMonthlyPlan.product_id == product_id)
+    result = await db.execute(query)
+    doctor_att = []
+    doctor_plans = result.scalars().all() 
+    for doctor_plan in doctor_plans:
+        result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==doctor_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
+        fact_d = 0
+        for f in result.scalars().all():
+            fact_d += f.fact
+        result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==doctor_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
+        bonus = result.scalars().first()
+        doctor_att.append({
+            'monthly_plan' : doctor_plan.monthly_plan,
+            'plan_price' : doctor_plan.monthly_plan * doctor_plan.price * 0.92,
+            'fact' : fact_d,
+            'fact_price' : fact_d * doctor_plan.price * 0.92,
+            'doctor_name' : doctor_plan.doctor.full_name,
+            'doctor_id' : doctor_plan.doctor.id,
+            'product_name' : doctor_plan.product.name,
+            'bonus_id' : bonus.id if bonus else None,
+            'bonus_amount': bonus.amount if bonus else 0,
+            'bonus_payed' : bonus.payed if bonus else 0
+        })
+    return doctor_att
+
+
 
 
 @router.get('/get-user-current-month-product-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])

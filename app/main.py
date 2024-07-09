@@ -7,10 +7,12 @@ from project_manager.views import router as pm_router
 from region_manager.views import router as rm_router
 from deputy_director.views import router as dd_router
 from director.views import router as d_router
-from models.database import engine, Base
+from models.database import engine, Base 
+from models.database_chacker import delete_expired_objects
 from med_rep.router import router as mr_router
 from head_of_orders.views import router as ho_router
 from wholesale.views import router as w_router
+import asyncio
 
 app = FastAPI()
 
@@ -39,6 +41,9 @@ app.mount("/head", ho_router)
 app.mount("/ws", w_router)
 
 
+@app.on_event("startup")
+async def start_background_tasks():
+    asyncio.create_task(delete_expired_objects())
 
 
 

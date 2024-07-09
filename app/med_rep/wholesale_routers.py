@@ -70,7 +70,6 @@ async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSessio
     for obj in objects:
         prd_list = []
         for product in obj.products:
-            print(obj.pharmacy.id, product.product.id)
             result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==obj.pharmacy.id, CurrentBalanceInStock.product_id==product.product.id))
             current_amount = result.scalars().first()
             prd_list.append({**product.__dict__, "current_amount":current_amount.amount})
