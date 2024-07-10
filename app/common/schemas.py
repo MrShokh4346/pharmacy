@@ -56,7 +56,6 @@ class MedicalOrganizationInSchema(BaseModel):
     address: str 
     latitude: str 
     longitude: str 
-    med_rep_id: int 
     region_id: int 
 
 
@@ -65,7 +64,6 @@ class MedicalOrganizationUpdateSchema(BaseModel):
     address: Optional[str] = None 
     latitude: Optional[str] = None 
     longitude: Optional[str] = None 
-    med_rep_id: Optional[int] = None 
     region_id: Optional[int] = None 
 
 
@@ -82,7 +80,6 @@ class MedicalOrganizationOutSchema(BaseModel):
     address: str 
     latitude: str 
     longitude: str 
-    med_rep: UserSchema
     region: RegionSchema
 
 

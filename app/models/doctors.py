@@ -69,8 +69,6 @@ class MedicalOrganization(Base):
     latitude = Column(String)
     longitude = Column(String)
 
-    med_rep = relationship("Users",  backref="med_org", lazy='selectin')
-    med_rep_id = Column(Integer, ForeignKey("users.id"))
     region = relationship("Region",  backref="med_org", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id")) 
 
