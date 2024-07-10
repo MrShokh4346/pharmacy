@@ -59,6 +59,7 @@ class MedicalOrganizationInSchema(BaseModel):
     region_id: int 
 
 
+
 class MedicalOrganizationUpdateSchema(BaseModel):
     name: Optional[str] = None
     address: Optional[str] = None 
