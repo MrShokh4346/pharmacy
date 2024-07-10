@@ -129,9 +129,7 @@ class NotificationOutSchema(BaseModel):
 
 class NotificationListSchema(BaseModel):
     id: int 
-    # author: str 
     theme: Optional[str] = None 
-    # description: Optional[str] = None 
     date: date 
     unread: bool
     doctor: Optional[DoctorListSchema] = None
@@ -158,7 +156,6 @@ class UserProductPlanOutSchema(BaseModel):
     product: ProductSchema 
     amount: int 
     date: datetime 
-
 
 
 class DoctorSchema(BaseModel):
@@ -216,7 +213,6 @@ class ReportSchema(BaseModel):
     speciality: DoctorSpecialitySchema 
     medical_organization: MedicalOrganizationSchema
     doctor_attached_products: List[AttachProductsSchema]
-    # region: RegionSchema 
 
 
 class ProductExpensesSchema(BaseModel):

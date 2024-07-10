@@ -127,17 +127,6 @@ class DoctorAttachedProductSchema(BaseModel):
 class DoctorVisitPlanListSchema(BaseModel):
     id: int    
     date: datetime
-    # theme: Optional[str] = None
-    # description: Optional[str] = None 
     status: bool 
     postpone: bool
     doctor: DoctorListSchema
-
-    # @validator('date', pre=True, always=True)
-    # def format_date(cls, value):
-    #     if isinstance(value, datetime):
-    #         return value.strftime('%Y-%m-%d %H:%M')
-    #     return value
-
-    # class Config:
-    #     orm_mode = True

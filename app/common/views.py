@@ -109,7 +109,7 @@ async def get_doctor_speciality(db: AsyncSession = Depends(get_db)):
 async def add_medical_organization(organization: MedicalOrganizationInSchema, db: AsyncSession = Depends(get_db)):
     new_organization = MedicalOrganization(**organization.dict())
     await new_organization.save(db)
-    result = await db.execute(select(MedicalOrganization).options(selectinload(MedicalOrganization.med_rep), selectinload(MedicalOrganization.region)))
+    result = await db.execute(select(MedicalOrganization).options(selectinload(MedicalOrganization.region)))
     return result.scalars().all()
 
 

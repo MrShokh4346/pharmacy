@@ -96,44 +96,6 @@ class MedicalOrganization(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-class DoctorAttachedProduct(Base):
-    __tablename__ = "doctor_attached_product"
-
-    id = Column(Integer, primary_key=True)
-    monthly_plan = Column(Integer)
-    fact = Column(Integer, default=0)
-
-    product = relationship("Products",  backref="doctorattachedproduct", lazy='selectin')
-    product_id = Column(Integer, ForeignKey("products.id"))
-    doctor = relationship("Doctor",  back_populates="doctor_attached_products")
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
-
-    async def save(self, db: AsyncSession):
-        try:
-            db.add(self)
-            await db.commit()
-            await db.refresh(self)
-        except:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-            
-    async def update(self, monthly_plan: int, user_id: int, db: AsyncSession):
-        self.monthly_plan = monthly_plan 
-        year = datetime.now().year
-        month = datetime.now().month
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
-        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==self.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
-        user_product = result.scalars().first()
-        if user_product is None:
-            raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan')
-        if user_product.current_amount < monthly_plan:
-            raise HTTPException(status_code=404, detail='You are trying to add more doctor plan than user plan for this product')
-        user_product.current_amount -= monthly_plan
-        await db.commit()
-
-
-
 class DoctorMonthlyPlan(Base):
     __tablename__ = "doctor_monthly_plan"
 
@@ -144,8 +106,8 @@ class DoctorMonthlyPlan(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     price = Column(Integer)
     discount_price = Column(Integer)
-    doctor = relationship("Doctor",  backref="doctormonthlyplan")
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor = relationship("Doctor", cascade="all, delete",  backref="doctormonthlyplan")
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
 
     async def save(self, db: AsyncSession):
         try:
@@ -164,9 +126,9 @@ class DoctorFact(Base):
     price = Column(Integer)
     discount_price = Column(Integer)
     date = Column(DateTime, default=datetime.now())
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="fact")
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", cascade="all, delete", backref="fact")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     pharmacy = relationship("Pharmacy", backref="doctorfact")
     product = relationship("Products",  backref="doctorfact")
     product_id = Column(Integer, ForeignKey("products.id"))
@@ -197,8 +159,8 @@ class Bonus(Base):
     amount = Column(Integer)
     payed = Column(Integer, default=0)
     product_quantity = Column(Integer)
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="bonus")
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", cascade="all, delete", backref="bonus")
     product = relationship("Products",  backref="bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
@@ -225,42 +187,11 @@ class Bonus(Base):
             month_bonus.product_quantity += kwargs['compleated']
 
 
-# class BonusProduct(Base):
-#     __tablename__ = "bonus_product"
-
-#     id = Column(Integer, primary_key=True)
-#     quantity = Column(Integer)
-#     bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
-#     bonus = relationship("Bonus", back_populates="products", cascade="all, delete")
-#     product = relationship("Products",  backref="bonusproduct", lazy='selectin')
-#     product_id = Column(Integer, ForeignKey("products.id"))
-
-
-# class BonusPayed(Base):
-#     __tablename__ = "bonus_payed"
-
-#     id = Column(Integer, primary_key=True)
-#     date = Column(DateTime, default=datetime.now())
-#     payed = Column(Integer)
-#     bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
-#     bonus = relationship("Bonus", back_populates="pated_bonus", cascade="all, delete")
-
-#     async def save(self, db: AsyncSession):
-#         try:
-#             db.add(self)
-#             await db.commit()
-#             await db.refresh(self)
-#         except IntegrityError as e:
-#             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-
-
 pharmacy_doctor = Table(
     "pharmacy_doctor",
     Base.metadata,
-    Column("doctor_id", ForeignKey("doctor.id"), primary_key=True),
-    Column("pharmacy_id", ForeignKey("pharmacy.id"), primary_key=True),
-    # Column("product_id", ForeignKey("products.id"), primary_key=True)
+    Column("doctor_id", ForeignKey("doctor.id", ondelete="CASCADE"), primary_key=True),
+    Column("pharmacy_id", ForeignKey("pharmacy.id", ondelete="CASCADE"), primary_key=True),
 )
 
 
@@ -290,15 +221,13 @@ class Doctor(Base):
     director = relationship("Users",   foreign_keys=[director_id])
     region = relationship("Region",  backref="doctor", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id")) 
-    pharmacy = relationship("Pharmacy",  secondary="pharmacy_doctor", back_populates="doctors")
+    pharmacy = relationship("Pharmacy",  secondary="pharmacy_doctor", cascade="all, delete", back_populates="doctors")
     speciality = relationship("Speciality",  backref="doctor", lazy='selectin')
     speciality_id = Column(Integer, ForeignKey("speciality.id")) 
     category = relationship("DoctorCategory",  backref="doctor", lazy='selectin')
     category_id = Column(Integer, ForeignKey("doctor_category.id"))
     medical_organization = relationship("MedicalOrganization",  backref="doctor", lazy='selectin')
     medical_organization_id = Column(Integer, ForeignKey("medical_organization.id")) 
-    doctor_attached_products = relationship("DoctorAttachedProduct",  back_populates="doctor")
-
 
     async def save(self, db: AsyncSession):
         try:
@@ -342,12 +271,3 @@ class Doctor(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-
-
-
-# lst = [{'name':'doctor',
-#             'pharmacy':['pharmacy1', 'pharmacy2']},
-#             {'name':'doctor2',
-#                 'pharmacy':['pharmacy1', 'pharmacy2']},
-#        {'name':'doctor3',
-#                 'pharmacy':['pharmacy1', 'pharmacy2']}]

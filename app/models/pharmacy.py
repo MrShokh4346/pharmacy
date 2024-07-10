@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
-from .doctors import Doctor, pharmacy_doctor, DoctorAttachedProduct, DoctorFact, DoctorMonthlyPlan
+from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan
 from datetime import date , datetime, timedelta
 from .users import Products
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
@@ -20,8 +20,8 @@ class IncomingStockProducts(Base):
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
 
-    stock_id = Column(Integer, ForeignKey("incoming_balance_in_stock.id"))
-    stock = relationship("IncomingBalanceInStock", back_populates="products")
+    stock_id = Column(Integer, ForeignKey("incoming_balance_in_stock.id", ondelete="CASCADE"))
+    stock = relationship("IncomingBalanceInStock", cascade="all, delete", back_populates="products")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="incomingstockproducts")
 
@@ -30,7 +30,6 @@ class IncomingBalanceInStock(Base):
     __tablename__ = "incoming_balance_in_stock"
 
     id = Column(Integer, primary_key=True)
-    # saler = Column(String)
     date = Column(DateTime, default=date.today())
     description = Column(String)
 
@@ -38,9 +37,9 @@ class IncomingBalanceInStock(Base):
     wholesale = relationship("Wholesale", backref='balanceinstock')
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
     factory = relationship("ManufacturedCompany", backref='balanceinstock')
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref='balanceinstock')
-    products = relationship("IncomingStockProducts", back_populates="stock", lazy='selectin')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='balanceinstock')
+    products = relationship("IncomingStockProducts", cascade="all, delete", back_populates="stock", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -80,8 +79,8 @@ class CurrentBalanceInStock(Base):
 
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="currntbalanceinstock")
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref='currntbalanceinstock')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='currntbalanceinstock')
 
     @classmethod
     async def add(cls, pharmacy_id: int, product_id: int, amount: int, db: AsyncSession):
@@ -104,8 +103,8 @@ class CheckingStockProducts(Base):
     remainder = Column(Integer)
     chack = Column(Boolean, default=False)
 
-    stock_id = Column(Integer, ForeignKey("checking_balance_in_stock.id"))
-    stock = relationship("CheckingBalanceInStock", backref="products")
+    stock_id = Column(Integer, ForeignKey("checking_balance_in_stock.id", ondelete="CASCADE"))
+    stock = relationship("CheckingBalanceInStock", cascade="all, delete", backref="products")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="checkingbalanceinstock")
 
@@ -117,8 +116,8 @@ class CheckingBalanceInStock(Base):
     date = Column(DateTime, default=date.today())
     description = Column(String)
 
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref='checkingbalanceinstock')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='checkingbalanceinstock')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -138,52 +137,8 @@ class CheckingBalanceInStock(Base):
                 current.amount -= saled_product_amount
             db.add(stock)
             await db.commit()
-            # for product in products:
-                # await cls.fact(product_id=product['product_id'], pharmacy_id=current.pharmacy_id, db=db)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    # @classmethod
-    # async def fact(cls, product_id: int, pharmacy_id: int, db: AsyncSession):
-    #     current_year = datetime.now().year
-    #     current_month = datetime.now().month
-
-    #     sum_fact_result = await db.execute(
-    #         select(func.sum(CheckingStockProducts.saled)).\
-    #             join(cls, CheckingStockProducts.stock_id == cls.id).\
-    #             filter(
-    #                 CheckingStockProducts.product_id == product_id,
-    #                 cls.pharmacy_id == pharmacy_id,
-    #                 extract('year', cls.date) == current_year,
-    #                 extract('month', cls.date) == current_month
-    #             )
-    #     )
-    #     sum_fact = sum_fact_result.scalar() or 0  # Ensure sum_fact is an integer, default to 0 if None
-
-    #     result = await db.execute(
-    #         select(DoctorAttachedProduct).\
-    #             join(Doctor, DoctorAttachedProduct.doctor_id == Doctor.id).\
-    #             join(pharmacy_doctor, pharmacy_doctor.c.doctor_id == Doctor.id).\
-    #             filter(
-    #                 pharmacy_doctor.c.pharmacy_id == pharmacy_id,
-    #                 DoctorAttachedProduct.product_id == product_id
-    #             )
-    #     )
-    #     attached = result.scalars().first()  # Get the first result or None if no result
-    #     if attached:
-    #         attached.fact = sum_fact
-    #         await db.commit()
-
-
-class PharmacyAttachedProducts(Base):
-    __tablename__ = "pharmacy_attached_products"
-
-    id = Column(Integer, primary_key=True)
-    monthly_plan = Column(Integer)
-    product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="pharmacy_attached_product", lazy='selectin')
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", back_populates="pharmacy_attached_product")
 
 
 class Debt(Base):
@@ -194,8 +149,8 @@ class Debt(Base):
     amount = Column(Integer)
     payed = Column(Boolean, default=False) 
     date = Column(DateTime, default=date.today())
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="debts")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", cascade="all, delete", backref="debts")
 
     async def save(self, db: AsyncSession):
         try:
@@ -226,9 +181,9 @@ class Reservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="reservation", lazy='selectin')
-    products = relationship("ReservationProducts", back_populates="reservation", lazy='selectin')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
+    products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     manufactured_company = relationship("ManufacturedCompany", backref="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
@@ -315,8 +270,8 @@ class ReservationProducts(Base):
     reservation_price = Column(Integer)
     reservation_discount_price = Column(Integer)
     product = relationship("Products", backref="reservaion_products", lazy='selectin')
-    reservation_id = Column(Integer, ForeignKey("reservation.id"))
-    reservation = relationship("Reservation", back_populates="products")
+    reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
+    reservation = relationship("Reservation", cascade="all, delete", back_populates="products")
 
 
 class PharmacyHotSale(Base):
@@ -328,8 +283,8 @@ class PharmacyHotSale(Base):
 
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="hot_sale_products", lazy='selectin')
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="hot_sale", lazy='selectin')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", backref="hot_sale", cascade="all, delete", lazy='selectin')
 
 
 class PharmacyFact(Base):
@@ -340,12 +295,12 @@ class PharmacyFact(Base):
     date = Column(DateTime, default=datetime.now())
     monthly_plan = Column(Integer)
 
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), nullable=True)
     doctor = relationship("Doctor", backref="pharmacyfact", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="pharmacyfact", lazy='selectin')
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="pharmacyfact", lazy='selectin')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", backref="pharmacyfact", cascade="all, delete", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -425,8 +380,7 @@ class Pharmacy(Base):
     director = relationship("Users",  foreign_keys=[director_id])
     region = relationship("Region", backref="pharmacy", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id")) 
-    doctors = relationship("Doctor",  secondary="pharmacy_doctor", back_populates="pharmacy")
-    pharmacy_attached_product = relationship("PharmacyAttachedProducts", back_populates="pharmacy")
+    doctors = relationship("Doctor",  secondary="pharmacy_doctor", passive_deletes=True, back_populates="pharmacy")
 
     async def save(self, db: AsyncSession):
         try:

@@ -95,7 +95,6 @@ class BalanceInStockSchema(BaseModel):
     pharmacy_id: int 
     wholesale_id: Optional[int] = None
     factory_id: Optional[int] = None
-    # saler: str 
     description: Optional[str] = None 
 
 
@@ -215,8 +214,6 @@ class ReservationOutSchema(BaseModel):
     id: int
     date: datetime 
     expire_date: datetime 
-    # products: List[ReservationProductOutSchema] 
-    # manufactured_company: ManufacturedCompanySchema
     discount: float
     total_quantity: float
     total_amount: float
@@ -229,7 +226,6 @@ class ReservationOutSchema(BaseModel):
 class AttachDoctorToPharmacySchema(BaseModel):
     doctor_id: int 
     pharmacy_id: int 
-    # product_id: int 
 
 
 class ReplyNotification(BaseModel):

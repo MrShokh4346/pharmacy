@@ -64,7 +64,7 @@ class Wholesale(Base):
     contact = Column(String)
     region_id = Column(Integer, ForeignKey("region.id")) 
     region = relationship("Region", backref="wholesales", lazy='selectin')
-    report_warehouse = relationship("CurrentWholesaleWarehouse", back_populates="wholesale", lazy='selectin')
+    report_warehouse = relationship("CurrentWholesaleWarehouse", cascade="all, delete", back_populates="wholesale", lazy='selectin')
 
     async def save(self, db: AsyncSession):
         try:
@@ -108,9 +108,9 @@ class ReportWholesaleWarehouse(Base):
     quantity = Column(Integer)
     price = Column(Integer)
     date = Column(DateTime, default=date.today())
-    factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
+    factory_id = Column(Integer, ForeignKey("manufactured_company.id"), nullable=True)
     factory = relationship("ManufacturedCompany", backref="wholesale_report_warehouse", lazy='selectin')
-    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
     wholesale = relationship("Wholesale", backref="wholesale_report_warehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="wholesale_report_warehouse", lazy='selectin')
@@ -130,8 +130,8 @@ class CurrentWholesaleWarehouse(Base):
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
     price = Column(Integer)
-    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
-    wholesale = relationship("Wholesale", back_populates="report_warehouse", lazy='selectin')
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
+    wholesale = relationship("Wholesale", cascade="all, delete",  back_populates="report_warehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="wholesale_current_warehouse", lazy='selectin')
 
@@ -158,7 +158,7 @@ class WholesaleOutput(Base):
     pharmacy = Column(String)
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="wholesale_output", lazy='selectin')
-    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
     wholesale = relationship("Wholesale", backref="warehouse_output", lazy='selectin')
 
     async def save(self, wholesale_id: int, db: AsyncSession):

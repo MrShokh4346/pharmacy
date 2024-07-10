@@ -67,7 +67,6 @@ class ManufacturedCompany(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-
 class ProductCategory(Base):
     __tablename__ = "product_category"
 
@@ -89,7 +88,6 @@ class ProductCategory(Base):
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
 
 class Products(Base):
@@ -142,9 +140,9 @@ class DoctorPlan(Base):
     date = Column(DateTime)
     status = Column(Boolean, default=False)
     postpone = Column(Boolean, default=False)
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="visit_plan")
-    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", cascade="all, delete", backref="visit_plan")
+    med_rep_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     med_rep = relationship("Users", backref="doctor_visit_plan")
 
     async def save(self, db: AsyncSession):
@@ -177,8 +175,8 @@ class DoctorVisitInfo(Base):
     id = Column(Integer, primary_key=True)
     recept = Column(Integer)
     data = Column(DateTime, default = datetime.now())
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="visit_info")
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", cascade="all, delete", backref="visit_info")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="visit_info")
 
@@ -201,8 +199,8 @@ class PharmacyPlan(Base):
     date = Column(DateTime)
     status = Column(Boolean, default=False)
     postpone = Column(Boolean, default=False)
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="visit_plan")
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", cascade="all, delete", backref="visit_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users", backref="pharmacy_visit_plan")
 
@@ -256,8 +254,8 @@ class PharmacyPlanAttachedProduct(Base):
     doctor_speciality = Column(String)
     product_name = Column(String)
     compleated = Column(Integer)
-    plan_id = Column(Integer, ForeignKey("pharmacy_plan.id"))
-    plan = relationship("PharmacyPlan", backref="products")
+    plan_id = Column(Integer, ForeignKey("pharmacy_plan.id", ondelete="CASCADE"))
+    plan = relationship("PharmacyPlan", cascade="all, delete", backref="products")
 
     @classmethod
     def delete(cls, id: int, db: AsyncSession):
@@ -275,16 +273,16 @@ class Notification(Base):
     description2 = Column(String)
     date = Column(DateTime, default=date.today())
     unread = Column(Boolean, default=True)
-    med_rep_id = Column(Integer, ForeignKey("users.id"))
-    med_rep = relationship("Users", backref="notifications", foreign_keys=[med_rep_id])
+    med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    med_rep = relationship("Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
     region_manager_id = Column(Integer, ForeignKey("users.id"))
     region_manager = relationship("Users", backref="rm_notifications", foreign_keys=[region_manager_id])
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"))
-    pharmacy = relationship("Pharmacy", backref="notifications", lazy='selectin')
-    doctor_id = Column(Integer, ForeignKey("doctor.id"))
-    doctor = relationship("Doctor", backref="notifications", lazy='selectin')
-    wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
-    wholesale = relationship("Wholesale", backref="notifications", lazy='selectin')
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", backref="notifications", cascade="all, delete", lazy='selectin')
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", backref="notifications", cascade="all, delete", lazy='selectin')
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
+    wholesale = relationship("Wholesale", backref="notifications", cascade="all, delete", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -322,8 +320,8 @@ class UserProductPlan(Base):
     discount_price = Column(Integer)
     product = relationship("Products", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    med_rep = relationship("Users", backref="product_plan")
-    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    med_rep = relationship("Users", cascade="all, delete", backref="product_plan")
+    med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
 
     async def save(self, db: AsyncSession):
         try:
@@ -372,7 +370,7 @@ class Users(Base):
     deputy_director = relationship("Users", remote_side=[id], foreign_keys=[deputy_director_id])
     director_id = Column(Integer, ForeignKey("users.id"))    #####
     director = relationship("Users", remote_side=[id], foreign_keys=[director_id])
-
+   
     @property
     def password(self):
         raise AttributeError("Passwprd was unrreadable")
