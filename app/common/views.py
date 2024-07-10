@@ -169,6 +169,13 @@ async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_d
 @router.get("/get-medical-representatives", response_model=List[UserOutSchema])
 async def get_medical_representatives(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Users).options(selectinload(Users.region), selectinload(Users.region_manager)).filter(Users.status == 'medical_representative'))
+    # for user in result.scalars().all()
+    #     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user.id))
+    #     user_plan = result1.scalars().first()
+    #     result = await db.execute(select(DoctorFact).filter(DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
+    #     fact_d = 0
+    #     for f in result.scalars().all():
+    #         fact_d += f.fact
     return result.scalars().all()
 
 

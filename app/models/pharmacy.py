@@ -203,7 +203,6 @@ class Reservation(Base):
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
                 res_products.append(ReservationProducts(**product, reservation_price=prd.price, reservation_discount_price=prd.discount_price))
-                wrh.amount -= product['quantity']
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
             total_payable = total_amount - total_amount * kwargs['discount'] / 100 if kwargs['discountable'] == True else total_amount
@@ -231,6 +230,7 @@ class Reservation(Base):
             if (not wrh) and wrh.amount < product.quantity: 
                 raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
             wrh.amount -= product.quantity
+            await CurrentBalanceInStock.add(self.pharmacy_id, product.product_id, product.quantity, db)
         await db.commit()
 
     async def update_expire_date(self, date: date, db: AsyncSession):

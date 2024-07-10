@@ -47,7 +47,6 @@ async def filter_doctors(
     category_id: Optional[int] = None, 
     speciality_id: Optional[int] = None, 
     region_id: Optional[int] = None, 
-    # product_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db)
 ):
     query = select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.medical_organization), selectinload(Doctor.category)).filter(Doctor.deleted==False)
@@ -57,8 +56,6 @@ async def filter_doctors(
         query = query.filter(Doctor.speciality_id == speciality_id)
     if region_id:
         query = query.filter(Doctor.region_id == region_id)
-    # if product_id:
-        # query = query.filter(Doctor.doctorattachedproduct.any(DoctorAttachedProduct.product_id == product_id))
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -107,15 +104,6 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
         raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
     return {"msg": "Done"}
 
-
-# @router.put('/update-doctor-plan/{plan_id}')
-# async def update_doctor_plan(plan_id: int, monthly_plan: int, user_id: int, db: AsyncSession = Depends(get_db)):
-#     user = await get_or_404(Users, user_id, db)
-#     obj = await get_or_404(DoctorAttachedProduct, plan_id, db)
-#     await obj.update(monthly_plan, user_id, db)
-#     return {"msg": "Done"}
-
-from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 
 @router.get('/doctor-attached-products/{doctor_id}')
 async def get_doctor_attached_products(doctor_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
