@@ -161,7 +161,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
         query = select(DoctorMonthlyPlan).join(Doctor).options(joinedload(DoctorMonthlyPlan.doctor)).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorMonthlyPlan.product_id == user_plan.product_id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
         result = await db.execute(query)
         doctor_att = []
-        doctor_plans = result.scalars().all() 
+        doctor_plans = result.scalars().all()
+        fact_p = 0 
         for doctor_plan in doctor_plans:
             result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
             fact_d = 0
@@ -175,6 +176,7 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             })
             fact +=  fact_d
             fact_price += fact_d *  user_plan.product.price
+            fact_p += fact_d 
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
@@ -183,7 +185,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             "plan_price" : user_plan.amount * user_plan.product.price,
             "date": user_plan.date,
             "doctor_plans": doctor_att,
-            "vakant": user_plan.current_amount
+            "vakant": user_plan.current_amount,
+            "product_fact": fact_p
         })
     data = {
         'plan' : user_plan_data,
@@ -335,7 +338,7 @@ async def get_proccess_report(month: int, db: AsyncSession = Depends(get_db)):
 @router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)
 async def set_product_expenses(product_id: int, marketing_expenses: int | None = None, salary_expenses: int | None = None, db: AsyncSession = Depends(get_db)):
     product = await get_or_404(Products, product_id, db)
-    await product.update(marketing_expenses=marketing_expenses, salary_expenses=salary_expenses, db=db)
+    await product.set_expenses(marketing_expenses=marketing_expenses, salary_expenses=salary_expenses, db=db)
     return product
 
 
@@ -343,3 +346,35 @@ async def set_product_expenses(product_id: int, marketing_expenses: int | None =
 async def get_medcine(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
     return result.scalars().all()
+
+
+@router.get('/get-total-plan-fact')
+async def get_total_plan_fact(
+                            med_rep_id: int | None = None, 
+                            product_id: int | None = None, 
+                            start_date: date | None = None,
+                            end_date: date | None = None,
+                            month_number : int | None = None,
+                            db: AsyncSession = Depends(get_db)):
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)
+        end_date = date(year, month_number, num_days)
+    if start_date is None or end_date is None:
+        raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="month_number or start_date / end_date should be exists"
+                )
+    query = select(Users)
+    if med_rep_id:
+        query = query.filter(Users.id == med_rep_id)
+    result = await db.execute(query)
+    users = result.scalars().all()
+    for user in users:
+        query = select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date)
+        if product_id:
+            query = query.filter(UserProductPlan.product_id==product_id)
+        result = await db.execute(query)
+        plans = result.scalars().all()
+        

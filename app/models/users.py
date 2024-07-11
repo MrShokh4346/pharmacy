@@ -90,6 +90,52 @@ class ProductCategory(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
+class ExpenseCategory(Base):
+    __tablename__ = 'expense_category'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
+
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
+
+class Expense(Base):
+    __tablename__ = 'expense'
+
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+    description = Column(String)
+    date = Column(DateTime, default=datetime.now())
+    category = relationship("ExpenseCategory", backref="expense", lazy='selectin')
+    category_id = Column(Integer, ForeignKey("expense_category.id"))
+    
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
+class ProductExpenses(Base):
+    __tablename__ = 'product_expenses'
+
+    id = Column(Integer, primary_key=True)
+    marketing_expense = Column(Integer, default=0)
+    salary_expenses = Column(Integer, default=0)
+    date = Column(DateTime, default=datetime.now())
+    product = relationship("Products", backref="product_expenmses", lazy='selectin')
+    product_id = Column(Integer, ForeignKey("products.id"))
+
+
 class Products(Base):
     __tablename__ = "products"
 
@@ -123,12 +169,23 @@ class Products(Base):
                 await db.execute(update(UserProductPlan).where(UserProductPlan.plan_month >= datetime.now()).values(price=kwargs.get('price', self.price), discount_price=kwargs.get('discount_price', self.discount_price)))
             self.man_company_id = kwargs.get('man_company_id', self.man_company_id)
             self.category_id = kwargs.get('category_id', self.category_id)
-            self.marketing_expenses = kwargs.get('marketing_expenses', self.marketing_expenses)
-            self.salary_expenses = kwargs.get('salary_expenses', self.salary_expenses)
             await db.commit()
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def set_expenses(self, db: AsyncSession, **kwargs):
+        self.marketing_expenses = kwargs.get('marketing_expenses') if kwargs.get('marketing_expenses') else self.marketing_expenses
+        self.salary_expenses = kwargs.get('salary_expenses') if kwargs.get('salary_expenses') else self.salary_expenses
+        expense = ProductExpenses(
+            marketing_expense = kwargs.get('marketing_expenses'),
+            salary_expenses = kwargs.get('salary_expenses'),
+            product_id = self.id 
+            )
+        db.add(expense)
+        await db.commit()
+        await db.refresh(self)
+
 
 
 class DoctorPlan(Base):

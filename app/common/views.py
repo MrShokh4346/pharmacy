@@ -169,13 +169,6 @@ async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_d
 @router.get("/get-medical-representatives", response_model=List[UserOutSchema])
 async def get_medical_representatives(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Users).options(selectinload(Users.region), selectinload(Users.region_manager)).filter(Users.status == 'medical_representative'))
-    # for user in result.scalars().all()
-    #     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user.id))
-    #     user_plan = result1.scalars().first()
-    #     result = await db.execute(select(DoctorFact).filter(DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
-    #     fact_d = 0
-    #     for f in result.scalars().all():
-    #         fact_d += f.fact
     return result.scalars().all()
 
 
@@ -256,3 +249,29 @@ async def update_user(user_id: int, crd: UserUpdateSchema, db: AsyncSession = De
     user = await get_or_404(Users, user_id, db)
     await user.update(**crd.dict(), db=db)
     return user
+
+
+@router.post('/post-expense-category', response_model=ExpenceCategoryOutSchema)
+async def post_expence_category(data: ExpenceCategoryInSchema, db: AsyncSession = Depends(get_db)):
+    category = ExpenseCategory(**data.dict())
+    await category.save(db)
+    return category
+
+
+@router.get('/get-expenxe-categories', response_model=List[ExpenceCategoryOutSchema])
+async def get_expenxe_categories(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ExpenseCategory))
+    return result.scalars().all()
+
+
+@router.post('/post-expense', response_model=ExpenceOutSchema)
+async def post_expence(data: ExpenceSchema, db: AsyncSession = Depends(get_db)):
+    expence = Expense(**data.dict())
+    await expence.save(db)
+    return expence
+
+
+@router.get('/get-expenxe', response_model=List[ExpenceOutSchema])
+async def get_expenxes(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Expense))
+    return result.scalars().all()

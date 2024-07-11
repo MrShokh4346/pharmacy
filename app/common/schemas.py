@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime 
 
 
 class RegionSchema(BaseModel):
@@ -114,4 +115,24 @@ class ProductOutSchema(BaseModel):
     category: ProductCategorySchema
 
 
+class ExpenceCategoryInSchema(BaseModel):
+    name: str
 
+
+class ExpenceCategoryOutSchema(BaseModel):
+    id: int 
+    name: str
+
+
+class ExpenceSchema(BaseModel):
+    category_id: int 
+    amount: int 
+    description: str 
+
+
+class ExpenceOutSchema(BaseModel):
+    id: int
+    category: ExpenceCategoryOutSchema 
+    amount: int 
+    description: str 
+    date: datetime
