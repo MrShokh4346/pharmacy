@@ -122,7 +122,7 @@ async def update_doctor_category(organization_id: int, organization: MedicalOrga
 
 @router.get('/get-medical-organization', response_model=List[MedicalOrganizationOutSchema], description='using MedicalOrganizationOutSchema')
 async def get_medical_organization(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(MedicalOrganization).options(selectinload(MedicalOrganization.med_rep), selectinload(MedicalOrganization.region)))
+    result = await db.execute(select(MedicalOrganization).options(selectinload(MedicalOrganization.region)))
     return result.scalars().all()
 
 

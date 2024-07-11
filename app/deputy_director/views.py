@@ -146,11 +146,12 @@ async def add_user_products_plan(med_rep_id: int, db: AsyncSession = Depends(get
 
 
 @router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
-async def get_user_product_plan_by_plan_id(med_rep_id: int, start_date: date, end_date: date, db: AsyncSession = Depends(get_db)):
-    # year = datetime.now().year
-    # num_days = calendar.monthrange(year, month_number)[1]
-    # start_date = date(year, month_number, 1)
-    # end_date = date(year, month_number, num_days)
+async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)
+        end_date = date(year, month_number, num_days)
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
@@ -193,11 +194,12 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, start_date: date, en
 
 
 @router.get('/get-med-rep-product-plan-by-month')
-async def get_user_product_plan_by_plan_id(start_date: date, end_date: date, db: AsyncSession = Depends(get_db)):
-    # year = datetime.now().year
-    # num_days = calendar.monthrange(year, month_number)[1]
-    # start_date = date(year, month_number, 1)
-    # end_date = date(year, month_number, num_days)
+async def get_user_product_plan_by_plan_id(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)
+        end_date = date(year, month_number, num_days)
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
     user_plans = result1.scalars().all()
     user_plan_data = []
