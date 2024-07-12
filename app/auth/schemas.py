@@ -5,19 +5,15 @@ from fastapi import FastAPI, Path
 
 
 class Status(str, Enum):
-    medical_representative = "medical_representative"
-    regional_manager = "regional_manager"
-    ff_manager = "ff_manager"
-    product_manager = "product_manager"
-    deputy_director = "deputy_director"
     director = "director"
+    ceo = "ceo"
 
 
 class RegisterSchema(BaseModel):
     password: str
     username: str
     full_name: str
-    # status: Status =  Path(..., title="User Role", description="The role of the user")
+    status: Status =  Path(..., title="User Role", description="The role of the user")
 
 
 class UpdateUserSchema(RegisterSchema):

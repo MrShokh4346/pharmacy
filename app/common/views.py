@@ -166,10 +166,46 @@ async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_d
     return result.scalars().all()
 
 
-@router.get("/get-medical-representatives", response_model=List[UserOutSchema])
-async def get_medical_representatives(db: AsyncSession = Depends(get_db)):
+@router.get("/get-medical-representatives")
+async def get_medical_representatives(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    if start_date is None or end_date is None:
+        if month_number is None:
+            month_number = datetime.now().month 
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)  
+        end_date = date(year, month_number, num_days)
     result = await db.execute(select(Users).options(selectinload(Users.region), selectinload(Users.region_manager)).filter(Users.status == 'medical_representative'))
-    return result.scalars().all()
+    data = []
+    for user in result.scalars().all():
+        result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
+        user_plans = result1.scalars().all()
+        user_plan_data = []
+        fact = 0
+        fact_price = 0
+        for user_plan in user_plans:
+            result = await db.execute(select(DoctorFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
+            for f in result.scalars().all():
+                fact += f.fact
+            user_plan_data.append({
+                "id": user_plan.id,
+                "product": user_plan.product.name,
+                "product_id": user_plan.product.id,
+                "plan_amount": user_plan.amount,
+                "plan_price" : user_plan.amount * user_plan.product.price,
+                "fact": fact,
+                "fact_price": fact *  user_plan.product.price,
+                "vakant": user_plan.current_amount
+            })
+        med_rep = {
+            'id': user.id,
+            'full_name': user.full_name,
+            'username': user.username,
+            'status': user.status,
+            'plan' : user_plan_data
+        }
+        data.append(med_rep)
+    return data
 
 
 @router.post('/add-manufactured-company', response_model=List[ManufacturedCompanySchema])

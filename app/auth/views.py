@@ -45,7 +45,7 @@ async def register_director(user: RegisterSchema, db: Session = Depends(get_db))
             detail="Username already exists",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    new_user = Users(**user.dict(), status='director')
+    new_user = Users(**user.dict())
     await new_user.save(db=db)
     return UserOutSchema(**new_user.__dict__)
 

@@ -12,6 +12,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func, text
 import calendar
 
 
@@ -164,6 +165,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
         doctor_plans = result.scalars().all()
         fact_p = 0 
         for doctor_plan in doctor_plans:
+            result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==user_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
+            bonus = result.scalars().first()
             result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
             fact_d = 0
             for f in result.scalars().all():
@@ -172,7 +175,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
                 'monthly_plan' : doctor_plan.monthly_plan,
                 'fact' : fact_d,
                 'doctor_name' : doctor_plan.doctor.full_name,
-                'doctor_id' : doctor_plan.doctor.id
+                'doctor_id' : doctor_plan.doctor.id,
+                'bonus': bonus.amount if bonus else None
             })
             fact +=  fact_d
             fact_price += fact_d *  user_plan.product.price
@@ -203,6 +207,11 @@ async def get_user_product_plan_by_plan_id(month_number: int | None = None, star
         num_days = calendar.monthrange(year, month_number)[1]
         start_date = date(year, month_number, 1)
         end_date = date(year, month_number, num_days)
+    if start_date is None or end_date is None:
+        raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="month_number or start_date / end_date should be exists"
+                )
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
     user_plans = result1.scalars().all()
     user_plan_data = []
@@ -245,11 +254,17 @@ async def get_user_product_plan_by_plan_id(month_number: int | None = None, star
 
 
 @router.get('/get-doctor-bonus-by-med-rep-id/{med_rep_id}')
-async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int,  db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    num_days = calendar.monthrange(year, month_number)[1]
-    start_date = date(year, month_number, 1)
-    end_date = date(year, month_number, num_days)
+async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None,  db: AsyncSession = Depends(get_db)):
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)
+        end_date = date(year, month_number, num_days)
+    if start_date is None or end_date is None:
+        raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="month_number or start_date / end_date should be exists"
+                )
     user = await get_or_404(Users, med_rep_id, db)
     query = select(DoctorMonthlyPlan).join(Doctor).join(MedicalOrganization).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(Doctor.med_rep_id == user.id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
     result = await db.execute(query)
@@ -276,11 +291,17 @@ async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int,  db
 
 
 @router.get('/get-fact')
-async def get_fact(month_number: int, med_rep_id: int | None = None, region_id: int | None = None, product_id: int | None = None, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    num_days = calendar.monthrange(year, month_number)[1]
-    start_date = date(year, month_number, 1)
-    end_date = date(year, month_number, num_days)
+async def get_fact(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, med_rep_id: int | None = None, region_id: int | None = None, product_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)
+        end_date = date(year, month_number, num_days)
+    if start_date is None or end_date is None:
+        raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="month_number or start_date / end_date should be exists"
+                )
     query = select(DoctorMonthlyPlan).join(Doctor).join(MedicalOrganization).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
     if med_rep_id:
         query = query.filter(Doctor.med_rep_id == med_rep_id)
@@ -366,15 +387,41 @@ async def get_total_plan_fact(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="month_number or start_date / end_date should be exists"
                 )
-    query = select(Users)
+    query = select(Users).filter(Users.status=='medical_representative')
     if med_rep_id:
         query = query.filter(Users.id == med_rep_id)
     result = await db.execute(query)
     users = result.scalars().all()
+    user_products = []
+    data = []
     for user in users:
-        query = select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date)
+        query = f"SELECT user_product_plan.product_id, products.name, user_product_plan.med_rep_id, sum(user_product_plan.amount) AS sum_1, \
+        sum(user_product_plan.amount * user_product_plan.price::NUMERIC) AS plan_price \
+        FROM user_product_plan INNER JOIN products ON products.id = user_product_plan.product_id \
+        WHERE user_product_plan.med_rep_id={user.id}"
         if product_id:
-            query = query.filter(UserProductPlan.product_id==product_id)
-        result = await db.execute(query)
-        plans = result.scalars().all()
-        
+            query += f" AND user_product_plan.product_id={product_id}::INT"
+        query += " GROUP BY user_product_plan.product_id, user_product_plan.med_rep_id, products.id"
+        result = await db.execute(text(query))
+        plan = result.all()
+        for prod in plan:
+            query = f"SELECT sum(doctor_fact.fact) AS fact, sum(doctor_fact.fact * doctor_fact.price) FROM doctor_fact INNER JOIN doctor ON doctor.id = doctor_fact.doctor_id  where doctor.med_rep_id={user.id} AND doctor_fact.product_id={prod[0]}"
+            result = await db.execute(text(query))
+            fact = result.all()
+            user_products.append({
+                "product_id": prod[0],
+                "product_name" : prod[1],
+                "plan": prod[3],
+                "plan_price": float(prod[4]) * 0.92,
+                "fact": fact[0][0],
+                "fact_price": fact[0][1] * 0.92
+            })
+        data.append({
+            "id": user.id,
+            "full_name":user.full_name,
+            "username": user.username,
+            "status": user.status,
+            "plan": user_products
+        })
+    return data
+
