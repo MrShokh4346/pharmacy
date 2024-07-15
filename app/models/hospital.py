@@ -10,6 +10,7 @@ from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from .users import Products
+import calendar
 
 
 class Hospital(Base):
@@ -96,9 +97,12 @@ class HospitalReservation(Base):
             if (not wrh) and wrh.amount < product.quantity: 
                 raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
             wrh.amount -= product.quantity
+            await HospitalFact.set_fact(product_id=product.product_id, product_quantity=product.quantity, hospital_id=self.hospital_id, db=db)
         await db.commit()
 
     async def check_if_payed_reservation(self, db: AsyncSession, **kwargs):
+        if self.confirmed == False:
+            raise HTTPException(status_code=400, detail=f"This reservation not confirmed")
         if self.payed == True:
             raise HTTPException(status_code=400, detail=f"This reservation already payed")
         self.payed = kwargs.get('payed')
@@ -112,7 +116,7 @@ class HospitalReservation(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def delete(self, db: AsyncSession):
-        if self.checked == True:
+        if self.confirmed == True:
             raise HTTPException(status_code=404, detail="This reservstion confirmed")
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
@@ -164,21 +168,16 @@ class HospitalBonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
-        year = datetime.now().year
-        month = datetime.now().month  
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
         product = await get_or_404(Products, kwargs['product_id'], db)
-        amount = product.marketing_expenses * kwargs['compleated']
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        amount = product.marketing_expenses * kwargs['product_quantity']
+        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=kwargs['start_date'], cls.date<=kwargs['end_date']))
         month_bonus = result.scalars().first()
         if month_bonus is None:
-            month_bonus = cls(doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=amount)
+            month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=amount)
             db.add(month_bonus)
         else:
             month_bonus.amount += amount
-            month_bonus.product_quantity += kwargs['compleated']
+            month_bonus.product_quantity += kwargs['product_quantity']
 
 
 class HospitalFact(Base):
@@ -202,11 +201,11 @@ class HospitalFact(Base):
         start_date = date(year, month, 1)  
         end_date = date(year, month, num_days)
         product = await get_or_404(Products, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
-            month_fact = cls(doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
+            month_fact = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], fact=kwargs['product_quantity'], price=product.price, discount_price=product.discount_price)
             db.add(month_fact)
         else:
-            month_fact.fact += kwargs['compleated']
-        await Bonus.set_bonus(**kwargs, db=db)
+            month_fact.fact += kwargs['product_quantity']
+        await HospitalBonus.set_bonus(**kwargs, start_date=start_date, end_date=end_date, db=db)

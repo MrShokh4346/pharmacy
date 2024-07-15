@@ -1,7 +1,7 @@
 from pydantic import BaseModel, validator
 from typing import List, Optional
 from models.doctors import Speciality
-from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
+from common.schemas import RegionSchema, DoctorCategorySchema, ManufacturedCompanySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 from datetime import date, datetime
 from enum import Enum
 
@@ -47,7 +47,20 @@ class HospitalReservationSchema(BaseModel):
     products: List[HospitalReservationProductSchema]
 
 
-class ReservationOutSchema(BaseModel):
+class ProductSchema(BaseModel):
+    id: int 
+    name: str 
+    price: int 
+    man_company: ManufacturedCompanySchema 
+
+
+class ReservationProductOutSchema(BaseModel):
+    id: int 
+    quantity: int 
+    product: ProductSchema
+
+
+class HospitalReservationOutSchema(BaseModel):
     id: int
     date: datetime 
     expire_date: datetime 
@@ -56,6 +69,7 @@ class ReservationOutSchema(BaseModel):
     total_amount: float
     total_payable: float
     total_payable_with_nds: float
+    products: ReservationProductOutSchema
     confirmed: bool
     payed: bool
 
@@ -68,3 +82,5 @@ class CheckPayedSchema(BaseModel):
     payed: bool
 
 
+class ExpireDateSchema(BaseModel):
+    date: date
