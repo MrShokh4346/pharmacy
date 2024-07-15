@@ -2,7 +2,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi import APIRouter
 from .pharmacy_routers import router as ph_router 
 from .doctor_routers import router as dr_router 
-from .user_routers import router as ur_router 
+from .hospital_routers import router as ur_router 
 from .wholesale_routers import router as wh_router
 
 

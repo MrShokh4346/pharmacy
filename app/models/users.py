@@ -1,9 +1,9 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
-from datetime import date, datetime 
+from datetime import date, datetime,  timedelta 
 from sqlalchemy.exc import IntegrityError
 from .database import Base, get_db, get_or_404
 from sqlalchemy.future import select
@@ -103,7 +103,6 @@ class ExpenseCategory(Base):
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
 
 class Expense(Base):
