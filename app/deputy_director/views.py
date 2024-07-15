@@ -425,3 +425,12 @@ async def get_total_plan_fact(
         })
     return data
 
+
+@router.get('/get-profit')
+async def get_profit(start_date: date, end_date: date, db: AsyncSession = Depends(get_db)): 
+    query = text(f"SELECT sum(pharmacy_fact.quantity) AS fact, sum(pharmacy_fact.quantity * products.salary_expenses) AS salary_expense, sum(pharmacy_fact.quantity * products.marketing_expenses) AS marketing_expense, products.name FROM pharmacy_fact \
+    INNER JOIN products on products.id = pharmacy_fact.product_id WHERE pharmacy_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD') GROUP BY products.id")
+    result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+    facts = result.all()
+    data = [{"fact":fact[0], "salary_expense":fact[1], "marketing_expense":fact[2], "product_name":fact[3]} for fact in facts]
+    return data

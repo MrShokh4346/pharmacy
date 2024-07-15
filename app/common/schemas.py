@@ -126,6 +126,7 @@ class ExpenceCategoryOutSchema(BaseModel):
 
 class ExpenceSchema(BaseModel):
     category_id: int 
+    author: str
     amount: int 
     description: str 
 
@@ -134,5 +135,6 @@ class ExpenceOutSchema(BaseModel):
     id: int
     category: ExpenceCategoryOutSchema 
     amount: int 
+    author: str
     description: str 
     date: datetime

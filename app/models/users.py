@@ -111,6 +111,7 @@ class Expense(Base):
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
+    author = Column(String)
     description = Column(String)
     date = Column(DateTime, default=datetime.now())
     category = relationship("ExpenseCategory", backref="expense", lazy='selectin')
