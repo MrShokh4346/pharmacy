@@ -45,14 +45,14 @@ async def get_pharmacy_by_id(pharmacy_id: int, db: AsyncSession = Depends(get_db
 
 
 @router.get('/filter-pharmacy', response_model=List[PharmacyListSchema])
-async def filter_pharmacies(doctor_id: int | None = None, product_id: int | None = None, region_id: int | None = None, db: AsyncSession = Depends(get_db)):
-    query = select(Pharmacy).options(selectinload(Pharmacy.pharmacy_attached_product), selectinload(Pharmacy.doctors))
+async def filter_pharmacies(med_rep_id: int | None = None, doctor_id: int | None = None, product_id: int | None = None, region_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    query = select(Pharmacy).options(selectinload(Pharmacy.doctors))
+    if med_rep_id:
+        query = query.filter(Pharmacy.med_rep_id == med_rep_id)
     if doctor_id:
         query = query.filter(Pharmacy.doctors.any(Doctor.id == doctor_id))
     if region_id:
         query = query.filter(Pharmacy.region_id == region_id)
-    if product_id:
-        query = query.filter(Pharmacy.pharmacy_attached_product.any(PharmacyAttachedProducts.product_id == product_id))
     result = await db.execute(query)
     return result.scalars().all()
 

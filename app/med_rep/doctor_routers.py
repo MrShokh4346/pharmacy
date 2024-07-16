@@ -142,6 +142,13 @@ async def get_doctor_attached_products(doctor_id: int, month: int | None = None,
     return data
 
 
+@router.put('/update-doctor-product-plan/{plan_id}', response_model=DoctorProductPlanOutSchema)
+async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(DoctorMonthlyPlan, plan_id, db)
+    await plan.update(amount, db)
+    return plan 
+
+
 @router.patch('/update-doctor/{id}', response_model=DoctorOutSchema)
 async def update_doctor(id: int, data: DoctorUpdateSchema, db: AsyncSession = Depends(get_db)):
     doctor = await get_doctor_or_404(id, db)

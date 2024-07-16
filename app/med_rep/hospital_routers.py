@@ -41,11 +41,11 @@ async def get_hospitals(hospital_id: int, db: AsyncSession = Depends(get_db)):
     return hospital
 
 
-@router.post('/hospital-reservation/{hospital_id}', response_model=HospitalReservationOutSchema)
+@router.post('/hospital-reservation/{hospital_id}')
 async def hospital_reservation(hospital_id: int, res: HospitalReservationSchema, db: AsyncSession = Depends(get_db)):
     hospital = await get_or_404(Hospital, hospital_id, db)
     reservation = await HospitalReservation.save(**res.dict(), db=db, hospital_id=hospital_id)
-    return reservation
+    return {"msg":"Done"}
 
 
 @router.post('/check-hospital-reservation/{hospital_reservation_id}')

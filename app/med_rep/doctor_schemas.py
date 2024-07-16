@@ -1,7 +1,7 @@
 from pydantic import BaseModel, validator
 from typing import List, Optional
 from models.doctors import Speciality
-from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
+from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema, ManufacturedCompanySchema, ProductCategorySchema
 from datetime import date, datetime
 from enum import Enum
 
@@ -130,3 +130,18 @@ class DoctorVisitPlanListSchema(BaseModel):
     status: bool 
     postpone: bool
     doctor: DoctorListSchema
+
+
+class ProductSchema(BaseModel):
+    id: int 
+    name: str 
+    man_company: ManufacturedCompanySchema 
+    category: ProductCategorySchema
+
+
+class DoctorProductPlanOutSchema(BaseModel):
+    id: int 
+    product: ProductSchema 
+    monthly_plan: int 
+    date: datetime 
+

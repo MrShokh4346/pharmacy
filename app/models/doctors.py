@@ -102,11 +102,11 @@ class DoctorMonthlyPlan(Base):
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
     date = Column(DateTime, default=datetime.now())
-    product = relationship("Products",  backref="doctormonthlyplan")
+    product = relationship("Products",  backref="doctormonthlyplan", lazy="selectin")
     product_id = Column(Integer, ForeignKey("products.id"))
     price = Column(Integer)
     discount_price = Column(Integer)
-    doctor = relationship("Doctor", cascade="all, delete",  backref="doctormonthlyplan")
+    doctor = relationship("Doctor", cascade="all, delete",  backref="doctormonthlyplan", lazy="selectin")
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
 
     async def save(self, db: AsyncSession):
@@ -115,6 +115,21 @@ class DoctorMonthlyPlan(Base):
             await db.commit()
             await db.refresh(self)
         except:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, amount: int, db: AsyncSession):
+        try:
+            difference = self.monthly_plan - amount
+            self.monthly_plan = amount
+            result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==self.doctor.med_rep_id, UserProductPlan.product_id==self.product_id))
+            user_plan = result.scalar()
+            user_plan.current_amount += difference
+            if user_plan.current_amount < 0:
+                raise HTTPException(status_code=404, detail="Med rep plan should be grater than 0 for tis product")
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
