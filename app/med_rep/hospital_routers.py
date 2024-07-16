@@ -76,9 +76,9 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
     return {"msg":"Done"}
 
 
-@router.post('/set-discount-to-pharmacy/{pharmacy_id}')
-async def set_discount_to_pharmacy(pharmacy_id: int, discount: float,  db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(HospitalReservation, pharmacy_id, db)
+@router.post('/set-discount-to-hospital-reservation/{reservation_id}')
+async def set_discount_to_pharmacy(reservation_id: int, discount: float,  db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(HospitalReservation, reservation_id, db)
     await reservation.update_discount(discount, db)
     return {"msg":"Done"}
 
