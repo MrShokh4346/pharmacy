@@ -23,9 +23,9 @@ class UserOutSchema(BaseModel):
 
 
 class UserUpdateSchema(BaseModel):
-    full_name: str
-    username: str
-    password: str 
+    full_name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None 
 
 
 class UserSchema(BaseModel):

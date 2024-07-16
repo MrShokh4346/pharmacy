@@ -4,6 +4,7 @@ from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
 from models.users import *
+from models.hospital import HospitalFact, Hospital, HospitalBonus
 from models.doctors import DoctorFact, Doctor, Bonus
 from models.database import get_db, get_or_404
 from models.dependencies import *
@@ -327,6 +328,27 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'doctor_name' : doctor_plan.doctor.full_name,
             'doctor_id' : doctor_plan.doctor.id,
             'product_name' : doctor_plan.product.name,
+            'bonus_id' : bonus.id if bonus else None,
+            'bonus_amount': bonus.amount if bonus else 0,
+            'bonus_payed' : bonus.payed if bonus else 0
+        })
+    query = select(HospitalFact).join(Hospital).options(joinedload(HospitalFact.hospital), joinedload(HospitalFact.product)).filter(HospitalFact.date >= start_date, HospitalFact.date <= end_date)
+    if med_rep_id:
+        query = query.filter(Hospital.med_rep_id == med_rep_id)
+    if product_id:
+        query = query.filter(HospitalFact.product_id == product_id)
+    result = await db.execute(query)
+    for hospital_fact in result.scalars().all():
+        result = await db.execute(select(HospitalBonus).filter(HospitalBonus.hospital_id==hospital_fact.hospital_id, HospitalBonus.product_id==hospital_fact.product_id, HospitalBonus.date >= start_date, HospitalBonus.date <= end_date))
+        bonus = result.scalars().first()
+        doctor_att.append({
+            'monthly_plan' : hospital_fact.fact,
+            'plan_price' : hospital_fact.fact * hospital_fact.price * 0.92,
+            'fact' : hospital_fact.fact,
+            'fact_price' : hospital_fact.fact * hospital_fact.price * 0.92,
+            'doctor_name' : hospital_fact.hospital.company_name,
+            'doctor_id' : hospital_fact.hospital.id,
+            'product_name' : hospital_fact.product.name,
             'bonus_id' : bonus.id if bonus else None,
             'bonus_amount': bonus.amount if bonus else 0,
             'bonus_payed' : bonus.payed if bonus else 0

@@ -22,6 +22,13 @@ async def create_hospital(obj: HospitalSchema, db: AsyncSession = Depends(get_db
     return hospital
 
 
+@router.patch('/update-hospital/{hospital_id}', response_model=HospitalOutSchema)
+async def update_pharmacy(hospital_id: int, data: HospitalUpdateSchema, db: AsyncSession = Depends(get_db)):
+    hospital = await get_or_404(Hospital, hospital_id, db)
+    await hospital.update(**data.dict(), db=db)
+    return hospital
+
+
 @router.get('/get-hospitals', response_model=List[HospitalOutSchema])
 async def get_hospitals(db: AsyncSession = Depends(get_db)):
     hospitals = await db.execute(select(Hospital))
@@ -79,6 +86,24 @@ async def set_discount_to_pharmacy(pharmacy_id: int, discount: float,  db: Async
 @router.get('/get-hospital-reservation/{hospital_id}', response_model=List[HospitalReservationOutSchema])
 async def get_hospital_reservation(hospital_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(HospitalReservation).filter(HospitalReservation.hospital_id==hospital_id))
+    return result.scalars().all()
+
+
+@router.post('/paying-hospital-bonus/{bonus_id}', response_model=BonusOutSchema)
+async def paying_bonus(bonus_id: int, amount: int, db: AsyncSession = Depends(get_db)):
+    bonus = await get_or_404(HospitalBonus, bonus_id, db)
+    await bonus.paying_bonus(amount, db)    
+    return bonus
+
+
+@router.get('/get-hospital-bonus/{hospital_id}', response_model=List[BonusOutSchema])
+async def get_bonus_by_doctor_id(hospital_id: int, month: int, db: AsyncSession = Depends(get_db)):
+    year = datetime.now().year
+    month = datetime.now().month if month is None else month 
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
+    result = await db.execute(select(HospitalBonus).options(selectinload(HospitalBonus.product)).filter(HospitalBonus.hospital_id == hospital_id, HospitalBonus.date >= start_date, HospitalBonus.date <= end_date))
     return result.scalars().all()
 
 

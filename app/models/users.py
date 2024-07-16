@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from .database import Base, get_db, get_or_404
 from sqlalchemy.future import select
 from sqlalchemy import update
+import calendar
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -404,6 +405,21 @@ class UserProductPlan(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    @classmethod
+    async def user_plan_minus(cls, db: AsyncSession, **kwargs):
+        year = datetime.now().year
+        month = datetime.now().month  
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)  
+        end_date = date(year, month, num_days)
+        result = await db.execute(select(cls).filter(cls.product_id==kwargs['product_id'], cls.med_rep_id==kwargs['med_rep_id'], cls.date>=start_date, cls.date<=end_date))
+        product = result.scalars().first()
+        if not product:
+            raise HTTPException(status_code=400, detail="Med rep has not product plan for this product in this month")
+        elif product.current_amount < kwargs['quantity']:
+            raise HTTPException(status_code=400, detail="Med rep has not enough product plan for this product in this month")
+        product.current_amount -= kwargs['quantity']
+
 
 class Users(Base):
     __tablename__ = "users"
@@ -446,6 +462,8 @@ class Users(Base):
 
     async def update(self, db: AsyncSession,  **kwargs):
         try:
+            for key in list(kwargs.keys()):
+                kwargs.pop(key) if kwargs[key]==None else None
             self.full_name = kwargs.get('full_name', self.full_name)
             if kwargs.get('username') and kwargs.get('username') != self.username:
                 result = await db.execute(select(Users).filter(Users.username == kwargs.get('username')))

@@ -165,13 +165,6 @@ async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession =
     return doctor.pharmacy
 
 
-# @router.post('/add-bonus', response_model=BonusOutSchema)
-# async def add_bonus_to_doctor(data: BonusSchema, db: AsyncSession = Depends(get_db)):
-#     doctor = await get_doctor_or_404(data.doctor_id, db)
-#     bonus_id = await Bonus.save(**data.dict(), db=db)
-#     return await db.get(Bonus, bonus_id)
-
-
 @router.post('/paying-bonus/{bonus_id}', response_model=BonusOutSchema)
 async def paying_bonus(bonus_id: int, amount: int, db: AsyncSession = Depends(get_db)):
     bonus = await get_or_404(Bonus, bonus_id, db)

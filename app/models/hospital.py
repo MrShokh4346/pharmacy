@@ -9,7 +9,7 @@ from .database import Base, get_db, get_or_404
 from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
-from .users import Products
+from .users import Products, UserProductPlan
 import calendar
 
 
@@ -35,6 +35,23 @@ class Hospital(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            for key in list(kwargs.keys()):
+                kwargs.pop(key) if kwargs[key]==None else None 
+            self.company_name = kwargs.get('company_name', self.company_name)
+            self.company_address = kwargs.get('company_address', self.company_address)
+            self.contact = kwargs.get('contact', self.contact)
+            self.bank_account_number = kwargs.get('bank_account_number', self.bank_account_number)
+            self.inter_branch_turnover = kwargs.get('inter_branch_turnover', self.inter_branch_turnover)
+            self.director = kwargs.get('director', self.director)
+            self.purchasing_manager = kwargs.get('purchasing_manager', self.purchasing_manager)
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
@@ -48,7 +65,7 @@ class HospitalReservation(Base):
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
-    hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete")
+    hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')
     products = relationship("HospitalReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     manufactured_company = relationship("ManufacturedCompany", backref="hospital_reservation", lazy='selectin')
@@ -97,6 +114,7 @@ class HospitalReservation(Base):
             if (not wrh) and wrh.amount < product.quantity: 
                 raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
             wrh.amount -= product.quantity
+            await UserProductPlan.user_plan_minus(product_id=product.product_id, med_rep_id=self.hospital.med_rep_id, quantity=product.quantity, db=db)
             await HospitalFact.set_fact(product_id=product.product_id, product_quantity=product.quantity, hospital_id=self.hospital_id, db=db)
         await db.commit()
 

@@ -24,6 +24,16 @@ class HospitalSchema(BaseModel):
     med_rep_id: int 
 
 
+class HospitalUpdateSchema(BaseModel):
+    company_name: Optional[str] = None 
+    company_address: Optional[str] = None 
+    inter_branch_turnover: Optional[str] = None 
+    bank_account_number: Optional[str] = None 
+    director: Optional[str] = None 
+    purchasing_manager: Optional[str] = None 
+    contact: Optional[str] = None 
+
+
 class HospitalOutSchema(BaseModel):
     id: int 
     company_name: str 
@@ -84,3 +94,12 @@ class CheckPayedSchema(BaseModel):
 
 class ExpireDateSchema(BaseModel):
     date: date
+
+
+class BonusOutSchema(BaseModel):
+    id: int
+    date: datetime
+    amount: int 
+    payed: int 
+    product_quantity: int 
+    product: ProductSchema

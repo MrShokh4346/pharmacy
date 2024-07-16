@@ -139,6 +139,7 @@ class DoctorSchema(BaseModel):
 class ProductSchema(BaseModel):
     id: int
     name: str
+    man_company: ManufacturedCompanySchema 
 
 
 class PharmacySchema(BaseModel):
@@ -231,3 +232,10 @@ class AttachDoctorToPharmacySchema(BaseModel):
 class ReplyNotification(BaseModel):
     description2: str 
     unread: bool 
+
+
+class PharmacyHotSaleSchema(BaseModel):
+    id: int 
+    amount: int 
+    date: date 
+    product: ProductSchema
