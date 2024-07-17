@@ -53,6 +53,43 @@ class Hospital(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
+class HospitalMonthlyPlan(Base):
+    __tablename__ = "hospital_monthly_plan"
+
+    id = Column(Integer, primary_key=True)
+    monthly_plan = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+    product = relationship("Products",  backref="hospitalmonthlyplan", lazy="selectin")
+    product_id = Column(Integer, ForeignKey("products.id"))
+    price = Column(Integer)
+    discount_price = Column(Integer)
+    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
+    hospital = relationship("Hospital", backref="hospital_monthly_plan", cascade="all, delete", lazy='selectin')
+ 
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, amount: int, db: AsyncSession):
+        try:
+            difference = self.monthly_plan - amount
+            self.monthly_plan = amount
+            result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==self.hospital.med_rep_id, UserProductPlan.product_id==self.product_id))
+            user_plan = result.scalar()
+            user_plan.current_amount += difference
+            if user_plan.current_amount < 0:
+                raise HTTPException(status_code=404, detail="Med rep plan should be grater than 0 for tis product")
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
 class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
 

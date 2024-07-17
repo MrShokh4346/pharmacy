@@ -42,6 +42,7 @@ class PharmacyReservationSchema(BaseModel):
     id: int
     company_name: str 
     med_rep: MedRepSchema
+    region: RegionSchema
 
 
 class ReservationListSchema(BaseModel):

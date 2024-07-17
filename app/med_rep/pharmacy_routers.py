@@ -220,6 +220,9 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
     return reservation
 
 
+# @router.post('/')
+
+
 # @router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
 # async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
 #     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))

@@ -142,8 +142,15 @@ async def add_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_db)
 
 
 @router.get('/get-user-products-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])
-async def add_user_products_plan(med_rep_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id))
+async def add_user_products_plan(med_rep_id: int, month_number: int | None = None, db: AsyncSession = Depends(get_db)):
+    query = select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id)
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = date(year, month_number, 1)
+        end_date = date(year, month_number, num_days)
+        query = query.filter(UserProductPlan.date>=start_date, UserProductPlan.date<=end_date)
+    result = await db.execute(query)
     return result.scalars().all() 
 
 
@@ -154,6 +161,11 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
         num_days = calendar.monthrange(year, month_number)[1]
         start_date = date(year, month_number, 1)
         end_date = date(year, month_number, num_days)
+    if start_date is None or end_date is None:
+        raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="month_number or start_date / end_date should be exists"
+                )
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
@@ -182,6 +194,9 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             fact +=  fact_d
             fact_price += fact_d *  user_plan.product.price
             fact_p += fact_d 
+        query = text(f"SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale WHERE pharmacy_hot_sale.product_id={user_plan.product_id}::INT AND pharmacy_hot_sale.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_hot_sale.date<=TO_DATE(:end_date, 'YYYY-MM-DD')")
+        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        hot_sale = result.first()
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
@@ -191,7 +206,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             "date": user_plan.date,
             "doctor_plans": doctor_att,
             "vakant": user_plan.current_amount,
-            "product_fact": fact_p
+            "product_fact": fact_p,
+            "pharmacy_hot_sale": hot_sale[0]
         })
     data = {
         'plan' : user_plan_data,
@@ -322,6 +338,8 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
         bonus = result.scalars().first()
         doctor_att.append({
             'monthly_plan' : doctor_plan.monthly_plan,
+            'med_rep': doctor_plan.doctor.med_rep.full_name,
+            'region': doctor_plan.doctor.medical_organization.region.name,
             'plan_price' : doctor_plan.monthly_plan * doctor_plan.price * 0.92,
             'fact' : fact_d,
             'fact_price' : fact_d * doctor_plan.price * 0.92,
@@ -330,7 +348,9 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'product_name' : doctor_plan.product.name,
             'bonus_id' : bonus.id if bonus else None,
             'bonus_amount': bonus.amount if bonus else 0,
-            'bonus_payed' : bonus.payed if bonus else 0
+            'bonus_payed' : bonus.payed if bonus else 0,
+            'bonus_remainder' : bonus.amount - bonus.payed if bonus else 0
+
         })
     # query = select(HospitalFact).join(Hospital).options(joinedload(HospitalFact.hospital), joinedload(HospitalFact.product)).filter(HospitalFact.date >= start_date, HospitalFact.date <= end_date)
     # if med_rep_id:

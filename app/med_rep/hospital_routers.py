@@ -41,6 +41,57 @@ async def get_hospitals(hospital_id: int, db: AsyncSession = Depends(get_db)):
     return hospital
 
 
+@router.post('/attach-products-to-hospital/{hospital_id}')
+async def attach_products_to_hospital(hospital_id: int, user_id: int, objects: AttachProductsListSchema, db: AsyncSession = Depends(get_db)):
+    user = await get_or_404(Users, user_id, db)
+    hospital_products = []
+    year = datetime.now().year
+    month = datetime.now().month
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
+    for obj in objects.items:
+        result1 = await db.execute(select(HospitalMonthlyPlan).filter(HospitalMonthlyPlan.product_id==obj.product_id, HospitalMonthlyPlan.hospital_id==hospital_id, HospitalMonthlyPlan.date>=start_date, HospitalMonthlyPlan.date<=end_date))
+        hospital_plan = result1.scalar()
+        if hospital_plan is not None:
+            raise HTTPException(status_code=404, detail='This product already attached to hospital plan for this month')
+        product = await get_or_404(Products, obj.product_id, db)
+        hospital_products.append(HospitalMonthlyPlan(**obj.dict(), hospital_id=hospital_id, price=product.price, discount_price=product.discount_price))
+        result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
+        user_product = result.scalars().first()
+        if user_product is None:
+            raise HTTPException(status_code=404, detail='You are trying to add product that is not exists in user plan in this month')
+        if user_product.current_amount < obj.monthly_plan:
+            raise HTTPException(status_code=404, detail='You are trying to add more doctor plan than user plan for this product')
+        user_product.current_amount -= obj.monthly_plan
+    db.add_all(hospital_products)
+    try:
+        await db.commit()
+    except IntegrityError as e:
+        raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+    return {"msg": "Done"}
+
+
+@router.put('/update-hospital-product-plan/{plan_id}', response_model=HospitalProductPlanOutSchema)
+async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(HospitalMonthlyPlan, plan_id, db)
+    await plan.update(amount, db)
+    return plan 
+
+
+
+@router.get('/hospital-attached-products/{hospital_id}', response_model=List[HospitalAttachedProducts])
+async def get_hospital_attached_products(hospital_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
+    doctor = await get_or_404(Hospital, hospital_id, db)
+    year = datetime.now().year
+    month = datetime.now().month if month is None else month 
+    num_days = calendar.monthrange(year, month)[1]
+    start_date = date(year, month, 1)  
+    end_date = date(year, month, num_days)
+    result = await db.execute(select(HospitalMonthlyPlan).options(selectinload(HospitalMonthlyPlan.product)).filter(HospitalMonthlyPlan.hospital_id==hospital_id, HospitalMonthlyPlan.date>=start_date, HospitalMonthlyPlan.date<=end_date))
+    return result.scalars().all()
+
+
 @router.post('/hospital-reservation/{hospital_id}')
 async def hospital_reservation(hospital_id: int, res: HospitalReservationSchema, db: AsyncSession = Depends(get_db)):
     hospital = await get_or_404(Hospital, hospital_id, db)

@@ -103,3 +103,33 @@ class BonusOutSchema(BaseModel):
     payed: int 
     product_quantity: int 
     product: ProductSchema
+
+
+class AttachProductsSchema(BaseModel):
+    product_id: int 
+    monthly_plan: int 
+
+
+class AttachProductsOutSchema(BaseModel):
+    id: int
+    product: ProductOutSchema
+    monthly_plan: int 
+
+
+class AttachProductsListSchema(BaseModel):
+    items: List[AttachProductsSchema]
+    month: int
+
+
+class HospitalProductPlanOutSchema(BaseModel):
+    id: int 
+    product: ProductSchema 
+    monthly_plan: int 
+    date: datetime 
+
+
+class HospitalAttachedProducts(BaseModel):
+    id: int 
+    monthly_plan: int 
+    date: datetime
+    product: ProductSchema

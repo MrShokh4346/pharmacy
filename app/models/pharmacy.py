@@ -169,6 +169,16 @@ class Debt(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
+# class ReservationPayedAmounts(Base):
+#     __tablename__ = "reservation_payed_amounts"
+
+#     id = Column(Integer, primary_key=True)
+#     amount = Column(Integer)
+#     date = Column(DateTime, default=date.today())
+#     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
+#     reservation = relationship("Reservation", cascade="all, delete", back_populates="payed_amounts")
+
+
 class Reservation(Base):
     __tablename__ = "reservation"
 
@@ -181,6 +191,9 @@ class Reservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
+    invoice_number = Column(Integer, unique=True, autoincrement=True)
+    profit = Column(Integer, default=0)
+    debt = Column(Integer)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
     products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
@@ -339,6 +352,8 @@ class PharmacyFact(Base):
                     raise HTTPException(status_code=404, detail=f"Balance should be chacked before adding fact")
                 if checking.saled < value:
                     raise HTTPException(status_code=404, detail=f"You are trying to add more product than saled for this product (id={key})")
+                pharmacy = await get_or_404(Pharmacy, kwargs['pharmacy_id'], db)
+                await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id)
                 hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
                 checking.chack = True
                 db.add(hot_sale)
