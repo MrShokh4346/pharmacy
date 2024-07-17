@@ -273,6 +273,7 @@ class Reservation(Base):
         self.discount = discount
         await db.commit()
 
+    # async def 
 
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"

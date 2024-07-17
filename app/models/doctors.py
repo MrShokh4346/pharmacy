@@ -166,6 +166,17 @@ class DoctorFact(Base):
         await Bonus.set_bonus(**kwargs, db=db)
 
 
+# class BonusPayedAmounts(Base):
+#     __tablename__ = "bonus_payed_amounts"
+
+#     id = Column(Integer, primary_key=True)
+#     amount = Column(Integer)
+#     description = Column(String)
+#     date = Column(DateTime, default=date.today())
+#     bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
+#     bonus = relationship("Bonus", cascade="all, delete", back_populates="payed_amounts")
+
+
 class Bonus(Base):
     __tablename__ = "bonus"
 
@@ -174,12 +185,15 @@ class Bonus(Base):
     amount = Column(Integer)
     payed = Column(Integer, default=0)
     product_quantity = Column(Integer)
+    pre_investment = Column(Integer)
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", cascade="all, delete", backref="bonus")
     product = relationship("Products",  backref="bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
-    async def paying_bonus(self, amount: int, db: AsyncSession):
+    async def paying_bonus(self, amount: int, description: str, db: AsyncSession):
+        payed = BonusPayedAmounts(amount=amount, description=description, bonus_id=self.id)
+        db.add(payed)
         self.payed += amount
         await db.commit()
 
