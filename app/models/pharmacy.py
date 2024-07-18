@@ -169,14 +169,23 @@ class Debt(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-# class ReservationPayedAmounts(Base):
-#     __tablename__ = "reservation_payed_amounts"
+class ReservationPayedAmounts(Base):
+    __tablename__ = "reservation_payed_amounts"
 
-#     id = Column(Integer, primary_key=True)
-#     amount = Column(Integer)
-#     date = Column(DateTime, default=date.today())
-#     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-#     reservation = relationship("Reservation", cascade="all, delete", back_populates="payed_amounts")
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+    description = Column(String)
+    date = Column(DateTime, default=date.today())
+    reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
+    reservation = relationship("Reservation", cascade="all, delete", backref="payed_amounts")
+   
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class Reservation(Base):
@@ -223,7 +232,8 @@ class Reservation(Base):
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
                                 total_payable = total_payable,
-                                total_payable_with_nds = total_payable + total_payable * 0.12
+                                total_payable_with_nds = total_payable + total_payable * 0.12,
+                                debt = total_payable + total_payable * 0.12
                                 )
             db.add(reservation)
             for p in res_products:
@@ -273,7 +283,15 @@ class Reservation(Base):
         self.discount = discount
         await db.commit()
 
-    # async def 
+    async def pay_reservation(self, db: AsyncSession, **kwargs):
+        self.debt -= kwargs['amount']
+        self.profit += kwargs['amount']
+        reservation = ReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
+        await reservation.save(db)
+        if self.debt < 0:
+            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+        db.commit()
+
 
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"

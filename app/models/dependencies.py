@@ -123,21 +123,23 @@ async def write_excel(reservation_id: int, db: AsyncSession):
 
 
 PRODUCT_EXCEL_DICT = {
-        1 : "N",        2 : "O",        6 : "N",        7 : "O",        25 : "P",
+        1 : "N",        2 : "O",        6 : "N",        7 : "CA",        25 : "P",
         8 : "Q",        4 : "R",        9 : "S",        10 : "T",        5 : "U",
-        11 : "V",        12 : "W",        13 : "X",        26 : "Y",        27 : "Z",
-        14 : "AA",        15 : "AB",        18 : "AC",        28 : "AD",        19 : "AE",
+        11 : "V",        12 : "W",        13 : "X",        26 : "Y",        27 : "AT",
+        14 : "AA",        15 : "AB",        18 : "AC",        28 : "AR",        19 : "AE",
         20 : "AF",        21 : "AG",        22 : "AH",        29 : "AI",        23 : "AJ",
-        30 : "AK",        24 : "AL",        16 : "AM",        17 : "AN"
+        30 : "AP",        24 : "AL",        16 : "AM",        17 : "AN",        31:"AO",
+        33: "AQ",        
 }
 
 PRODUCT_EXCEL_DICT2 = {
-        1 : "AP",        2 : "AQ",        6 : "AP",        7 : "AQ",        25 : "AR",
+        1 : "AP",        2 : "AQ",        6 : "AP",        7 : "CA",        25 : "AR",
         8 : "AS",        4 : "AT",        9 : "AU",        10 : "AV",        5 : "AW",
-        11 : "AX",        12 : "AY",        13 : "AZ",        26 : "BA",        27 : "BB",
-        14 : "BC",        15 : "BD",        18 : "BE",        28 : "BF",        19 : "BG",
+        11 : "AX",        12 : "AY",        13 : "AZ",        26 : "BA",        27 : "CB",
+        14 : "BC",        15 : "BD",        18 : "BE",        28 : "BZ",        19 : "BG",
         20 : "BH",        21 : "BI",        22 : "BJ",        29 : "BK",        23 : "BL",
-        30 : "BM",        24 : "BN",        16 : "BO",        17 : "BP"
+        30 : "BX",        24 : "BN",        16 : "BO",        17 : "BP",        31: "BW",
+        33: "BY"
 }
 
 
@@ -169,12 +171,12 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
         doctor_count = 0
         for user in med_reps:
             USER_PLAN_COMPLEATED = {
-                    "AP" : 0,        "AQ" : 0,        "AP" : 0,        "AQ" : 0,        "AR" : 0,
-                    "AS" : 0,        "AT" : 0,        "AU" : 0,        "AV" : 0,        "AW" : 0,
+                    "AV" : 0,        "AW" : 0,
                     "AX" : 0,        "AY" : 0,        "AZ" : 0,        "BA" : 0,        "BB" : 0,
                     "BC" : 0,        "BD" : 0,        "BE" : 0,        "BF" : 0,        "BG" : 0,
                     "BH" : 0,        "BI" : 0,        "BJ" : 0,        "BK" : 0,        "BL" : 0,
-                    "BM" : 0,        "BN" : 0,        "BO" : 0,        "BP" : 0
+                    "BM" : 0,        "BN" : 0,        "BO" : 0,        "BP" : 0,
+                    "BQ": 0, "BR":0, "BS":0, "BT": 0, "BU":0, "BV":0, "BW":0, "BX":0, "BY":0, "BZ":0, "CA":0, "CB":0
             }
             data_to_write[f"C{count}"] = user.full_name
             data_to_write[f"H{count}"] = user.region.name
@@ -197,14 +199,14 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
                 if pharmacy_quantity > 1:
                     for d_prd in doctor_products:
                         ws.merge_cells(f"{PRODUCT_EXCEL_DICT[d_prd.product_id]}{count}:{PRODUCT_EXCEL_DICT[d_prd.product_id]}{count+pharmacy_quantity-1}")
-                    ws.merge_cells(f"AO{count}:AO{count+pharmacy_quantity-1}")
-                    ws.merge_cells(f"BQ{count}:BQ{count+pharmacy_quantity-1}")
-                    ws.merge_cells(f"BR{count}:BR{count+pharmacy_quantity-1}")
+                    ws.merge_cells(f"AU{count}:AU{count+pharmacy_quantity-1}")
+                    ws.merge_cells(f"CC{count}:CC{count+pharmacy_quantity-1}")
+                    ws.merge_cells(f"CD{count}:CD{count+pharmacy_quantity-1}")
                 ph_compleated_sum = 0
                 row = count  
                 for pharmacy in pharmacies:
                     doctor_fact = None
-                    result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+                    # result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
                     doctor_plan = dict()
                     doctor_plan_sum = 0
                     for product in doctor_products:
@@ -226,21 +228,21 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
                     data_to_write[f'J{count}'] = doctor.category.name
                     data_to_write[f'K{count}'] = pharmacy.company_name
                     data_to_write[f'L{count}'] = pharmacy.contact1
-                    data_to_write[f'AO{row}'] = doctor_plan_sum
+                    data_to_write[f'AU{row}'] = doctor_plan_sum
                     data_to_write.update(doctor_plan)
                     if doctor_fact is not None:
                         data_to_write[f'{PRODUCT_EXCEL_DICT2[doctor_fact.product_id]}{count}'] = doctor_fact.fact
                         ph_compleated_sum += doctor_fact.fact * doctor_fact.price
-                        # data_to_write[f'BQ{row}'] = doctor_fact.fact * doctor_fact.price
-                        # data_to_write[f"BR{row}"] = round(doctor_fact.fact * doctor_fact.price / doctor_plan_sum, 2)
+                        # data_to_write[f'CC{row}'] = doctor_fact.fact * doctor_fact.price
+                        # data_to_write[f"CD{row}"] = round(doctor_fact.fact * doctor_fact.price / doctor_plan_sum, 2)
                     count += 1
-                data_to_write[f'BQ{row}'] = ph_compleated_sum
-                data_to_write[f"BR{row}"] = round(ph_compleated_sum / doctor_plan_sum, 2) if doctor_plan_sum != 0 else 0
+                data_to_write[f'CC{row}'] = ph_compleated_sum
+                data_to_write[f"CD{row}"] = round(ph_compleated_sum / doctor_plan_sum, 2) if doctor_plan_sum != 0 else 0
             for key in USER_PLAN_COMPLEATED.keys():
                 data_to_write[f"{key}{med_rep_count}"] = USER_PLAN_COMPLEATED[key]
-            data_to_write[f"AO{med_rep_count}"] = user_plan_sum
-            data_to_write[f"BQ{med_rep_count}"] = user_plan_compleated_sum
-            data_to_write[f"BR{med_rep_count}"] = round(user_plan_compleated_sum / user_plan_sum if user_plan_sum else 0, 2)
+            data_to_write[f"AU{med_rep_count}"] = user_plan_sum
+            data_to_write[f"CC{med_rep_count}"] = user_plan_compleated_sum
+            data_to_write[f"CD{med_rep_count}"] = round(user_plan_compleated_sum / user_plan_sum if user_plan_sum else 0, 2)
     data_to_write.update(pm_names)
     for cell_address, value in data_to_write.items():
         destination_sheet[cell_address] = value

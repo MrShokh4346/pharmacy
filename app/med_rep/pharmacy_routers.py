@@ -220,7 +220,11 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
     return reservation
 
 
-# @router.post('/')
+@router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)
+async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.pay_reservation(**obj.dict(), db=db)
+    return reservation
 
 
 # @router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])

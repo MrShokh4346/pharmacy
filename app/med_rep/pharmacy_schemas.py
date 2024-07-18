@@ -189,6 +189,7 @@ class ReservationProductSchema(BaseModel):
 
 class ReservationSchema(BaseModel):
     manufactured_company_id: int
+    invoice_number: str
     discountable: bool 
     products: List[ReservationProductSchema]
 
@@ -221,7 +222,14 @@ class ReservationOutSchema(BaseModel):
     total_payable: float
     total_payable_with_nds: float
     checked: bool
+    invoice_number: Optional[str] = None 
+    profit: Optional[int] = None 
+    debt: Optional[int] = None 
 
+
+class PayReservtionSchema(BaseModel):
+    amount: int 
+    description: Optional[str] = None 
 
 
 class AttachDoctorToPharmacySchema(BaseModel):

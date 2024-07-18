@@ -19,7 +19,7 @@ async def delete_expired_objects():
                 for reservation in reservations:
                     await session.delete(reservation)
                 result1 = await session.execute(
-                    select(HospitalReservation).filter(HospitalReservation.expire_date < datetime.now(), HospitalReservation.confirmed == False)
+                    select(HospitalReservation).filter(HospitalReservation.expire_date < datetime.now(), HospitalReservation.checked == False)
                 )
                 h_reservations = result1.scalars().all()
                 for reservation in h_reservations:

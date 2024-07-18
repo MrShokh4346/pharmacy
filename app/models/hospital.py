@@ -90,6 +90,25 @@ class HospitalMonthlyPlan(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
+class HospitalReservationPayedAmounts(Base):
+    __tablename__ = "hospital_reservation_payed_amounts"
+
+    id = Column(Integer, primary_key=True)
+    amount = Column(Integer)
+    description = Column(String)
+    date = Column(DateTime, default=date.today())
+    reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
+    reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts")
+   
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
 class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
 
@@ -101,12 +120,15 @@ class HospitalReservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
+    invoice_number = Column(Integer, unique=True, autoincrement=True)
+    profit = Column(Integer, default=0)
+    debt = Column(Integer)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')
     products = relationship("HospitalReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     manufactured_company = relationship("ManufacturedCompany", backref="hospital_reservation", lazy='selectin')
-    confirmed = Column(Boolean, default=False)
+    checked = Column(Boolean, default=False)
     payed = Column(Boolean, default=False)
 
     @classmethod
@@ -142,9 +164,9 @@ class HospitalReservation(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
             
     async def check_reservation(self, db: AsyncSession, **kwargs):
-        if self.confirmed == True:
-            raise HTTPException(status_code=400, detail=f"This reservation already confirmed")
-        self.confirmed = kwargs.get('confirmed')
+        if self.checked == True:
+            raise HTTPException(status_code=400, detail=f"This reservation already checked")
+        self.checked = kwargs.get('checked')
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
             wrh = result.scalar()
@@ -156,8 +178,8 @@ class HospitalReservation(Base):
         await db.commit()
 
     async def check_if_payed_reservation(self, db: AsyncSession, **kwargs):
-        if self.confirmed == False:
-            raise HTTPException(status_code=400, detail=f"This reservation not confirmed")
+        if self.checked == False:
+            raise HTTPException(status_code=400, detail=f"This reservation not checked")
         if self.payed == True:
             raise HTTPException(status_code=400, detail=f"This reservation already payed")
         self.payed = kwargs.get('payed')
@@ -171,8 +193,8 @@ class HospitalReservation(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def delete(self, db: AsyncSession):
-        if self.confirmed == True:
-            raise HTTPException(status_code=404, detail="This reservstion confirmed")
+        if self.checked == True:
+            raise HTTPException(status_code=404, detail="This reservstion checked")
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
             wrh = result.scalars().first()
@@ -181,14 +203,23 @@ class HospitalReservation(Base):
         await db.commit()
 
     async def update_discount(self, discount: int, db: AsyncSession):
-        if self.confirmed == True:
-            raise HTTPException(status_code=400, detail=f"This reservation already confirmed")
+        if self.checked == True:
+            raise HTTPException(status_code=400, detail=f"This reservation already checked")
         for product in self.products:
             product.reservation_price = product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.discount = discount
         await db.commit()
+
+    async def pay_reservation(self, db: AsyncSession, **kwargs):
+        self.debt -= kwargs['amount']
+        self.profit += kwargs['amount']
+        reservation = HospitalReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
+        await reservation.save(db)
+        if self.debt < 0:
+            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+        db.commit()
 
 
 class HospitalReservationProducts(Base):

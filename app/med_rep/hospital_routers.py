@@ -30,8 +30,11 @@ async def update_pharmacy(hospital_id: int, data: HospitalUpdateSchema, db: Asyn
 
 
 @router.get('/get-hospitals', response_model=List[HospitalOutSchema])
-async def get_hospitals(db: AsyncSession = Depends(get_db)):
-    hospitals = await db.execute(select(Hospital))
+async def get_hospitals(med_rep_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    query = select(Hospital)
+    if med_rep_id:
+        query = query.filter(Hospital.med_rep_id==med_rep_id)
+    hospitals = await db.execute(query)
     return hospitals.scalars().all()
 
 
@@ -79,7 +82,6 @@ async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession
     return plan 
 
 
-
 @router.get('/hospital-attached-products/{hospital_id}', response_model=List[HospitalAttachedProducts])
 async def get_hospital_attached_products(hospital_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
     doctor = await get_or_404(Hospital, hospital_id, db)
@@ -97,6 +99,13 @@ async def hospital_reservation(hospital_id: int, res: HospitalReservationSchema,
     hospital = await get_or_404(Hospital, hospital_id, db)
     reservation = await HospitalReservation.save(**res.dict(), db=db, hospital_id=hospital_id)
     return {"msg":"Done"}
+
+
+@router.post('/pay-hospital-reservation/{reservation_id}', response_model=HospitalReservationOutSchema)
+async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.pay_reservation(**obj.dict(), db=db)
+    return reservation
 
 
 @router.post('/check-hospital-reservation/{hospital_reservation_id}')
