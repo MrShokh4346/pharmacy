@@ -53,7 +53,7 @@ class HospitalReservationProductSchema(BaseModel):
 
 class HospitalReservationSchema(BaseModel):
     manufactured_company_id: int
-    invoice_number: str
+    invoice_number: Optional[int] = None
     discount: Optional[int] = 0
     products: List[HospitalReservationProductSchema]
 
@@ -83,7 +83,7 @@ class HospitalReservationOutSchema(BaseModel):
     products: List[ReservationProductOutSchema]
     checked: bool
     payed: bool
-    invoice_number: Optional[str] = None 
+    invoice_number: Optional[int] = None 
     profit: Optional[int] = None 
     debt: Optional[int] = None 
 
@@ -142,3 +142,4 @@ class HospitalAttachedProducts(BaseModel):
     monthly_plan: int 
     date: datetime
     product: ProductSchema
+    fact: Optional[int] = None

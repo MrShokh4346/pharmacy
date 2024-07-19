@@ -91,7 +91,15 @@ async def get_hospital_attached_products(hospital_id: int, month: int | None = N
     start_date = date(year, month, 1)  
     end_date = date(year, month, num_days)
     result = await db.execute(select(HospitalMonthlyPlan).options(selectinload(HospitalMonthlyPlan.product)).filter(HospitalMonthlyPlan.hospital_id==hospital_id, HospitalMonthlyPlan.date>=start_date, HospitalMonthlyPlan.date<=end_date))
-    return result.scalars().all()
+    data = []
+    for plan in result.scalars().all():
+        result1 = await db.execute(select(HospitalFact).filter(HospitalFact.hospital_id==hospital_id, HospitalFact.product_id==plan.product_id, HospitalFact.date>=start_date, HospitalFact.date<=end_date))
+        fact = result1.scalars().first()
+        data.append({
+            **plan.__dict__, 
+            "fact": fact.fact if fact else 0
+        })
+    return data
 
 
 @router.post('/hospital-reservation/{hospital_id}')

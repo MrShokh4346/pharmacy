@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Sequence
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -188,6 +188,9 @@ class ReservationPayedAmounts(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
+invoice_number_seq = Sequence('invoice_number_seq')
+
+
 class Reservation(Base):
     __tablename__ = "reservation"
 
@@ -200,7 +203,7 @@ class Reservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
-    invoice_number = Column(Integer, unique=True, autoincrement=True)
+    invoice_number = Column(Integer, invoice_number_seq, primary_key=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
@@ -250,7 +253,7 @@ class Reservation(Base):
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
             wrh = result.scalar()
-            if (not wrh) and wrh.amount < product.quantity: 
+            if (not wrh) or wrh.amount < product.quantity: 
                 raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
             wrh.amount -= product.quantity
             await CurrentBalanceInStock.add(self.pharmacy_id, product.product_id, product.quantity, db)

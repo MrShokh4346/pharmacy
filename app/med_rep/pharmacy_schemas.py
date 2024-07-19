@@ -189,7 +189,7 @@ class ReservationProductSchema(BaseModel):
 
 class ReservationSchema(BaseModel):
     manufactured_company_id: int
-    invoice_number: str
+    invoice_number: Optional[int] = None
     discountable: bool 
     products: List[ReservationProductSchema]
 
@@ -213,7 +213,7 @@ class ReservationListSchema(BaseModel):
 
 
 class ReservationOutSchema(BaseModel):
-    id: int
+    id: Optional[int]
     date: datetime 
     expire_date: datetime 
     discount: float
@@ -222,7 +222,7 @@ class ReservationOutSchema(BaseModel):
     total_payable: float
     total_payable_with_nds: float
     checked: bool
-    invoice_number: Optional[str] = None 
+    invoice_number: Optional[int] = None 
     profit: Optional[int] = None 
     debt: Optional[int] = None 
 
