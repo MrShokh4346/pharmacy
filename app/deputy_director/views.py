@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from models.users import *
 from models.hospital import HospitalFact, Hospital, HospitalBonus
 from models.doctors import DoctorFact, Doctor, Bonus
+from models.pharmacy import PharmacyHotSale
 from models.database import get_db, get_or_404
 from models.dependencies import *
 from typing import Any
@@ -194,9 +195,14 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             fact +=  fact_d
             fact_price += fact_d *  user_plan.product.price
             fact_p += fact_d 
-        query = text(f"SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale WHERE pharmacy_hot_sale.product_id={user_plan.product_id}::INT AND pharmacy_hot_sale.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_hot_sale.date<=TO_DATE(:end_date, 'YYYY-MM-DD')")
-        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
-        hot_sale = result.first()
+        # query = text(f"SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale WHERE pharmacy_hot_sale.product_id={user_plan.product_id}::INT AND pharmacy_hot_sale.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_hot_sale.date<=TO_DATE(:end_date, 'YYYY-MM-DD')")
+        # result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        # hot_sale = result.first()
+        
+        result = await db.execute(select(PharmacyHotSale).filter(PharmacyHotSale.product_id==user_plan.product_id))
+        hot_sales = [{"company_name": hot_sale.pharmacy.company_name, "sale": hot_sale.amount} for hot_sale in result.scalars().all()]
+        result = await db.execute(select(HospitalFact).filter(HospitalFact.product_id==user_plan.product_id))
+        hospital_facts = [{"hospital_name": hospital_fact.hospital.company_name, "fact": hospital_fact.fact} for hospital_fact in result.scalars().all()]
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
@@ -207,7 +213,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             "doctor_plans": doctor_att,
             "vakant": user_plan.current_amount,
             "product_fact": fact_p,
-            "pharmacy_hot_sale": hot_sale[0]
+            "pharmacy_hot_sale": hot_sales,
+            "hospital_fact": hospital_facts
         })
     data = {
         'plan' : user_plan_data,

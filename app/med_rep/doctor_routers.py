@@ -97,6 +97,7 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
         if user_product.current_amount < obj.monthly_plan:
             raise HTTPException(status_code=404, detail='You are trying to add more doctor plan than user plan for this product')
         user_product.current_amount -= obj.monthly_plan
+        await Bonus.set_bonus(doctor_id=obj.doctor_id, product_id=obj.product_id, compleated=0, db=db)
     db.add_all(doctor_products)
     try:
         await db.commit()

@@ -181,10 +181,10 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
         result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==user.id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
         user_plans = result1.scalars().all()
         user_plan_data = []
-        fact = 0
-        fact_price = 0
         for user_plan in user_plans:
             result = await db.execute(select(DoctorFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
+            fact = 0
+            fact_price = 0
             for f in result.scalars().all():
                 fact += f.fact
             user_plan_data.append({

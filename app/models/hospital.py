@@ -279,7 +279,7 @@ class HospitalFact(Base):
     discount_price = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
-    hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete")
+    hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
     product = relationship("Products",  backref="hospital_fact")
     product_id = Column(Integer, ForeignKey("products.id"))
 
