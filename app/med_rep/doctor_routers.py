@@ -174,7 +174,7 @@ async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession =
 
 
 @router.post('/paying-bonus/{bonus_id}', response_model=BonusOutSchema)
-async def paying_bonus(bonus_id: int, amount: int, description: str, db: AsyncSession = Depends(get_db)):
+async def paying_bonus(bonus_id: int, amount: int, description: str | None = None, db: AsyncSession = Depends(get_db)):
     bonus = await get_or_404(Bonus, bonus_id, db)
     await bonus.paying_bonus(amount, description, db)    
     return bonus
@@ -197,6 +197,12 @@ async def get_bonus_by_doctor_id(doctor_id: int, month: int, db: AsyncSession = 
     end_date = date(year, month, num_days)
     doctor = await get_doctor_or_404(doctor_id, db)
     result = await db.execute(select(Bonus).options(selectinload(Bonus.product)).filter(Bonus.doctor_id == doctor_id, Bonus.date >= start_date, Bonus.date <= end_date))
+    return result.scalars().all()
+
+
+@router.get('/get-bonus-history/{bonus_id}', response_model=List[BonusHistory])
+async def get_bonus_history(bonus_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(BonusPayedAmounts).filter(BonusPayedAmounts.bonus_id==bonus_id))
     return result.scalars().all()
 
 

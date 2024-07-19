@@ -100,7 +100,15 @@ class BonusOutSchema(BaseModel):
     amount: int 
     payed: int 
     product_quantity: int 
+    pre_investment: int 
     product: ProductOutSchema
+
+
+class BonusHistory(BaseModel):
+    id: int 
+    amount: int 
+    description: Optional[str] = None
+    date: datetime
 
 
 class RescheduleSchema(BaseModel):

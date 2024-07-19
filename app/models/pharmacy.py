@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan
 from datetime import date , datetime, timedelta
-from .users import Products
+from .users import Products, UserProductPlan
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -375,7 +375,7 @@ class PharmacyFact(Base):
                 if checking.saled < value:
                     raise HTTPException(status_code=404, detail=f"You are trying to add more product than saled for this product (id={key})")
                 pharmacy = await get_or_404(Pharmacy, kwargs['pharmacy_id'], db)
-                await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id)
+                await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)
                 hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
                 checking.chack = True
                 db.add(hot_sale)

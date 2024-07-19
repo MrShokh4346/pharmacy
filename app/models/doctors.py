@@ -195,7 +195,9 @@ class Bonus(Base):
         payed = BonusPayedAmounts(amount=amount, description=description, bonus_id=self.id)
         db.add(payed)
         self.payed += amount
-        self.pre_investment -= amount
+        difference = self.payed - self.amount
+        if difference > 0:
+            self.pre_investment = difference
         await db.commit()
 
     @classmethod
@@ -215,6 +217,10 @@ class Bonus(Base):
         else:
             month_bonus.amount += amount
             month_bonus.product_quantity += kwargs['compleated']
+            if month_bonus.pre_investment >= amount:
+                month_bonus.pre_investment -= amount
+            else:
+                month_bonus.pre_investment = 0 
 
 
 pharmacy_doctor = Table(
