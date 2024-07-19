@@ -96,6 +96,8 @@ async def write_excel(reservation_id: int, db: AsyncSession):
     destination_sheet = destination_wb[sheet_name]
     result = await db.execute(select(Reservation).options(selectinload(Reservation.pharmacy)).where(Reservation.id==reservation_id))
     reservation = result.scalar()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
     destination_sheet['E2'] = reservation.discount
     destination_sheet['E6'] = reservation.pharmacy.company_name
     destination_sheet['E7'] = reservation.pharmacy.inter_branch_turnover

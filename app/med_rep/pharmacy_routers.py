@@ -222,7 +222,11 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
 
 @router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)
 async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(Reservation, reservation_id, db)
+    # reservation = await get_or_404(Reservation, reservation_id, db)
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
     await reservation.pay_reservation(**obj.dict(), db=db)
     return reservation
 

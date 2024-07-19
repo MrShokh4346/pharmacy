@@ -117,6 +117,7 @@ class HospitalReservation(Base):
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=date.today())
+    date_implementation = Column(DateTime)
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=10)))
     discount = Column(Float)
     total_quantity = Column(Integer)
@@ -171,6 +172,7 @@ class HospitalReservation(Base):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already checked")
         self.checked = kwargs.get('checked')
+        self.date_implementation = datetime.now()
         for product in self.products:
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
             wrh = result.scalar()

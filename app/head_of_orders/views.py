@@ -63,6 +63,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "id":rs.id,
             "date":rs.date,
             "expire_date":rs.expire_date,
+            "date_implementation": rs.date_implementation,
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
             "debt": rs.debt,
@@ -87,6 +88,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "id":rs.id,
             "date":rs.date,
             "expire_date":rs.expire_date,
+            "date_implementation": rs.date_implementation,
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
             "debt": rs.debt,
@@ -124,14 +126,18 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
 
 @router.post('/check-reservation/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(Reservation, reservation_id, db)
+    # reservation = await get_or_404(Reservation, reservation_id, db)
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.check_reservation(**obj.dict(), db=db)
     return {"msg":"Done"}
 
 
 @router.post('/check-hospital-reservation/{reservation_id}')
 async def get_hospital_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.check_reservation(**obj.dict(), db=db)
     return {"msg":"Done"}
 
@@ -139,28 +145,36 @@ async def get_hospital_reservation_products(reservation_id: int, obj: CheckSchem
 
 @router.delete('/delete-reservation/{reservation_id}')
 async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(Reservation, reservation_id, db)
+    # reservation = await get_or_404(Reservation, reservation_id, db)
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.delete(db=db)
     return {"msg":"Done"}
 
 
 @router.delete('/delete-hospital-reservation/{reservation_id}')
 async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.delete(db=db)
     return {"msg":"Done"}
 
 
 @router.post('/update-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(Reservation, reservation_id, db)
+    # reservation = await get_or_404(Reservation, reservation_id, db)
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.update_expire_date(date = obj.date, db=db)
     return {"msg":"Done"}
 
 
 @router.post('/update-hospital-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.update_expire_date(date = obj.date, db=db)
     return {"msg":"Done"}
 
@@ -181,13 +195,17 @@ async def set_discount_to_all_pharmacies(discount: float,  db: AsyncSession = De
 
 @router.post('/update-reservation-discount/{reservation_id}')
 async def get_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(Reservation, reservation_id, db)
+    # reservation = await get_or_404(Reservation, reservation_id, db)
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.update_discount(discount = discount, db=db)
     return {"msg":"Done"}
 
 
 @router.post('/update-hospital-reservation-discount/{reservation_id}')
 async def get_hospital_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
     await reservation.update_discount(discount = discount, db=db)
     return {"msg":"Done"}
