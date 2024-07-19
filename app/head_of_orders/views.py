@@ -52,7 +52,7 @@ async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
     return result.scalars().all()
 
-
+#######
 @router.get('/get-all-reservations')
 async def get_reservation(db: AsyncSession = Depends(get_db)):
     data = []
@@ -66,9 +66,13 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
             "debt": rs.debt,
+            "profit": rs.profit,
             "pharmacy":{
                 "id":rs.pharmacy.id ,
                 "company_name":rs.pharmacy.company_name,
+                "manufactured_company": "Zuma",
+                "inter_branch_turnover":rs.pharmacy.inter_branch_turnover,
+                "promo":1000,
                 "med_rep":{"full_name":rs.pharmacy.med_rep.full_name},
                 "region":{"name":rs.pharmacy.region.name }
                 },
@@ -86,9 +90,13 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
             "debt": rs.debt,
+            "profit": rs.profit,
             "hospital":{
                 "id":rs.hospital.id ,
                 "company_name":rs.hospital.company_name,
+                "manufactured_company": "Zuma",
+                "promo":1000,
+                "inter_branch_turnover":rs.hospital.inter_branch_turnover,
                 "med_rep":{"full_name":rs.hospital.med_rep.full_name},
                 # "region":rs.hospital.region.name 
                 },
