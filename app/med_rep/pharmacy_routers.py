@@ -8,6 +8,7 @@ from models.users import Products
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.pharmacy import *
+from models.hospital import HospitalReservation
 from models.users import PharmacyPlan, Notification
 from models.database import get_db, get_or_404
 from models.dependencies import *
@@ -231,6 +232,17 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
     return reservation
 
 
+@router.post('/pay-hospital-reservation/{reservation_id}', response_model=ReservationOutSchema)
+async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+    # reservation = await get_or_404(Reservation, reservation_id, db)
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
+    await reservation.pay_reservation(**obj.dict(), db=db)
+    return reservation
+
+
 # @router.get('/get-reservations/{pharmacy_id}', response_model=List[ReservationListSchema])
 # async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
 #     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
@@ -240,6 +252,11 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
 @router.get('/get-report/{reservation_id}')
 async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
     return await write_excel(reservation_id, db)
+
+
+@router.get('/get-hospital-report/{reservation_id}')
+async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    return await write_excel_hospital(reservation_id, db)
 
 
 @router.post('/reply-notification/{notification_id}', response_model=NotificationOutSchema)
