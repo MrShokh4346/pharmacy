@@ -116,6 +116,13 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
     return reservation
 
 
+
+@router.get('/get-hospital-reservation-history/{reservation_id}')
+async def get_hospital_reservation_history(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    history = await db.execute(select(HospitalReservationPayedAmounts).filter(HospitalReservationPayedAmounts.reservation_id==reservation_id))
+    return history.scalars().all()
+
+
 @router.post('/check-hospital-reservation/{hospital_reservation_id}')
 async def check_hospital_reservation(hospital_reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
     reservation = await get_or_404(HospitalReservation, hospital_reservation_id, db)

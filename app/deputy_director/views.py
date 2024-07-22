@@ -200,9 +200,9 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
         # hot_sale = result.first()
         
         result = await db.execute(select(PharmacyHotSale).filter(PharmacyHotSale.product_id==user_plan.product_id))
-        hot_sales = [{"company_name": hot_sale.pharmacy.company_name, "sale": hot_sale.amount} for hot_sale in result.scalars().all()]
+        hot_sales = [{"company_name": hot_sale.pharmacy.company_name, "company_id": hot_sale.pharmacy.id, "sale": hot_sale.amount} for hot_sale in result.scalars().all()]
         result = await db.execute(select(HospitalFact).filter(HospitalFact.product_id==user_plan.product_id))
-        hospital_facts = [{"hospital_name": hospital_fact.hospital.company_name, "fact": hospital_fact.fact} for hospital_fact in result.scalars().all()]
+        hospital_facts = [{"hospital_name": hospital_fact.hospital.company_name, "hospital_id": hospital_fact.hospital.id, "fact": hospital_fact.fact} for hospital_fact in result.scalars().all()]
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
