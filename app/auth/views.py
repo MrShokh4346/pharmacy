@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
-from models.dependencies import create_access_token
+from models.dependencies import create_access_token, simple_send
 from sqlalchemy.orm import Session
 from models.users import *
 from models.database import get_db
@@ -67,3 +67,7 @@ async def register_director(user: RegisterSchema, db: Session = Depends(get_db))
 #     db_user.update(**user.dict(), db=db)
 #     return UserOutSchema(**db_user.__dict__)
 
+
+@router.post('/send-email')
+async def send_mail(email: str, msg: str):
+    return await simple_send(email, msg)

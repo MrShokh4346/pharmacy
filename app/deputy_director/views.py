@@ -358,7 +358,8 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'bonus_id' : bonus.id if bonus else None,
             'bonus_amount': bonus.amount if bonus else 0,
             'bonus_payed' : bonus.payed if bonus else 0,
-            'bonus_remainder' : bonus.amount - bonus.payed if bonus else 0
+            'bonus_remainder' : bonus.amount - bonus.payed if bonus else 0,
+            'pre_investment' : bonus.pre_investment if bonus else 0
 
         })
     # query = select(HospitalFact).join(Hospital).options(joinedload(HospitalFact.hospital), joinedload(HospitalFact.product)).filter(HospitalFact.date >= start_date, HospitalFact.date <= end_date)
@@ -398,7 +399,7 @@ async def get_user_current_month_plan(med_rep_id: int, db: AsyncSession = Depend
 
 @router.get('/get-proccess-report', response_model=List[ReportSchema])
 async def get_proccess_report(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.doctor_attached_products)).filter(Doctor.deleted==False))
+    result = await db.execute(select(Doctor).filter(Doctor.deleted==False))
     return result.scalars().all()
 
 

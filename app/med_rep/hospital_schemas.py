@@ -22,6 +22,7 @@ class HospitalSchema(BaseModel):
     purchasing_manager: str 
     contact: str 
     med_rep_id: int 
+    region_id: int 
 
 
 class HospitalUpdateSchema(BaseModel):
@@ -32,6 +33,7 @@ class HospitalUpdateSchema(BaseModel):
     director: Optional[str] = None 
     purchasing_manager: Optional[str] = None 
     contact: Optional[str] = None 
+    region_id: Optional[int] = None
 
 
 class HospitalOutSchema(BaseModel):
@@ -44,6 +46,7 @@ class HospitalOutSchema(BaseModel):
     purchasing_manager: str 
     contact: str 
     med_rep: UserSchema
+    region: Optional[RegionSchema] = None
 
 
 class HospitalReservationProductSchema(BaseModel):

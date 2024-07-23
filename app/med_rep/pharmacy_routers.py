@@ -141,7 +141,7 @@ async def reschedule_pharmacy_visit_date(plan_id: int, date: RescheduleSchema, d
 
 
 @router.post('/pharmacy-visit-info/{visit_id}')
-async def doctor_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
+async def pharmacy_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(PharmacyPlan, visit_id, db)
     await plan.update(description=visit.description, status=True, db=db)
     if visit.doctors is not None:

@@ -212,7 +212,6 @@ class ReportSchema(BaseModel):
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
     medical_organization: MedicalOrganizationSchema
-    doctor_attached_products: List[AttachProductsSchema]
 
 
 class ProductExpensesSchema(BaseModel):

@@ -24,6 +24,8 @@ class Hospital(Base):
     director = Column(String)
     purchasing_manager = Column(String)
     contact = Column(String)
+    region = relationship("Region", backref="hospital", lazy='selectin')
+    region_id = Column(Integer, ForeignKey("region.id")) 
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users",  backref="mr_hospital", lazy='selectin')
 

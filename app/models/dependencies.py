@@ -29,6 +29,35 @@ SECRET_KEY = os.environ['SECRET_KEY']
 ALGORITHM = os.environ['ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+
+conf = ConnectionConfig(
+    MAIL_USERNAME = "shokhruxabdurasulov0",
+    MAIL_PASSWORD = os.environ['EMAIL_PASSWORD'],
+    MAIL_FROM = "shokhruxabdurasulov0@email.com",
+    MAIL_PORT = 587,
+    MAIL_SERVER = "smtp.gmail.com",
+    MAIL_FROM_NAME="Pharma_app",
+    MAIL_STARTTLS = True,
+    MAIL_SSL_TLS = False,
+    USE_CREDENTIALS = True,
+    VALIDATE_CERTS = True
+)
+
+async def simple_send(email: str, body: str):
+    html = """<p>Hi this test mail, thanks for using Fastapi-mail</p> """
+
+    message = MessageSchema(
+        subject="Fastapi-Mail module",
+        recipients=[email],
+        body=body,
+        subtype=MessageType.html)
+
+    fm = FastMail(conf)
+    await fm.send_message(message)
+    return {"message": "email has been sent"}
+
 auth_header = HTTPBearer()
 
 
@@ -214,7 +243,7 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
         doctor_count = 0
         for user in med_reps:
             USER_PLAN_COMPLEATED = {
-                    "AV" : 0,        "AW" : 0,
+                    "AV" : 0,        "AW" : 0,      "AP":0,
                     "AX" : 0,        "AY" : 0,        "AZ" : 0,        "BA" : 0,        "BB" : 0,
                     "BC" : 0,        "BD" : 0,        "BE" : 0,        "BF" : 0,        "BG" : 0,
                     "BH" : 0,        "BI" : 0,        "BJ" : 0,        "BK" : 0,        "BL" : 0,
