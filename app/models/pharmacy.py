@@ -257,10 +257,10 @@ class Reservation(Base):
         self.checked = kwargs.get('checked')
         self.date_implementation = datetime.now()
         for product in self.products:
-            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
+            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
             wrh = result.scalar()
             if (not wrh) or wrh.amount < product.quantity: 
-                raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in warehouse")
+                raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in factrory warehouse")
             wrh.amount -= product.quantity
             await CurrentBalanceInStock.add(self.pharmacy_id, product.product_id, product.quantity, db)
         await db.commit()
@@ -503,3 +503,9 @@ class Pharmacy(Base):
             await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
+
+
+
+
