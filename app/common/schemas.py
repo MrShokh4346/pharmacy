@@ -97,6 +97,7 @@ class ProductUpdateSchema(BaseModel):
     name: Optional[str] = None  
     price: Optional[int] = None  
     discount_price: Optional[int] = None  
+    is_exist: Optional[bool] = None
     man_company_id: Optional[int] = None  
     category_id: Optional[int] = None
  
@@ -110,7 +111,8 @@ class ProductOutSchema(BaseModel):
     id: int 
     name: str 
     price: int 
-    discount_price: int 
+    discount_price: int
+    is_exist: Optional[bool] = None  
     man_company: ManufacturedCompanySchema 
     category: ProductCategorySchema
 

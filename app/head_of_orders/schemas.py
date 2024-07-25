@@ -66,3 +66,43 @@ class CheckSchema(BaseModel):
 class ExpireDateSchema(BaseModel):
     date: date
 
+
+class PayReservtionDoctors(BaseModel):
+    amount: int 
+    doctor_id: int 
+    product_id: int 
+
+
+class PayReservtionSchema(BaseModel):
+    objects: List[PayReservtionDoctors] 
+    description: Optional[str] = None 
+
+
+class PayWholesaleReservtionDoctors(BaseModel):
+    amount: int 
+    doctor_id: int 
+    product_id: int 
+
+
+class PayWholesaleReservtionSchema(BaseModel):
+    med_rep_id: int 
+    pharmacy_id: int 
+    objects: List[PayWholesaleReservtionDoctors] 
+    description: Optional[str] = None 
+
+
+
+class ReservationOutSchema(BaseModel):
+    id: Optional[int]
+    date: datetime 
+    expire_date: datetime 
+    discount: Optional[float] = None
+    total_quantity: float
+    total_amount: float
+    total_payable: float
+    total_payable_with_nds: float
+    checked: bool
+    invoice_number: Optional[int] = None 
+    profit: Optional[int] = None 
+    debt: Optional[int] = None 
+

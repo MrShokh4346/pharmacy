@@ -221,28 +221,6 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
     return reservation
 
 
-@router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)
-async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(Reservation, reservation_id, db)
-    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
-    reservation = result.scalars().first()
-    if not reservation:
-        raise HTTPException(status_code=400, detail=f"Reservation not found")
-    await reservation.pay_reservation(**obj.dict(), db=db)
-    return reservation
-
-
-@router.post('/pay-hospital-reservation/{reservation_id}', response_model=ReservationOutSchema)
-async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(Reservation, reservation_id, db)
-    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
-    reservation = result.scalars().first()
-    if not reservation:
-        raise HTTPException(status_code=400, detail=f"Reservation not found")
-    await reservation.pay_reservation(**obj.dict(), db=db)
-    return reservation
-
-
 @router.get('/get-reservation-history/{reservation_id}')
 async def get_reservation_history(reservation_id: int, db: AsyncSession = Depends(get_db)):
     history = await db.execute(select(ReservationPayedAmounts).filter(ReservationPayedAmounts.reservation_id==reservation_id))

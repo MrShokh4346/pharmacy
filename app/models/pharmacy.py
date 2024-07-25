@@ -2,7 +2,7 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
-from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan
+from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan, Bonus
 from datetime import date , datetime, timedelta
 from .users import Products, UserProductPlan
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from .database import Base, get_db, get_or_404
-from sqlalchemy import and_ , extract, func, or_
+from sqlalchemy import and_ , extract, func, or_, text
 import calendar
 
 
@@ -176,14 +176,18 @@ class ReservationPayedAmounts(Base):
     amount = Column(Integer)
     description = Column(String)
     date = Column(DateTime, default=date.today())
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
+    product = relationship("Products", cascade="all, delete", backref="reservation_payed_amounts", lazy='selectin')
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", backref="reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
     reservation = relationship("Reservation", cascade="all, delete", backref="payed_amounts")
    
     async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            await db.commit()
-            await db.refresh(self)
+            # await db.commit()
+            # await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
@@ -204,7 +208,7 @@ class Reservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
-    invoice_number = Column(Integer, invoice_number_seq, primary_key=True, server_default=invoice_number_seq.next_value())
+    invoice_number = Column(Integer, invoice_number_seq, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
@@ -256,7 +260,7 @@ class Reservation(Base):
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
             wrh = result.scalar()
             if (not wrh) or wrh.amount < product.quantity: 
-                raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
+                raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in warehouse")
             wrh.amount -= product.quantity
             await CurrentBalanceInStock.add(self.pharmacy_id, product.product_id, product.quantity, db)
         await db.commit()
@@ -289,13 +293,32 @@ class Reservation(Base):
         await db.commit()
 
     async def pay_reservation(self, db: AsyncSession, **kwargs):
-        self.debt -= kwargs['amount']
-        self.profit += kwargs['amount']
-        reservation = ReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
-        await reservation.save(db)
-        if self.debt < 0:
-            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-        db.commit()
+        try:
+            query = text(f'SELECT product_id FROM reservation_products WHERE reservation_id={self.id}')
+            result = await db.execute(query)
+            product_ids = [row[0] for row in result.all()]
+            for obj in kwargs['objects']:
+                if obj['product_id'] not in product_ids:
+                    raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
+                self.debt -= obj['amount']
+                self.profit += obj['amount']
+                reservation = ReservationPayedAmounts(amount=obj['amount'], description=kwargs['description'], reservation_id=self.id, product_id=obj['product_id'], doctor_id=obj['doctor_id'])
+                await reservation.save(db)
+                if self.debt < 0:
+                    raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+                await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['amount'], db=db)
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def edit_invoice_number(self, invoice_number: int, db: AsyncSession):
+        try:
+            self.invoice_number = invoice_number
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 
 class ReservationProducts(Base):

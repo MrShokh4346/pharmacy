@@ -227,11 +227,6 @@ class ReservationOutSchema(BaseModel):
     debt: Optional[int] = None 
 
 
-class PayReservtionSchema(BaseModel):
-    amount: int 
-    description: Optional[str] = None 
-
-
 class AttachDoctorToPharmacySchema(BaseModel):
     doctor_id: int 
     pharmacy_id: int 

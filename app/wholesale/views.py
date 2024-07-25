@@ -5,7 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
-from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse, ReportWholesaleWarehouse, WholesaleOutput
+from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation
 from models.pharmacy import CurrentBalanceInStock
 from models.dependencies import *
 from typing import Any, List
@@ -87,5 +87,13 @@ async def return_wholesale(wholesale_id: int, obj: ReturnProductSchema, db: Asyn
     wholesale_warehouse.amount += obj.amount
     await db.commit()
     return {"msg":"Done"}
+
+
+
+@router.post('/wholesale-reservation/{wholesale_id}', response_model=ReservationOutSchema)
+async def wholesale_reservation(wholesale_id: int, res: WholesaleReservationSchema, db: AsyncSession = Depends(get_db)):
+    pharmacy = await get_or_404(Wholesale, wholesale_id, db)
+    reservation = await WholesaleReservation.save(**res.dict(), db=db, wholesale_id=wholesale_id)
+    return reservation
 
 

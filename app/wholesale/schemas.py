@@ -3,7 +3,7 @@ from typing import Literal, Annotated
 from enum import Enum
 from fastapi import FastAPI, Path
 from common.schemas import ManufacturedCompanySchema, ProductOutSchema, RegionSchema, ProductCategorySchema
-from datetime import date 
+from datetime import date , datetime
 from typing import List, Optional
 
 
@@ -83,3 +83,34 @@ class ReturnProductSchema(BaseModel):
     pharmacy_id: int 
     product_id: int 
     amount: int 
+
+
+class WholesaleReservationProductSchema(BaseModel):
+    product_id: int 
+    quantity: int
+    price: int 
+
+
+class WholesaleReservationSchema(BaseModel):
+    manufactured_company_id: int
+    invoice_number: Optional[int] = None
+    # discount: bool 
+    products: List[WholesaleReservationProductSchema]
+    
+
+
+class ReservationOutSchema(BaseModel):
+    id: Optional[int]
+    date: datetime 
+    expire_date: datetime 
+    # discount: float
+    total_quantity: float
+    total_amount: float
+    total_payable: float
+    total_payable_with_nds: float
+    checked: bool
+    invoice_number: Optional[int] = None 
+    profit: Optional[int] = None 
+    debt: Optional[int] = None 
+
+

@@ -7,12 +7,12 @@ from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
 from models.pharmacy import Pharmacy
 from models.hospital import HospitalReservation
-from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale
+from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, WholesaleReservation
 from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import selectinload
-from sqlalchemy import update
+from sqlalchemy import update, text 
 
 
 router = FastAPI()
@@ -52,7 +52,7 @@ async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
     return result.scalars().all()
 
-#######
+
 @router.get('/get-all-reservations')
 async def get_reservation(db: AsyncSession = Depends(get_db)):
     data = []
@@ -130,8 +130,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
 
 
 @router.post('/check-reservation/{reservation_id}')
-async def get_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(Reservation, reservation_id, db)
+async def check_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -141,8 +140,7 @@ async def get_reservation_products(reservation_id: int, obj: CheckSchema, db: As
 
 
 @router.post('/check-hospital-reservation/{reservation_id}')
-async def get_hospital_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
+async def check_hospital_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -151,10 +149,18 @@ async def get_hospital_reservation_products(reservation_id: int, obj: CheckSchem
     return {"msg":"Done"}
 
 
+@router.post('/check-wholesale-reservation/{reservation_id}')
+async def check_wholesale_reservation_products(reservation_id: int, obj: CheckSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if reservation is None:
+        raise HTTPException(status_code=400, detail='Reservation not found')
+    await reservation.check_reservation(**obj.dict(), db=db)
+    return {"msg":"Done"}
+
 
 @router.delete('/delete-reservation/{reservation_id}')
 async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(Reservation, reservation_id, db)
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -165,7 +171,6 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
 
 @router.delete('/delete-hospital-reservation/{reservation_id}')
 async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -176,7 +181,6 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
 
 @router.post('/update-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(Reservation, reservation_id, db)
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -187,7 +191,6 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
 
 @router.post('/update-hospital-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -212,17 +215,87 @@ async def set_discount_to_all_pharmacies(discount: float,  db: AsyncSession = De
 
 @router.post('/update-reservation-discount/{reservation_id}')
 async def get_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(Reservation, reservation_id, db)
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
+    if reservation is None:
+        raise HTTPException(status_code=400, detail='Reservation not found')
+    await reservation.update_discount(discount = discount, db=db)
+    return {"msg":"Done"}
+
+
+@router.post('/update-hospital-reservation-discount/{reservation_id}')
+async def get_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if reservation is None:
+        raise HTTPException(status_code=400, detail='Reservation not found')
     await reservation.update_discount(discount = discount, db=db)
     return {"msg":"Done"}
 
 
 @router.post('/update-hospital-reservation-discount/{reservation_id}')
 async def get_hospital_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
-    # reservation = await get_or_404(HospitalReservation, reservation_id, db)
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
     reservation = result.scalars().first()
     await reservation.update_discount(discount = discount, db=db)
     return {"msg":"Done"}
+
+
+@router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)
+async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
+    await reservation.pay_reservation(**obj.dict(), db=db)
+    return reservation
+
+
+@router.post('/pay-hospital-reservation/{reservation_id}', response_model=ReservationOutSchema)
+async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
+    await reservation.pay_reservation(**obj.dict(), db=db)
+    return reservation
+
+
+@router.post('/pay-wholesale-reservation/{reservation_id}', response_model=ReservationOutSchema)
+async def pay_wholesale_pharmacy_reservation(reservation_id: int, obj: PayWholesaleReservtionSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"WholesaleReservation not found")
+    await reservation.pay_reservation(**obj.dict(), db=db)
+    return reservation
+
+
+@router.put('/edit-pharmacy-reservation-invoice-number/{reservation_id}', response_model=ReservationOutSchema)
+async def edit_pharmacy_reservation_invoice_number(reservation_id: int, invoice_number: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
+    await reservation.edit_invoice_number(invoice_number, db)
+    return reservation
+
+
+@router.put('/edit-hospital-reservation-invoice-number/{reservation_id}', response_model=ReservationOutSchema)
+async def edit_hospital_reservation_invoice_number(reservation_id: int, invoice_number: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"HospitalReservation not found")
+    await reservation.edit_invoice_number(invoice_number, db)
+    return reservation
+
+
+@router.put('/edit-wholesale-reservation-invoice-number/{reservation_id}', response_model=ReservationOutSchema)
+async def edit_wholesale_reservation_invoice_number(reservation_id: int, invoice_number: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"WholesaleReservation not found")
+    await reservation.edit_invoice_number(invoice_number, db)
+    return reservation

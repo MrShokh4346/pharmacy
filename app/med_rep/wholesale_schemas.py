@@ -67,7 +67,26 @@ class WholesaleReportSchema(BaseModel):
     products: List[IncomingBalanceInStockProductSchema]
 
 
+class DoctorOutSchema(BaseModel):
+    id: int 
+    full_name: str 
+    email: str 
+    speciality: DoctorSpecialitySchema 
 
+
+class PharmacyWSchema(BaseModel):
+    id: int
+    company_name: str
+    inter_branch_turnover: str 
     
 
 
+class WholesaleReservationPayedAmountsSchema(BaseModel):
+    id : int  
+    amount : int 
+    description : Optional[str] = None 
+    date : datetime  
+    product : ProductOutSchema 
+    doctor : DoctorOutSchema  
+    pharmacy : PharmacyWSchema   
+    med_rep : UserOutSchema  

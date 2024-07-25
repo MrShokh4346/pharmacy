@@ -163,7 +163,7 @@ class DoctorFact(Base):
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['compleated']
-        await Bonus.set_bonus(**kwargs, db=db)
+        # await Bonus.set_bonus(**kwargs, db=db)
 
 
 class BonusPayedAmounts(Base):
@@ -242,6 +242,7 @@ class Doctor(Base):
     latitude = Column(String)
     longitude = Column(String)
     deleted = Column(Boolean, default=False)
+    birth_date = Column(DateTime)
 
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users",  backref="mr_doctor", foreign_keys=[med_rep_id], lazy='selectin')
@@ -283,6 +284,7 @@ class Doctor(Base):
             self.email = kwargs.get('email', self.email)
             self.latitude = kwargs.get('latitude', self.latitude)
             self.longitude = kwargs.get('longitude', self.longitude)
+            self.birth_date = kwargs.get('birth_date', self.birth_date)
             self.med_rep_id = kwargs.get('med_rep_id', self.med_rep_id)
             self.region_manager_id = kwargs.get('region_manager_id', self.region_manager_id)
             self.ffm_id = kwargs.get('ffm_id', self.ffm_id)

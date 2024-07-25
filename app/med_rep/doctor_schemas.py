@@ -11,6 +11,7 @@ class DoctorInSchema(BaseModel):
     contact1: str 
     contact2: Optional[str] = None   
     email: str 
+    birth_date: Optional[datetime] = None  
     category_id: int 
     speciality_id: int 
     # med_rep_id: int
@@ -28,6 +29,7 @@ class DoctorOutSchema(BaseModel):
     full_name: str 
     contact1: str 
     contact2: Optional[str] = None   
+    birth_date: Optional[datetime] = None  
     email: str 
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
@@ -40,6 +42,7 @@ class DoctorUpdateSchema(BaseModel):
     contact1: Optional[str] = None  
     contact2: Optional[str] = None  
     email: Optional[str] = None  
+    birth_date: Optional[datetime] = None  
     category_id: Optional[int] = None  
     speciality_id: Optional[int] = None  
     # med_rep_id: Optional[int] = None 

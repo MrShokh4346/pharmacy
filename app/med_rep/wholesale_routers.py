@@ -5,7 +5,7 @@ from .wholesale_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.pharmacy import *
-from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse
+from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservation, WholesaleReservationPayedAmounts
 from models.database import get_db, get_or_404
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
@@ -58,26 +58,35 @@ async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(
 #     return result.scalars().all()
 
 
-@router.get('/wholesale-report-by-wholesale-id/{wholesale_id}', response_model=List[WholesaleReportSchema])
-async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
+# @router.get('/wholesale-report-by-wholesale-id/{wholesale_id}', response_model=List[WholesaleReportSchema])
+# async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
+#     year = datetime.now().year
+#     num_days = calendar.monthrange(year, month_number)[1]
+#     start_date = date(year, month_number, 1)
+#     end_date = date(year, month_number, num_days)
+#     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id == wholesale_id, IncomingBalanceInStock.date >= start_date, IncomingBalanceInStock.date <= end_date))
+#     objects = result.scalars().all()
+#     data = []
+#     for obj in objects:
+#         prd_list = []
+#         for product in obj.products:
+#             result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==obj.pharmacy.id, CurrentBalanceInStock.product_id==product.product.id))
+#             current_amount = result.scalars().first()
+#             prd_list.append({**product.__dict__, "current_amount":current_amount.amount})
+#         data.append({
+#             "date" : obj.date,
+#             "wholesale": {**obj.wholesale.__dict__},
+#             "pharmacy": {**obj.pharmacy.__dict__},
+#             "products": prd_list
+#         })
+#     return data
+
+
+@router.get('/wholesale-report-by-wholesale-reservation-id/{reservation_id}', response_model=List[WholesaleReservationPayedAmountsSchema])
+async def wholesale_report(reservation_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
     num_days = calendar.monthrange(year, month_number)[1]
     start_date = date(year, month_number, 1)
     end_date = date(year, month_number, num_days)
-    result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id == wholesale_id, IncomingBalanceInStock.date >= start_date, IncomingBalanceInStock.date <= end_date))
-    objects = result.scalars().all()
-    data = []
-    for obj in objects:
-        prd_list = []
-        for product in obj.products:
-            result = await db.execute(select(CurrentBalanceInStock).filter(CurrentBalanceInStock.pharmacy_id==obj.pharmacy.id, CurrentBalanceInStock.product_id==product.product.id))
-            current_amount = result.scalars().first()
-            prd_list.append({**product.__dict__, "current_amount":current_amount.amount})
-        data.append({
-            "date" : obj.date,
-            "wholesale": {**obj.wholesale.__dict__},
-            "pharmacy": {**obj.pharmacy.__dict__},
-            "products": prd_list
-        })
-    return data
-
+    result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id == reservation_id, WholesaleReservationPayedAmounts.date >= start_date, WholesaleReservationPayedAmounts.date <= end_date))
+    return result.scalars().all()

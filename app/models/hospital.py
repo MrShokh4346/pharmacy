@@ -126,7 +126,7 @@ class HospitalReservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
-    invoice_number = Column(Integer, invoice_number_seq, primary_key=True, server_default=invoice_number_seq.next_value())
+    invoice_number = Column(Integer, invoice_number_seq, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
@@ -164,6 +164,7 @@ class HospitalReservation(Base):
                                 )
             db.add(reservation)
             for p in res_products:
+                p.reservation_id=reservation.id
                 reservation.products.append(p)
             await db.commit()
             return reservation
@@ -176,10 +177,10 @@ class HospitalReservation(Base):
         self.checked = kwargs.get('checked')
         self.date_implementation = datetime.now()
         for product in self.products:
-            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id))
+            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
             wrh = result.scalar()
             if (not wrh) or wrh.amount < product.quantity: 
-                raise HTTPException(status_code=404, detail=f"There is not enough {product.name} in warehouse")
+                raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in warehouse")
             wrh.amount -= product.quantity
             await UserProductPlan.user_plan_minus(product_id=product.product_id, med_rep_id=self.hospital.med_rep_id, quantity=product.quantity, db=db)
             await HospitalFact.set_fact(product_id=product.product_id, product_quantity=product.quantity, hospital_id=self.hospital_id, db=db)
@@ -221,13 +222,31 @@ class HospitalReservation(Base):
         await db.commit()
 
     async def pay_reservation(self, db: AsyncSession, **kwargs):
-        self.debt -= kwargs['amount']
-        self.profit += kwargs['amount']
-        reservation = HospitalReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
-        await reservation.save(db)
-        if self.debt < 0:
-            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-        db.commit()
+        try:
+            query = text(f'SELECT product_id FROM hospital_reservation_products WHERE reservation_id={self.id}')
+            result = await db.execute(query)
+            product_ids = [row[0] for row in result.all()]
+            for obj in kwargs['objects']:
+                if obj['product_id'] not in product_ids:
+                    raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
+                self.debt -= obj['amount']
+                self.profit += obj['amount']
+                reservation = ReservationPayedAmounts(amount=obj['amount'], description=kwargs['description'], reservation_id=self.id, product_id=obj['product_id'], doctor_id=obj['doctor_id'])
+                await reservation.save(db)
+                if self.debt < 0:
+                    raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+                await HospitalBonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['amount'], db=db)
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def edit_invoice_number(self, invoice_number: int, db: AsyncSession):
+        try:
+            self.invoice_number = invoice_number
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class HospitalReservationProducts(Base):
@@ -262,9 +281,14 @@ class HospitalBonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
+        year = datetime.now().year
+        month = datetime.now().month  
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)  
+        end_date = date(year, month, num_days)
         product = await get_or_404(Products, kwargs['product_id'], db)
         amount = product.marketing_expenses * kwargs['product_quantity']
-        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=kwargs['start_date'], cls.date<=kwargs['end_date']))
+        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_bonus = result.scalars().first()
         if month_bonus is None:
             month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=amount)
@@ -302,4 +326,4 @@ class HospitalFact(Base):
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['product_quantity']
-        await HospitalBonus.set_bonus(**kwargs, start_date=start_date, end_date=end_date, db=db)
+        # await HospitalBonus.set_bonus(**kwargs, start_date=start_date, end_date=end_date, db=db)

@@ -144,6 +144,7 @@ class Products(Base):
     name = Column(String, unique=True)
     price = Column(Integer)
     discount_price = Column(Integer)
+    is_exist = Column(Boolean, default=True)
     marketing_expenses = Column(Integer, default=0)
     salary_expenses = Column(Integer, default=0)
     man_company = relationship("ManufacturedCompany", backref="product", lazy='selectin')
@@ -164,6 +165,7 @@ class Products(Base):
             for key in list(kwargs.keys()):
                 kwargs.pop(key) if kwargs[key]==None else None 
             self.name = kwargs.get('name', self.name)
+            self.is_exist = kwargs.get('is_exist', self.is_exist)
             self.price = kwargs.get('price', self.price)
             self.discount_price = kwargs.get('discount_price', self.discount_price)
             if kwargs.get('price', None) or kwargs.get('discount_price', None):
