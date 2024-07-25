@@ -507,5 +507,3 @@ class Pharmacy(Base):
 
 
 
-
-
