@@ -199,6 +199,23 @@ class ReservationProductOutSchema(BaseModel):
     quantity: int
 
 
+class ReservationOutWithProductsSchema(BaseModel):
+    id: Optional[int]
+    date: datetime 
+    expire_date: datetime 
+    discount: float
+    total_quantity: float
+    total_amount: float
+    total_payable: float
+    total_payable_with_nds: float
+    products: List[ReservationProductOutSchema]
+    checked: bool
+    invoice_number: Optional[int] = None 
+    profit: Optional[int] = None 
+    debt: Optional[int] = None 
+
+
+
 class ReservationListSchema(BaseModel):
     id: int
     date: datetime 

@@ -140,3 +140,16 @@ class ExpenceOutSchema(BaseModel):
     author: str
     description: str 
     date: datetime
+
+class PmSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+
+
+class UserByIdSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    status: str
+    product_manager: PmSchema

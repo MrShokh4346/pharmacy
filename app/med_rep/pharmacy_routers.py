@@ -233,6 +233,12 @@ async def get_reservation_history(reservation_id: int, db: AsyncSession = Depend
 #     return result.scalars().all()
 
 
+@router.get('/get-reservation/{reservation_id}', response_model=ReservationOutWithProductsSchema)
+async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    return result.scalar()
+
+
 @router.get('/get-report/{reservation_id}')
 async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
     return await write_excel(reservation_id, db)

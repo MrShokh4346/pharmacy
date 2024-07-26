@@ -277,7 +277,7 @@ class WholesaleReservation(Base):
 
     async def pay_reservation(self, db: AsyncSession, **kwargs):
         try:
-            query = text(f'SELECT product_id FROM reservation_products WHERE reservation_id={self.id}')
+            query = text(f'SELECT product_id FROM wholesale_reservation_products WHERE reservation_id={self.id}')
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
             for obj in kwargs['objects']:

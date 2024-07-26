@@ -109,11 +109,11 @@ async def hospital_reservation(hospital_id: int, res: HospitalReservationSchema,
     return {"msg":"Done"}
 
 
-@router.post('/pay-hospital-reservation/{reservation_id}', response_model=HospitalReservationOutSchema)
-async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(Reservation, reservation_id, db)
-    await reservation.pay_reservation(**obj.dict(), db=db)
-    return reservation
+# @router.post('/pay-hospital-reservation/{reservation_id}', response_model=HospitalReservationOutSchema)
+# async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+#     reservation = await get_or_404(HospitalReservation, reservation_id, db)
+#     await reservation.pay_reservation(**obj.dict(), db=db)
+#     return reservation
 
 
 

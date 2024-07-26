@@ -193,6 +193,7 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
                 "product_id": user_plan.product.id,
                 "plan_amount": user_plan.amount,
                 "plan_price" : user_plan.amount * user_plan.product.price,
+                "plan_bonus" : (user_plan.amount - user_plan.current_amount) * user_plan.product.marketing_expenses, 
                 "fact": fact,
                 "fact_price": fact *  user_plan.product.price,
                 "vakant": user_plan.current_amount
@@ -317,3 +318,12 @@ async def post_expence(data: ExpenceSchema, db: AsyncSession = Depends(get_db)):
 async def get_expenxes(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Expense))
     return result.scalars().all()
+
+
+@router.get('/get-med-rep-by-id/{med_rep_id}', response_model=UserByIdSchema)
+async def get_med_rep_by_id(med_rep_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Users).options(selectinload(Users.product_manager)).where(Users.id==med_rep_id))
+    user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=400, detail=f"User not found")
+    return user 

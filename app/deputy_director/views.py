@@ -309,7 +309,8 @@ async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | No
             'product_name' : doctor_plan.product.name,
             'bonus_id' : bonus.id if bonus else None,
             'bonus_amount': bonus.amount if bonus else 0,
-            'bonus_payed' : bonus.payed if bonus else 0
+            'bonus_payed' : bonus.payed if bonus else 0,
+            'pre_investment' : bonus.pre_investment if bonus else 0
         })
     return doctor_att
 
