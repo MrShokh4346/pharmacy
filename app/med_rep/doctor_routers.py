@@ -183,8 +183,10 @@ async def paying_bonus(bonus_id: int, amount: int, description: str | None = Non
 @router.delete('/delete-bonus/{bonus_id}')
 async def delete_product_by_id_form_bonus(bonus_id:int, db: AsyncSession = Depends(get_db)):
     bonus = await get_or_404(Bonus, bonus_id, db)
-    await db.delete(bonus)
-    await db.commit()
+    query = f"delete from reservation WHERE id={self.id}"  
+    result = await db.execute(text(query))
+    # await db.delete(bonus)
+    # await db.commit()
     return {"msg":"Deleted"}
 
 

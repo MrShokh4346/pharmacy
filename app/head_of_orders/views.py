@@ -233,12 +233,12 @@ async def get_reservation_products(reservation_id: int, discount: int, db: Async
     return {"msg":"Done"}
 
 
-@router.post('/update-hospital-reservation-discount/{reservation_id}')
-async def get_hospital_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
-    reservation = result.scalars().first()
-    await reservation.update_discount(discount = discount, db=db)
-    return {"msg":"Done"}
+# @router.post('/update-wholesale-reservation-discount/{reservation_id}')
+# async def get_wholesale_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+#     result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+#     reservation = result.scalars().first()
+#     await reservation.update_discount(discount = discount, db=db)
+#     return {"msg":"Done"}
 
 
 @router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)

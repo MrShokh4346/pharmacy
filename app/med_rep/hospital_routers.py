@@ -137,11 +137,11 @@ async def check_if_payed_hospital_reservation(hospital_reservation_id: int, obj:
     return {"msg":"Done"}
 
 
-@router.delete('/delete-hospital-reservation/{reservation_id}')
-async def delete_hospital_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    reservation = await get_or_404(HospitalReservation, reservation_id, db)
-    await reservation.delete(db=db)
-    return {"msg":"Done"}
+# @router.delete('/delete-hospital-reservation/{reservation_id}')
+# async def delete_hospital_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+#     reservation = await get_or_404(HospitalReservation, reservation_id, db)
+#     await reservation.delete(db=db)
+#     return {"msg":"Done"}
 
 
 @router.post('/update-reservation-expire-date/{reservation_id}')

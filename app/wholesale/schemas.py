@@ -94,7 +94,7 @@ class WholesaleReservationProductSchema(BaseModel):
 class WholesaleReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
-    # discount: bool 
+    discount: int 
     products: List[WholesaleReservationProductSchema]
     
 
@@ -103,7 +103,7 @@ class ReservationOutSchema(BaseModel):
     id: Optional[int]
     date: datetime 
     expire_date: datetime 
-    # discount: float
+    discount: Optional[int] = None
     total_quantity: float
     total_amount: float
     total_payable: float

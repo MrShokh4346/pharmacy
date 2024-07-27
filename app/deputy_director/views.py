@@ -67,7 +67,9 @@ async def add_doctor_visit_plan_to_mr(med_rep_id:int, plan: DoctorVisitPlanSchem
 @router.delete('/delete-doctor-plan/{plan_id}')
 async def delete_doctor_visit_plan(plan_id:int, db: AsyncSession = Depends(get_db)):
     visit = await get_or_404(DoctorPlan, plan_id, db)
-    await db.delete(visit)
+    query = f"delete from doctor_plan WHERE id={plan_id}"
+    result = await db.execute(text(query))
+    # await db.delete(visit)
     await db.commit()
     return {"msg":"Deleted"}
 
@@ -83,7 +85,9 @@ async def add_pharmacy_visit_plan_to_mr(med_rep_id:int, plan: PharmacyVisitPlanS
 @router.delete('/delete-pharmacy-plan/{plan_id}')
 async def delete_pharmacy_visit_plan(plan_id:int, db: AsyncSession = Depends(get_db)):
     visit = await get_or_404(PharmacyPlan, plan_id, db)
-    await db.delete(visit)
+    query = f"delete from pharmacy_plan WHERE id={plan_id}"
+    result = await db.execute(text(query))
+    # await db.delete(visit)
     await db.commit()
     return {"msg":"Deleted"}
 
@@ -103,7 +107,9 @@ async def notofications(user_id: int, db: AsyncSession = Depends(get_db)):
 @router.delete('/delete-notofications/{notofication_id}')
 async def delete_notofications(notofication_id: int, db: AsyncSession = Depends(get_db)):
     notification = await get_or_404(Notification, notofication_id, db)
-    await db.delete(notification)
+    query = f"delete from notification WHERE id={notofication_id}"
+    result = await db.execute(text(query))
+    # await db.delete(notification)
     await db.commit()
     return {"msg":"Deleted"}
 
@@ -137,7 +143,9 @@ async def add_user_product_plan(plan_id: int, amount: int, db: AsyncSession = De
 @router.delete('/delete-user-product-plan/{plan_id}')
 async def add_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(UserProductPlan, plan_id, db)
-    await db.delete(plan)
+    query = f"delete from user_product_plan WHERE id={plan_id}"
+    result = await db.execute(text(query))
+    # await db.delete(plan)
     await db.commit()
     return {"msg":"Deleted"} 
 

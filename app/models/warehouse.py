@@ -185,7 +185,7 @@ class WholesaleReservation(Base):
     date = Column(DateTime, default=date.today())
     date_implementation = Column(DateTime)
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=10)))
-    discount = Column(Float)
+    discount = Column(Float, default=0)
     discountable = Column(Boolean)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
@@ -218,7 +218,7 @@ class WholesaleReservation(Base):
                 res_products.append(WholesaleReservationProducts(**product))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
-            total_payable = total_amount #- total_amount * kwargs['discount'] / 100 
+            total_payable = total_amount - total_amount * kwargs['discount'] / 100 
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
@@ -262,7 +262,9 @@ class WholesaleReservation(Base):
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
             wrh = result.scalars().first()
             wrh.amount += product.quantity
-        await db.delete(self)
+        # await db.delete(self)
+        query = f"delete from wholesale_reservation WHERE id={self.id}"  
+        result = await db.execute(text(query))
         await db.commit()
 
     async def update_discount(self, discount: int, db: AsyncSession):

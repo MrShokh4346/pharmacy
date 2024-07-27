@@ -208,7 +208,9 @@ class HospitalReservation(Base):
             result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
             wrh = result.scalars().first()
             wrh.amount += product.quantity
-        await db.delete(self)
+        # await db.delete(self)
+        query = f"delete from hospital_reservation WHERE id={self.id}"  
+        result = await db.execute(text(query))
         await db.commit()
 
     async def update_discount(self, discount: int, db: AsyncSession):
