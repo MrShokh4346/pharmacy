@@ -5,7 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from models.users import *
 from models.hospital import HospitalFact, Hospital, HospitalBonus
-from models.doctors import DoctorFact, Doctor, Bonus
+from models.doctors import DoctorFact, Doctor, Bonus, DoctorPostupleniyaFact
 from models.pharmacy import PharmacyHotSale
 from models.database import get_db, get_or_404
 from models.dependencies import *
@@ -346,6 +346,10 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
     doctor_att = []
     doctor_plans = result.scalars().all() 
     for doctor_plan in doctor_plans:
+        result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==doctor_plan.doctor_id, DoctorPostupleniyaFact.product_id==doctor_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
+        fact_postupleniya = 0
+        for f in result.scalars().all():
+            fact_postupleniya += f.fact
         result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==doctor_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
         fact_d = 0
         for f in result.scalars().all():
@@ -358,7 +362,7 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'region': doctor_plan.doctor.medical_organization.region.name,
             'plan_price' : doctor_plan.monthly_plan * doctor_plan.price * 0.92,
             'fact' : fact_d,
-            'fact_price' : fact_d * doctor_plan.price * 0.92,
+            'fact_price' : fact_postupleniya * doctor_plan.price * 0.92,
             'doctor_name' : doctor_plan.doctor.full_name,
             'speciality' : doctor_plan.doctor.speciality.name,
             'medical_organization_name' : doctor_plan.doctor.medical_organization.name,

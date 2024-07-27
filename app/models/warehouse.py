@@ -194,6 +194,8 @@ class WholesaleReservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
+    med_rep_id = Column(Integer, ForeignKey("users.id"))    
+    med_rep = relationship("Users",  backref="wholesale_reservation")
     wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
     wholesale = relationship("Wholesale", backref="wholesale_reservation", cascade="all, delete", lazy='selectin')
     products = relationship("WholesaleReservationProducts", cascade="all, delete", back_populates="wholesale_reservation", lazy='selectin')

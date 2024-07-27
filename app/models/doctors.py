@@ -177,6 +177,39 @@ class BonusPayedAmounts(Base):
     bonus = relationship("Bonus", cascade="all, delete", backref="bonus_payed_amounts")
 
 
+class DoctorPostupleniyaFact(Base):
+    __tablename__ = 'doctor_postupleniya_fact'
+
+    id = Column(Integer, primary_key=True)
+    fact = Column(Integer)
+    price = Column(Integer)
+    discount_price = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor = relationship("Doctor", cascade="all, delete", backref="postupleniya_fact")
+    # pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
+    # pharmacy = relationship("Pharmacy", backref="doctorfact")
+    product = relationship("Products",  backref="postupleniya_fact")
+    product_id = Column(Integer, ForeignKey("products.id"))
+
+    @classmethod
+    async def set_fact(cls, db: AsyncSession, **kwargs):
+        year = datetime.now().year
+        month = datetime.now().month  
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)  
+        end_date = date(year, month, num_days)
+        product = await get_or_404(Products, kwargs['product_id'], db)
+        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        month_fact = result.scalars().first()
+        if month_fact is None:
+            month_fact = cls(doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
+            db.add(month_fact)
+        else:
+            month_fact.fact += kwargs['compleated']
+        # await Bonus.set_bonus(**kwargs, db=db)
+
+
 class Bonus(Base):
     __tablename__ = "bonus"
 

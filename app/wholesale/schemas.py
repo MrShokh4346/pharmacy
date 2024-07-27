@@ -94,6 +94,7 @@ class WholesaleReservationProductSchema(BaseModel):
 class WholesaleReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
+    med_rep_id: int
     discount: int 
     products: List[WholesaleReservationProductSchema]
     
@@ -110,7 +111,7 @@ class ReservationOutSchema(BaseModel):
     total_payable_with_nds: float
     checked: bool
     invoice_number: Optional[int] = None 
-    profit: Optional[int] = None 
-    debt: Optional[int] = None 
+    profit: Optional[float] = None 
+    debt: Optional[float] = None 
 
 
