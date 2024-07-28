@@ -259,3 +259,11 @@ class PharmacyHotSaleSchema(BaseModel):
     amount: int 
     date: date 
     product: ProductSchema
+
+
+class ReservationHistorySchema(BaseModel):
+    amount: int 
+    description: Optional[str] = None
+    date: date 
+    product: ProductSchema
+    doctor: DoctorSchema

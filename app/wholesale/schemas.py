@@ -136,3 +136,15 @@ class ReservationOutSchema(BaseModel):
     debt: Optional[float] = None 
 
 
+
+class DoctorSchema(BaseModel):
+    id: int
+    full_name: str
+
+
+class ReservationHistorySchema(BaseModel):
+    amount: int 
+    description: Optional[str] = None
+    date: date 
+    product: ProductSchema
+    doctor: DoctorSchema

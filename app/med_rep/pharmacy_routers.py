@@ -221,7 +221,7 @@ async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession
     return reservation
 
 
-@router.get('/get-reservation-history/{reservation_id}')
+@router.get('/get-reservation-history/{reservation_id}', response_model=List[ReservationHistorySchema])
 async def get_reservation_history(reservation_id: int, db: AsyncSession = Depends(get_db)):
     history = await db.execute(select(ReservationPayedAmounts).filter(ReservationPayedAmounts.reservation_id==reservation_id))
     return history.scalars().all()
@@ -236,7 +236,10 @@ async def get_reservation_history(reservation_id: int, db: AsyncSession = Depend
 @router.get('/get-reservation/{reservation_id}', response_model=ReservationOutWithProductsSchema)
 async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
-    return result.scalar()
+    res = result.scalar()
+    if res is None:
+        raise HTTPException(status_code=404, detail="Reservation no found")
+    return res
 
 
 @router.get('/get-report/{reservation_id}')

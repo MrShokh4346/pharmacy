@@ -5,7 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
-from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation
+from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation, WholesaleReservationPayedAmounts
 from models.pharmacy import CurrentBalanceInStock
 from models.dependencies import *
 from typing import Any, List
@@ -97,7 +97,21 @@ async def wholesale_reservation(wholesale_id: int, res: WholesaleReservationSche
     return reservation
 
 
-@router.get('/get-wholesale-reservation-produxts/{reservation_id}', response_model=ReservationSchema)
+@router.get('/get-wholesale-reservation-products/{reservation_id}', response_model=ReservationSchema)
 async def get_hospital_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
-    return result.scalar()
+    res = result.scalar()
+    if res is None:
+        raise HTTPException(status_code=404, detail="Reservation no found")
+    return res
+
+
+@router.get('/get-wholesale-reservation-history/{reservation_id}', response_model=List[ReservationHistorySchema])
+async def get_reservation_history(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    history = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id))
+    return history.scalars().all()
+
+
+@router.get('/get-wholesale-report/{reservation_id}')
+async def get_report(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    return await write_excel_wholesale(reservation_id, db)

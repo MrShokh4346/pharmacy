@@ -209,9 +209,9 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
     return data
 
 
-@router.get("/get-med-reps", response_model=List[UserSchema])
+@router.get("/get-med-reps", response_model=List[UserByIdSchema])
 async def get_med_rep(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Users).filter(Users.status == 'medical_representative'))
+    result = await db.execute(select(Users).options(selectinload(Users.product_manager)).filter(Users.status == 'medical_representative'))
     return result.scalars().all()
     
 

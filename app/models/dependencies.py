@@ -9,6 +9,7 @@ from .users import Users, Products, Region, UserProductPlan
 from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
 from .pharmacy import Reservation
 from .hospital import HospitalReservation
+from .warehouse import WholesaleReservation
 from typing import Annotated
 from .database import get_db
 from fastapi.security import HTTPBearer
@@ -189,6 +190,46 @@ async def write_excel_hospital(reservation_id: int, db: AsyncSession):
     destination_sheet['G33'] = "12% ндс билан"
     destination_sheet['H33'] = reservation.total_payable + 0.12 * reservation.total_payable
     filename = reservation.hospital.company_name + '_' + reservation.hospital.inter_branch_turnover + '_' + str(date.today()) + "_" + reservation.manufactured_company.name + '.xlsx'
+    destination_wb.save(destination_excel_file)
+    destination_wb.close()
+    return FileResponse(filename=filename, path="app/report/report.xlsx")
+
+
+
+async def write_excel_wholesale(reservation_id: int, db: AsyncSession):
+    source_excel_file = 'app/report/Book.xlsx'
+    destination_excel_file = 'app/report/report.xlsx'
+    sheet_name = 'Sheet1'
+    # shutil.copy2(source_excel_file, destination_excel_file)
+    import subprocess
+    subprocess.call(['cp', 'app/report/Book.xlsx', 'app/report/report.xlsx'])
+    destination_wb = load_workbook(destination_excel_file)
+    destination_sheet = destination_wb[sheet_name]
+    result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.wholesale)).where(WholesaleReservation.id==reservation_id))
+    reservation = result.scalar()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
+    destination_sheet['E2'] = reservation.discount
+    destination_sheet['E6'] = reservation.wholesale.name
+    # destination_sheet['E7'] = reservation.wholesale.inter_branch_turnover
+    count = 9
+    for product in reservation.products:
+        data_to_write = {
+            f'D{count}' : product.product.name,
+            f'E{count}' : product.quantity,
+            f'F{count}' : product.price,
+            # f'G{count}' : product.reservation_discount_price,
+            f'H{count}' : product.quantity * product.price
+        }
+        count += 1
+        for cell_address, value in data_to_write.items():
+            destination_sheet[cell_address] = value
+    destination_sheet['H31'] = reservation.total_amount
+    destination_sheet['G32'] = f"{reservation.discount}% скидка билан"
+    destination_sheet['H32'] = reservation.total_payable
+    destination_sheet['G33'] = "12% ндс билан"
+    destination_sheet['H33'] = reservation.total_payable + 0.12 * reservation.total_payable
+    filename = reservation.wholesale.name + '_' + str(date.today()) + "_" + '.xlsx'
     destination_wb.save(destination_excel_file)
     destination_wb.close()
     return FileResponse(filename=filename, path="app/report/report.xlsx")

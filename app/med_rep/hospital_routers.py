@@ -117,7 +117,7 @@ async def hospital_reservation(hospital_id: int, res: HospitalReservationSchema,
 
 
 
-@router.get('/get-hospital-reservation-history/{reservation_id}')
+@router.get('/get-hospital-reservation-history/{reservation_id}', response_model=List[ReservationHistorySchema])
 async def get_hospital_reservation_history(reservation_id: int, db: AsyncSession = Depends(get_db)):
     history = await db.execute(select(HospitalReservationPayedAmounts).filter(HospitalReservationPayedAmounts.reservation_id==reservation_id))
     return history.scalars().all()
@@ -158,10 +158,13 @@ async def set_discount_to_pharmacy(reservation_id: int, discount: float,  db: As
     return {"msg":"Done"}
 
 
-@router.get('/get-hospital-reservation/{hospital_id}', response_model=List[HospitalReservationOutSchema])
-async def get_hospital_reservation(hospital_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(HospitalReservation).filter(HospitalReservation.hospital_id==hospital_id))
-    return result.scalars().all()
+@router.get('/get-hospital-reservation/{reservation_id}', response_model=HospitalReservationOutSchema)
+async def get_hospital_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(HospitalReservation).filter(HospitalReservation.id==reservation_id))
+    res = result.scalar()
+    if res is None:
+        raise HTTPException(status_code=404, detail="Reservation no found")
+    return res
 
 
 @router.post('/paying-hospital-bonus/{bonus_id}', response_model=BonusOutSchema)
