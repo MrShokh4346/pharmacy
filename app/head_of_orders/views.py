@@ -111,22 +111,33 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "total_payable_with_nds":rs.total_payable_with_nds,
             "checked":rs.checked
         })
+    result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.products)))
+    for rs in result.scalars().all():
+        promo = 0
+        for pr in rs.products:
+            promo += pr.product.marketing_expenses * pr.quantity
+        data.append({
+            "id":rs.id,
+            "date":rs.date,
+            "expire_date":rs.expire_date,
+            "date_implementation": rs.date_implementation,
+            "invoice_number": rs.invoice_number,
+            "profit": rs.profit,
+            "debt": rs.debt,
+            "profit": rs.profit,
+            "wholesale":{
+                "id":rs.wholesale.id ,
+                "company_name":rs.wholesale.name,
+                "promo":promo,
+                "region":{"name":rs.wholesale.region.name }
+                },
+            "discount":rs.discount,
+            "total_payable_with_nds":rs.total_payable_with_nds,
+            "checked":rs.checked
+            })
     return data
 
-    # {
-    # "id":16,
-    # "date":"2024-07-16T00:00:00",
-    # "expire_date":"2024-07-26T11:46:03.586305",
-    # "pharmacy":{
-    #     "id":18,
-    #     "company_name":"Мед Темур Фарм МЧЖ",
-    #     "med_rep":{"id":60,"full_name":"Xalimova Anvara"},
-    #     "region":{"id":6,"name":"Кашкадарьинская область"}
-    #     },
-    # "discount":5.0,
-    # "total_payable_with_nds":4979520.0,
-    # "checked":true
-    # }
+ 
 
 
 @router.post('/check-reservation/{reservation_id}')
@@ -179,6 +190,16 @@ async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get
     return {"msg":"Done"}
 
 
+@router.delete('/delete-wholesale-reservation/{reservation_id}')
+async def delete_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if reservation is None:
+        raise HTTPException(status_code=400, detail='Reservation not found')
+    await reservation.delete(db=db)
+    return {"msg":"Done"}
+
+
 @router.post('/update-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
@@ -192,6 +213,16 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
 @router.post('/update-hospital-reservation-expire-date/{reservation_id}')
 async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if reservation is None:
+        raise HTTPException(status_code=400, detail='Reservation not found')
+    await reservation.update_expire_date(date = obj.date, db=db)
+    return {"msg":"Done"}
+
+
+@router.post('/update-wholesale-reservation-expire-date/{reservation_id}')
+async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
@@ -233,12 +264,12 @@ async def get_reservation_products(reservation_id: int, discount: int, db: Async
     return {"msg":"Done"}
 
 
-# @router.post('/update-wholesale-reservation-discount/{reservation_id}')
-# async def get_wholesale_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
-#     result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
-#     reservation = result.scalars().first()
-#     await reservation.update_discount(discount = discount, db=db)
-#     return {"msg":"Done"}
+@router.post('/update-wholesale-reservation-discount/{reservation_id}')
+async def get_wholesale_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+    reservation = result.scalars().first()
+    await reservation.update_discount(discount = discount, db=db)
+    return {"msg":"Done"}
 
 
 @router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)

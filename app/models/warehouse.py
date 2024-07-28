@@ -273,7 +273,7 @@ class WholesaleReservation(Base):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
-            product.reservation_price = product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100)
+            product.price = product.price * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.discount = discount
