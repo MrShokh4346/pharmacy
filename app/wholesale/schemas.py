@@ -97,7 +97,28 @@ class WholesaleReservationSchema(BaseModel):
     med_rep_id: int
     discount: int 
     products: List[WholesaleReservationProductSchema]
-    
+
+
+class ReservationProductOutSchema(BaseModel):
+    id: int 
+    quantity: int 
+    product: ProductSchema
+
+
+class ReservationSchema(BaseModel):
+    id: Optional[int]
+    date: datetime 
+    expire_date: datetime 
+    discount: Optional[int] = None
+    total_quantity: float
+    total_amount: float
+    total_payable: float
+    total_payable_with_nds: float
+    products: Optional[List[ReservationProductOutSchema]] = None
+    checked: bool
+    invoice_number: Optional[int] = None 
+    profit: Optional[float] = None 
+    debt: Optional[float] = None 
 
 
 class ReservationOutSchema(BaseModel):

@@ -97,3 +97,7 @@ async def wholesale_reservation(wholesale_id: int, res: WholesaleReservationSche
     return reservation
 
 
+@router.get('/get-wholesale-reservation-produxts/{reservation_id}', response_model=ReservationSchema)
+async def get_hospital_reservation(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
+    return result.scalar()
