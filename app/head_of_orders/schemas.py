@@ -69,6 +69,7 @@ class ExpireDateSchema(BaseModel):
 
 class PayReservtionDoctors(BaseModel):
     amount: int 
+    quantity: int
     doctor_id: int 
     product_id: int 
 

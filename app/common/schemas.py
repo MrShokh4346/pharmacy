@@ -88,6 +88,7 @@ class MedicalOrganizationOutSchema(BaseModel):
 class ProductInSchema(BaseModel):
     name: str 
     price: int 
+    is_exist: Optional[bool] = True
     discount_price: int 
     man_company_id: int 
     category_id: int

@@ -219,6 +219,7 @@ class ProductExpensesSchema(BaseModel):
     name: str 
     price: int 
     discount_price: int 
+    is_exist: Optional[bool] = None
     marketing_expenses: Optional[int] = None
     salary_expenses: Optional[int] = None 
     man_company: ManufacturedCompanySchema 
