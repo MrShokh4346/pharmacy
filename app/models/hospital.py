@@ -105,8 +105,8 @@ class HospitalReservationPayedAmounts(Base):
     async def save(self, db: AsyncSession):
         try:
             db.add(self)
-            await db.commit()
-            await db.refresh(self)
+            # await db.commit()
+            # await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
@@ -128,7 +128,7 @@ class HospitalReservation(Base):
     total_payable_with_nds = Column(Float)
     invoice_number = Column(Integer, invoice_number_seq, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
-    debt = Column(Integer)
+    debt = Column(Integer, default=0)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')
     products = relationship("HospitalReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
@@ -225,19 +225,19 @@ class HospitalReservation(Base):
 
     async def pay_reservation(self, db: AsyncSession, **kwargs):
         try:
-            query = text(f'SELECT product_id FROM hospital_reservation_products WHERE reservation_id={self.id}')
-            result = await db.execute(query)
-            product_ids = [row[0] for row in result.all()]
-            for obj in kwargs['objects']:
-                if obj['product_id'] not in product_ids:
-                    raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                self.debt -= obj['amount']
-                self.profit += obj['amount']
-                reservation = ReservationPayedAmounts(amount=obj['amount'], description=kwargs['description'], reservation_id=self.id, product_id=obj['product_id'], doctor_id=obj['doctor_id'])
-                await reservation.save(db)
-                if self.debt < 0:
-                    raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-                await HospitalBonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
+            # query = text(f'SELECT product_id FROM hospital_reservation_products WHERE reservation_id={self.id}')
+            # result = await db.execute(query)
+            # product_ids = [row[0] for row in result.all()]
+            # for obj in kwargs['objects']:
+            #     if obj['product_id'] not in product_ids:
+            #         raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
+            self.debt -= kwargs['amount']
+            self.profit += kwargs['amount']
+            reservation = HospitalReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
+            await reservation.save(db)
+            if self.debt < 0:
+                raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+            # await HospitalBonus.set_bonus(product_id=kwargs['product_id'], doctor_id=kwargs['doctor_id'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

@@ -283,7 +283,7 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
 
 
 @router.post('/pay-hospital-reservation/{reservation_id}', response_model=ReservationOutSchema)
-async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
+async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayHospitalReservtionSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
     reservation = result.scalars().first()
     if not reservation:

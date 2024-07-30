@@ -70,13 +70,20 @@ class ExpireDateSchema(BaseModel):
 class PayReservtionDoctors(BaseModel):
     amount: int 
     quantity: int
-    doctor_id: int 
+    doctor_id: Optional[int] = None 
     product_id: int 
 
 
 class PayReservtionSchema(BaseModel):
     objects: List[PayReservtionDoctors] 
     description: Optional[str] = None 
+
+
+
+class PayHospitalReservtionSchema(BaseModel):
+    amount: int  
+    description: Optional[str] = None 
+
 
 
 class PayWholesaleReservtionDoctors(BaseModel):

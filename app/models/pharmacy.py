@@ -308,8 +308,11 @@ class Reservation(Base):
                 await reservation.save(db)
                 if self.debt < 0:
                     raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-                await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
-                await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
+                if obj.get('doctor_id') is None:
+                    await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
+                else:
+                    await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
+                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -348,6 +351,15 @@ class PharmacyHotSale(Base):
     product = relationship("Products", backref="hot_sale_products", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", backref="hot_sale", cascade="all, delete", lazy='selectin')
+
+    @classmethod
+    async def save(cls, db: AsyncSession, **kwargs):
+        try:
+            hot_sale = cls(**kwargs)
+            db.add(hot_sale)
+            await db.commit()                
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class PharmacyFact(Base):
