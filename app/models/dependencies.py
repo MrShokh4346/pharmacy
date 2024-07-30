@@ -236,7 +236,7 @@ async def write_excel_wholesale(reservation_id: int, db: AsyncSession):
 
 
 PRODUCT_EXCEL_DICT = {
-        1 : "N",        2 : "O",        6 : "N",        7 : "CA",        25 : "P",
+        6 : "N",        7 : "O",        25 : "P",
         8 : "Q",        4 : "R",        9 : "S",        10 : "T",        5 : "U",
         11 : "V",        12 : "W",        13 : "X",        26 : "Y",        27 : "AT",
         14 : "AA",        15 : "AB",        18 : "AC",        28 : "AR",        19 : "AE",
@@ -246,12 +246,12 @@ PRODUCT_EXCEL_DICT = {
 }
 
 PRODUCT_EXCEL_DICT2 = {
-        1 : "AP",        2 : "AQ",        6 : "AP",        7 : "CA",        25 : "AR",
-        8 : "AS",        4 : "AT",        9 : "AU",        10 : "AV",        5 : "AW",
-        11 : "AX",        12 : "AY",        13 : "AZ",        26 : "BA",        27 : "CB",
-        14 : "BC",        15 : "BD",        18 : "BE",        28 : "BZ",        19 : "BG",
-        20 : "BH",        21 : "BI",        22 : "BJ",        29 : "BK",        23 : "BL",
-        30 : "BX",        24 : "BN",        16 : "BO",        17 : "BP",        31: "BW",
+        6 : "AV",        7 : "AW",        25 : "AX",
+        8 : "AY",        4 : "AZ",        9 : "BA",        10 : "BB",        5 : "BC",
+        11 : "BD",        12 : "BE",        13 : "BF",        26 : "BG",        27 : "CB",
+        14 : "BI",        15 : "BJ",        18 : "BK",        28 : "BZ",        19 : "BM",
+        20 : "BN",        21 : "BO",        22 : "BP",        29 : "BQ",        23 : "BR",
+        30 : "BX",        24 : "BT",        16 : "BU",        17 : "BV",        31: "BW",
         33: "BY"
 }
 
