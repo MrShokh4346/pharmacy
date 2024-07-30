@@ -365,7 +365,7 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'monthly_plan' : doctor_plan.monthly_plan,
             'med_rep': doctor_plan.doctor.med_rep.full_name,
             'region': doctor_plan.doctor.medical_organization.region.name,
-            'plan_price' : doctor_plan.monthly_plan * doctor_plan.price * 0.92,
+            'plan_price' : doctor_plan.monthly_plan * doctor_plan.price ,
             'fact' : fact_d,
             'fact_price' : fact_postupleniya,
             'doctor_name' : doctor_plan.doctor.full_name,
@@ -391,9 +391,9 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
     #     bonus = result.scalars().first()
     #     doctor_att.append({
     #         'monthly_plan' : hospital_fact.fact,
-    #         'plan_price' : hospital_fact.fact * hospital_fact.price * 0.92,
+    #         'plan_price' : hospital_fact.fact * hospital_fact.price ,
     #         'fact' : hospital_fact.fact,
-    #         'fact_price' : hospital_fact.fact * hospital_fact.price * 0.92,
+    #         'fact_price' : hospital_fact.fact * hospital_fact.price ,
     #         'doctor_name' : hospital_fact.hospital.company_name,
     #         'doctor_id' : hospital_fact.hospital.id,
     #         'product_name' : hospital_fact.product.name,
@@ -482,9 +482,9 @@ async def get_total_plan_fact(
                 "product_id": prod[0],
                 "product_name" : prod[1],
                 "plan": prod[3],
-                "plan_price": float(prod[4]) * 0.92,
+                "plan_price": float(prod[4]) ,
                 "fact": fact[0][0],
-                "fact_price": fact[0][1] * 0.92
+                "fact_price": fact[0][1] 
             })
         data.append({
             "id": user.id,

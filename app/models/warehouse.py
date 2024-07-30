@@ -184,7 +184,7 @@ class WholesaleReservation(Base):
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=date.today())
     date_implementation = Column(DateTime)
-    expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=10)))
+    expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float, default=0)
     discountable = Column(Boolean)
     total_quantity = Column(Integer)
@@ -250,9 +250,9 @@ class WholesaleReservation(Base):
             await CurrentWholesaleWarehouse.add(product_id=product.product_id, wholesale_id=self.wholesale_id, amount=product.quantity, price=product.price, db=db)
         await db.commit()
 
-    async def update_expire_date(self, date: date, db: AsyncSession):
+    async def update_date_implementation(self, date: date, db: AsyncSession):
         try:
-            self.expire_date = date
+            self.date_implementation = date
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

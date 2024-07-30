@@ -192,7 +192,7 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
                 "product": user_plan.product.name,
                 "product_id": user_plan.product.id,
                 "plan_amount": user_plan.amount - user_plan.current_amount,
-                "plan_price" : user_plan.amount * user_plan.product.price,
+                "plan_price" : (user_plan.amount - user_plan.current_amount) * user_plan.product.price,
                 "plan_bonus" : (user_plan.amount - user_plan.current_amount) * user_plan.product.marketing_expenses, 
                 "fact": fact,
                 "fact_price": fact *  user_plan.product.price,

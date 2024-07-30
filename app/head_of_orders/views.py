@@ -206,7 +206,7 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
-    await reservation.update_expire_date(date = obj.date, db=db)
+    await reservation.update_date_implementation(date = obj.date, db=db)
     return {"msg":"Done"}
 
 
@@ -216,7 +216,7 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
-    await reservation.update_expire_date(date = obj.date, db=db)
+    await reservation.update_date_implementation(date = obj.date, db=db)
     return {"msg":"Done"}
 
 
@@ -226,7 +226,7 @@ async def get_reservation_products(reservation_id: int, obj: ExpireDateSchema, d
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
-    await reservation.update_expire_date(date = obj.date, db=db)
+    await reservation.update_date_implementation(date = obj.date, db=db)
     return {"msg":"Done"}
 
 
