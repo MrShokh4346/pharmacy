@@ -260,8 +260,8 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
     year = datetime.now().year
     month = datetime.now().month if month is None else month
     num_days = calendar.monthrange(year, month)[1]
-    start_date = date(year, month, 1)  
-    end_date = date(year, month, num_days)
+    end_date = datetime(year, month, num_days, 23, 59)  
+    end_date = datetime(year, month, num_days, 23, 59)
     source_excel_file = 'app/report/Base_Doc.xlsx'
     destination_excel_file = 'app/report/base_doctor.xlsx'
     sheet_name = 'База Врачей Актуальная'

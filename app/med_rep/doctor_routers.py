@@ -81,8 +81,8 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
     year = datetime.now().year
     month = datetime.now().month
     num_days = calendar.monthrange(year, month)[1]
-    start_date = date(year, month, 1)  
-    end_date = date(year, month, num_days)
+    start_date = datetime(year, month, 1, 23, 59)  
+    end_date = datetime(year, month, num_days, 23, 59)
     for obj in objects.items:
         result1 = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.product_id==obj.product_id, DoctorMonthlyPlan.doctor_id==obj.doctor_id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
         doctor = result1.scalar()
@@ -112,8 +112,8 @@ async def get_doctor_attached_products(doctor_id: int, month: int | None = None,
     year = datetime.now().year
     month = datetime.now().month if month is None else month 
     num_days = calendar.monthrange(year, month)[1]
-    start_date = date(year, month, 1)  
-    end_date = date(year, month, num_days)
+    start_date = datetime(year, month, 1, 23, 59)  
+    end_date = datetime(year, month, num_days, 23, 59)
     result = await db.execute(select(DoctorMonthlyPlan).options(selectinload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.doctor_id==doctor_id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
     data = []
     for obj in result.scalars().all():
@@ -195,8 +195,8 @@ async def get_bonus_by_doctor_id(doctor_id: int, month: int, db: AsyncSession = 
     year = datetime.now().year
     month = datetime.now().month if month is None else month 
     num_days = calendar.monthrange(year, month)[1]
-    start_date = date(year, month, 1)  
-    end_date = date(year, month, num_days)
+    start_date = datetime(year, month, 1, 23, 59)  
+    end_date = datetime(year, month, num_days, 23, 59)
     doctor = await get_doctor_or_404(doctor_id, db)
     result = await db.execute(select(Bonus).options(selectinload(Bonus.product)).filter(Bonus.doctor_id == doctor_id, Bonus.date >= start_date, Bonus.date <= end_date))
     return result.scalars().all()

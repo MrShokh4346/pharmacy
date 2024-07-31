@@ -153,8 +153,8 @@ class DoctorFact(Base):
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
+        start_date = datetime(year, month, 1, 23, 59)  
+        end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
@@ -197,8 +197,8 @@ class DoctorPostupleniyaFact(Base):
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
+        start_date = datetime(year, month, 1, 23, 59)  
+        end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
@@ -238,8 +238,8 @@ class Bonus(Base):
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
+        start_date = datetime(year, month, 1, 23, 59)  
+        end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
         amount = product.marketing_expenses * kwargs['compleated']
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))

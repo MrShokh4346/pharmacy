@@ -276,6 +276,7 @@ class WholesaleReservation(Base):
             product.price = product.price * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
+        self.debt = self.debt * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.discount = discount
         await db.commit()
 

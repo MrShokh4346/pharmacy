@@ -220,6 +220,7 @@ class HospitalReservation(Base):
             product.reservation_price = product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
+        self.debt = self.debt * (100 / (100 - self.discount)) * (1 - discount / 100)
         self.discount = discount
         await db.commit()
 
@@ -286,8 +287,8 @@ class HospitalBonus(Base):
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
+        start_date = datetime(year, month, 1, 23, 59)  
+        end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
         amount = product.marketing_expenses * kwargs['product_quantity']
         result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
@@ -318,8 +319,8 @@ class HospitalFact(Base):
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
-        start_date = date(year, month, 1)  
-        end_date = date(year, month, num_days)
+        start_date = datetime(year, month, 1, 23, 59)  
+        end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
