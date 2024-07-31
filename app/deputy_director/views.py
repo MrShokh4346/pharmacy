@@ -156,8 +156,8 @@ async def add_user_products_plan(med_rep_id: int, month_number: int | None = Non
     if month_number:
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)
+        end_date = datetime(year, month_number, num_days, 23, 59)
         query = query.filter(UserProductPlan.date>=start_date, UserProductPlan.date<=end_date)
     result = await db.execute(query)
     return result.scalars().all() 
@@ -168,8 +168,8 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
     if month_number:
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)
+        end_date = datetime(year, month_number, num_days, 23, 59)
     if start_date is None or end_date is None:
         raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -242,8 +242,8 @@ async def get_user_product_plan_by_plan_id(month_number: int | None = None, star
     if month_number:
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)
+        end_date = datetime(year, month_number, num_days, 23, 59)
     if start_date is None or end_date is None:
         raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -295,8 +295,8 @@ async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | No
     if month_number:
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)
+        end_date = datetime(year, month_number, num_days, 23, 59)
     if start_date is None or end_date is None:
         raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -333,8 +333,8 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
     if month_number:
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)
+        end_date = datetime(year, month_number, num_days, 23, 59)
     if start_date is None or end_date is None:
         raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -450,8 +450,8 @@ async def get_total_plan_fact(
     if month_number:
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)
+        end_date = datetime(year, month_number, num_days, 23, 59)
     if start_date is None or end_date is None:
         raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,

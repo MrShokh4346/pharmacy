@@ -153,8 +153,8 @@ async def pharmacy_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSe
 async def pharmacy_visit_report(month_number: int, db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
     num_days = calendar.monthrange(year, month_number)[1]
-    start_date = date(year, month_number, 1)
-    end_date = date(year, month_number, num_days)
+    start_date = datetime(year, month_number, 1, 23, 59)
+    end_date = datetime(year, month_number, num_days, 23, 59)
     fact = await db.execute(select(PharmacyFact).filter(PharmacyFact.date >= start_date, PharmacyFact.date <= end_date))
     return fact.scalars().all()
 

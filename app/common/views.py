@@ -173,8 +173,8 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
             month_number = datetime.now().month 
         year = datetime.now().year
         num_days = calendar.monthrange(year, month_number)[1]
-        start_date = date(year, month_number, 1)  
-        end_date = date(year, month_number, num_days)
+        start_date = datetime(year, month_number, 1, 23, 59)  
+        end_date = datetime(year, month_number, num_days, 23, 59)
     result = await db.execute(select(Users).options(selectinload(Users.region), selectinload(Users.region_manager)).filter(Users.status == 'medical_representative'))
     data = []
     for user in result.scalars().all():
