@@ -417,8 +417,8 @@ class PharmacyFact(Base):
                     # raise HTTPException(status_code=404, detail=f"You are trying to add more product than saled for this product (id={key})")
                 pharmacy = await get_or_404(Pharmacy, kwargs['pharmacy_id'], db)
                 if checking.saled > value:
-                    await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)
-                hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
+                    hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
+                await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)
                 checking.chack = True
                 db.add(hot_sale)
             await db.commit()

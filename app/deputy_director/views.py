@@ -314,9 +314,14 @@ async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | No
             fact_d += f.fact
         result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==doctor_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
         bonus = result.scalars().first()
+        result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==doctor_plan.doctor_id, DoctorPostupleniyaFact.product_id==doctor_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
+        fact_postupleniya = 0
+        for f in result.scalars().all():
+            fact_postupleniya += f.fact
         doctor_att.append({
             'monthly_plan' : doctor_plan.monthly_plan,
             'fact' : fact_d,
+            'fact_postupleniya': fact_postupleniya,
             'doctor_name' : doctor_plan.doctor.full_name,
             'doctor_id' : doctor_plan.doctor.id,
             'product_name' : doctor_plan.product.name,
