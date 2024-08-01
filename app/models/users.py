@@ -412,7 +412,7 @@ class UserProductPlan(Base):
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1, 23, 59)  
+        start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
         result = await db.execute(select(cls).filter(cls.product_id==kwargs['product_id'], cls.med_rep_id==kwargs['med_rep_id'], cls.date>=start_date, cls.date<=end_date))
         product = result.scalars().first()

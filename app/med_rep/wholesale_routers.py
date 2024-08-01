@@ -62,7 +62,7 @@ async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(
 # async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
 #     year = datetime.now().year
 #     num_days = calendar.monthrange(year, month_number)[1]
-#     start_date = datetime(year, month_number, 1, 23, 59)
+#     start_date = datetime(year, month_number, 1)
 #     end_date = datetime(year, month_number, num_days, 23, 59)
 #     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id == wholesale_id, IncomingBalanceInStock.date >= start_date, IncomingBalanceInStock.date <= end_date))
 #     objects = result.scalars().all()
@@ -86,7 +86,7 @@ async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(
 async def wholesale_report(reservation_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
     num_days = calendar.monthrange(year, month_number)[1]
-    start_date = datetime(year, month_number, 1, 23, 59)
+    start_date = datetime(year, month_number, 1)
     end_date = datetime(year, month_number, num_days, 23, 59)
     result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id == reservation_id, WholesaleReservationPayedAmounts.date >= start_date, WholesaleReservationPayedAmounts.date <= end_date))
     return result.scalars().all()

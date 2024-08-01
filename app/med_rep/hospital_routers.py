@@ -52,7 +52,7 @@ async def attach_products_to_hospital(hospital_id: int, user_id: int, objects: A
     year = datetime.now().year
     month = datetime.now().month
     num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1, 23, 59)  
+    start_date = datetime(year, month, 1)  
     end_date = datetime(year, month, num_days, 23, 59)
     for obj in objects.items:
         result1 = await db.execute(select(HospitalMonthlyPlan).filter(HospitalMonthlyPlan.product_id==obj.product_id, HospitalMonthlyPlan.hospital_id==hospital_id, HospitalMonthlyPlan.date>=start_date, HospitalMonthlyPlan.date<=end_date))
@@ -89,7 +89,7 @@ async def get_hospital_attached_products(hospital_id: int, month: int | None = N
     year = datetime.now().year
     month = datetime.now().month if month is None else month 
     num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1, 23, 59)  
+    start_date = datetime(year, month, 1)  
     end_date = datetime(year, month, num_days, 23, 59)
     result = await db.execute(select(HospitalMonthlyPlan).options(selectinload(HospitalMonthlyPlan.product)).filter(HospitalMonthlyPlan.hospital_id==hospital_id, HospitalMonthlyPlan.date>=start_date, HospitalMonthlyPlan.date<=end_date))
     data = []
@@ -180,7 +180,7 @@ async def get_bonus_by_doctor_id(hospital_id: int, month: int, db: AsyncSession 
     year = datetime.now().year
     month = datetime.now().month if month is None else month 
     num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1, 23, 59)  
+    start_date = datetime(year, month, 1)  
     end_date = datetime(year, month, num_days, 23, 59)
     result = await db.execute(select(HospitalBonus).options(selectinload(HospitalBonus.product)).filter(HospitalBonus.hospital_id == hospital_id, HospitalBonus.date >= start_date, HospitalBonus.date <= end_date))
     return result.scalars().all()

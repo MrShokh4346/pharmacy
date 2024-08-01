@@ -384,7 +384,7 @@ class PharmacyFact(Base):
             year = datetime.now().year
             month = datetime.now().month  
             num_days = calendar.monthrange(year, month)[1]
-            start_date = datetime(year, month, 1, 23, 59)  
+            start_date = datetime(year, month, 1)  
             end_date = datetime(year, month, num_days, 23, 59)
             product_dict = dict()
             for doctor in kwargs['doctors']:

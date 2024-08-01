@@ -409,7 +409,7 @@ async def get_user_current_month_plan(med_rep_id: int, db: AsyncSession = Depend
     year = datetime.now().year
     month = datetime.now().month
     num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month_number, 1)
+    start_date = datetime(year, month, 1)
     end_date = datetime(year, month, num_days, 23, 59)
     result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id, UserProductPlan.plan_month >= start_date, UserProductPlan.plan_month <= end_date))
     return result.scalars().all() 
