@@ -22,7 +22,7 @@ class HospitalSchema(BaseModel):
     purchasing_manager: str 
     contact: str 
     med_rep_id: int 
-    region_id: int 
+    # region_id: int 
 
 
 class HospitalUpdateSchema(BaseModel):

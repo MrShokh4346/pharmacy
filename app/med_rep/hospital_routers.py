@@ -17,7 +17,8 @@ router = APIRouter()
 
 @router.post('/create-hospital', response_model=HospitalOutSchema)
 async def create_hospital(obj: HospitalSchema, db: AsyncSession = Depends(get_db)):
-    hospital = Hospital(**obj.dict())
+    user = await get_or_404(Users, obj.med_rep_id, db)
+    hospital = Hospital(**obj.dict(), region_id=user.region_id)
     await hospital.save(db)
     return hospital
 
