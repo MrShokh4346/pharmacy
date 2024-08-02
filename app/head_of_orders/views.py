@@ -5,9 +5,9 @@ from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
-from models.pharmacy import Pharmacy
+from models.pharmacy import Pharmacy, ReservationPayedAmounts, ReservationProducts
 from models.hospital import HospitalReservation
-from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, WholesaleReservation
+from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, WholesaleReservation, WholesaleReservationPayedAmounts, WholesaleReservationProducts
 from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -136,8 +136,6 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "checked":rs.checked
             })
     return data
-
- 
 
 
 @router.post('/check-reservation/{reservation_id}')
@@ -300,6 +298,32 @@ async def pay_wholesale_pharmacy_reservation(reservation_id: int, obj: PayWholes
         raise HTTPException(status_code=400, detail=f"WholesaleReservation not found")
     await reservation.pay_reservation(**obj.dict(), db=db)
     return reservation
+
+
+@router.get('/get-pharmacy-reservation-payed-remiainder/{reservation_id}')
+async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    data = {}
+    result = await db.execute(select(ReservationPayedAmounts).filter(ReservationPayedAmounts.reservation_id==reservation_id).order_by(ReservationPayedAmounts.id.desc()))
+    obj = result.scalars().first()
+    result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation_id))
+    data = {
+        "remiainder_sum": obj.remainder_sum if obj else 0 ,
+        "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity} for prd in result.scalars().all()]
+    }
+    return data 
+
+
+@router.get('/get-wholesale-reservation-payed-remiainder/{reservation_id}')
+async def get_wholesale_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    data = {}
+    result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id).order_by(WholesaleReservationPayedAmounts.id.desc()))
+    obj = result.scalars().first()
+    result = await db.execute(select(WholesaleReservationProducts).filter(WholesaleReservationProducts.reservation_id==reservation_id))
+    data = {
+        "remiainder_sum": obj.remainder_sum if obj else 0 ,
+        "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity} for prd in result.scalars().all()]
+    }
+    return data 
 
 
 @router.put('/edit-pharmacy-reservation-invoice-number/{reservation_id}', response_model=ReservationOutSchema)

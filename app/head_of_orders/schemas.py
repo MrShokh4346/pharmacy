@@ -76,6 +76,8 @@ class PayReservtionDoctors(BaseModel):
 
 class PayReservtionSchema(BaseModel):
     objects: List[PayReservtionDoctors] 
+    total: int
+    month_number: int 
     description: Optional[str] = None 
 
 
@@ -88,6 +90,7 @@ class PayHospitalReservtionSchema(BaseModel):
 
 class PayWholesaleReservtionDoctors(BaseModel):
     amount: int 
+    quantity: int
     doctor_id: int 
     product_id: int 
 
@@ -95,6 +98,8 @@ class PayWholesaleReservtionDoctors(BaseModel):
 class PayWholesaleReservtionSchema(BaseModel):
     med_rep_id: int 
     pharmacy_id: int 
+    total: int 
+    month_number: int
     objects: List[PayWholesaleReservtionDoctors] 
     description: Optional[str] = None 
 

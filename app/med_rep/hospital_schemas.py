@@ -1,9 +1,10 @@
 from pydantic import BaseModel, validator
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from models.doctors import Speciality
 from common.schemas import RegionSchema, DoctorCategorySchema, ManufacturedCompanySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 from datetime import date, datetime
 from enum import Enum
+from fastapi import Path
 
 
 class UserSchema(BaseModel):
@@ -51,7 +52,7 @@ class HospitalOutSchema(BaseModel):
 
 class HospitalReservationProductSchema(BaseModel):
     product_id: int 
-    quantity: int
+    quantity: Annotated[int, Path(title="", ge=0)]
 
 
 class HospitalReservationSchema(BaseModel):

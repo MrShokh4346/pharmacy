@@ -34,7 +34,6 @@ class DoctorOutSchema(BaseModel):
     category: DoctorCategorySchema 
     speciality: DoctorSpecialitySchema 
     medical_organization: MedicalOrganizationOutSchema
-    # region: RegionSchema 
     
 
 class DoctorUpdateSchema(BaseModel):
@@ -128,7 +127,7 @@ class VisitInfoProductSchema(BaseModel):
 
 class VisitInfoSchema(BaseModel):
     description: str 
-    products: List[VisitInfoProductSchema]
+    distance: int
 
 
 class DoctorAttachedProductSchema(BaseModel):

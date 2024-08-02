@@ -251,6 +251,23 @@ async def reschedule_doctor_visit_date(plan_id: int, date: RescheduleSchema, db:
 @router.post('/doctor-visit-info')
 async def doctor_visit_info(plan_id: int, visit: VisitInfoSchema, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(DoctorPlan, plan_id, db) 
+    result = await db.execute(select(Distance))
+    distance = result.scalars().first()
+    if distance.distance < visit.distance:
+        raise HTTPException(status_code=400, detail="You are far from doctor")
     await plan.update(description=visit.dict().get('description'), status=True, db=db)
-    await DoctorVisitInfo.save(**visit.dict(), doctor_id=plan.doctor_id, db=db)
+    # await DoctorVisitInfo.save(**visit.dict(), doctor_id=plan.doctor_id, db=db)
+    return {"msg":"Done"}
+
+
+@router.post('/set-distance')
+async def set_distance(distance: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Distance))
+    dst = result.scalars().first()
+    if dst is None:
+        dst = Distance(distance=distance)
+        db.add(dst)
+    else:
+        dst.distance = distance
+    await db.commit()
     return {"msg":"Done"}

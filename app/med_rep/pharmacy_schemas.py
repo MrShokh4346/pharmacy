@@ -1,8 +1,9 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Annotated
 from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema, ManufacturedCompanySchema
 from datetime import date, datetime
 from enum import Enum
+from fastapi import Path
 
 
 class PharmacyAddSchema(BaseModel):
@@ -184,7 +185,7 @@ class FactoryWarehouseOutSchema(BaseModel):
 
 class ReservationProductSchema(BaseModel):
     product_id: int 
-    quantity: int
+    quantity: Annotated[int, Path(title="", ge=0)]
 
 
 class ReservationSchema(BaseModel):

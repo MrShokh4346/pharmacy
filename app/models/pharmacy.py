@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from .database import Base, get_db, get_or_404
-from sqlalchemy import and_ , extract, func, or_, text
+from sqlalchemy import and_ , extract, func, or_, text, update
 import calendar
 
 
@@ -174,6 +174,9 @@ class ReservationPayedAmounts(Base):
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
+    total_sum = Column(Integer)
+    remainder_sum = Column(Integer)
+    quantity = Column(Integer)
     description = Column(String)
     date = Column(DateTime, default=date.today())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
@@ -232,7 +235,7 @@ class Reservation(Base):
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                res_products.append(ReservationProducts(**product, reservation_price=prd.price, reservation_discount_price=prd.discount_price))
+                res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=prd.price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
             total_payable = total_amount - total_amount * kwargs['discount'] / 100 if kwargs['discountable'] == True else total_amount
@@ -300,20 +303,37 @@ class Reservation(Base):
             query = text(f'SELECT product_id FROM reservation_products WHERE reservation_id={self.id}')
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
+            current = sum([obj['amount'] for obj in kwargs['objects']])
+            if kwargs['total'] < current:   
+                raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
                 self.debt -= obj['amount']
                 self.profit += obj['amount']
-                reservation = ReservationPayedAmounts(amount=obj['amount'], description=kwargs['description'], reservation_id=self.id, product_id=obj['product_id'], doctor_id=obj['doctor_id'])
+                reservation = ReservationPayedAmounts(
+                                        total_sum=kwargs['total'], 
+                                        remainder_sum=kwargs['total'] - current, 
+                                        amount=obj['amount'], 
+                                        quantity=obj['quantity'], 
+                                        description=kwargs['description'], 
+                                        reservation_id=self.id, 
+                                        product_id=obj['product_id'], 
+                                        doctor_id=obj['doctor_id'])
                 await reservation.save(db)
+                await ReservationProducts.set_payed_quantity(
+                                            quantity=obj['quantity'],
+                                            reservation_id=reservation.reservation_id,
+                                            product_id=obj['product_id'],
+                                            db=db
+                                            )
                 if self.debt < 0:
                     raise HTTPException(status_code=400, detail=f"This reservation already chacked")
                 if obj.get('doctor_id') is None:
                     await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
                 else:
-                    await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
-                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], db=db)
+                    await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=kwargs['month_number'], db=db)
+                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=kwargs['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -333,12 +353,19 @@ class ReservationProducts(Base):
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
+    not_payed_quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
     reservation_price = Column(Integer)
     reservation_discount_price = Column(Integer)
     product = relationship("Products", backref="reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
     reservation = relationship("Reservation", cascade="all, delete", back_populates="products")
+
+    @classmethod
+    async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
+        query = f"update reservation_products set not_payed_quantity=not_payed_quantity-{kwargs['quantity']} WHERE reservation_id={kwargs['reservation_id']} AND product_id={kwargs['product_id']}"  
+        result = await db.execute(text(query))
+        await db.commit()
 
 
 class PharmacyHotSale(Base):
@@ -418,7 +445,7 @@ class PharmacyFact(Base):
                 pharmacy = await get_or_404(Pharmacy, kwargs['pharmacy_id'], db)
                 if checking.saled > value:
                     hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
-                await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)
+                    await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)
                 checking.chack = True
                 db.add(hot_sale)
             await db.commit()

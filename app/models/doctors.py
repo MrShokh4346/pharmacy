@@ -14,6 +14,13 @@ from .users import UserProductPlan, Products
 import calendar
 
 
+class Distance(Base):
+    __tablename__ = "distance"
+
+    id = Column(Integer, primary_key=True)
+    distance = Column(Integer)
+
+
 class Speciality(Base):
     __tablename__ = "speciality"
 
@@ -88,7 +95,6 @@ class MedicalOrganization(Base):
             self.address = kwargs.get('address', self.address)
             self.latitude = kwargs.get('latitude', self.latitude)
             self.longitude = kwargs.get('longitude', self.longitude)
-            self.med_rep_id = kwargs.get('med_rep_id', self.med_rep_id)
             self.region_id = kwargs.get('region_id', self.region_id)
             await db.commit()
             await db.refresh(self)
@@ -195,10 +201,10 @@ class DoctorPostupleniyaFact(Base):
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
         year = datetime.now().year
-        month = datetime.now().month  
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
+        # month = datetime.now().month  
+        num_days = calendar.monthrange(year, kwargs['month_number'])[1]
+        start_date = datetime(year, kwargs['month_number'], 1)  
+        end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
@@ -236,7 +242,10 @@ class Bonus(Base):
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
         year = datetime.now().year
-        month = datetime.now().month  
+        if kwargs.get('month_number') is None:
+            month = datetime.now().month  
+        else:
+            month = kwargs.get('month_number')  
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)

@@ -87,8 +87,8 @@ class ReturnProductSchema(BaseModel):
 
 class WholesaleReservationProductSchema(BaseModel):
     product_id: int 
-    quantity: int
-    price: int 
+    quantity: Annotated[int, Path(title="", ge=0)]
+    price: Annotated[int, Path(title="", ge=0)] 
 
 
 class WholesaleReservationSchema(BaseModel):
