@@ -419,7 +419,8 @@ class UserProductPlan(Base):
         if not product:
             raise HTTPException(status_code=400, detail="Med rep has not product plan for this product in this month")
         elif product.current_amount < kwargs['quantity']:
-            raise HTTPException(status_code=400, detail="Med rep has not enough product plan for this product in this month")
+            product.current_amount = 0
+            # raise HTTPException(status_code=400, detail="Med rep has not enough product plan for this product in this month")
         product.current_amount -= kwargs['quantity']
 
 

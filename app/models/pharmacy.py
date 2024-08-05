@@ -449,9 +449,9 @@ class PharmacyFact(Base):
                 pharmacy = await get_or_404(Pharmacy, kwargs['pharmacy_id'], db)
                 if checking.saled > value:
                     hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
+                    db.add(hot_sale)
                     await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)
                 checking.chack = True
-                db.add(hot_sale)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
