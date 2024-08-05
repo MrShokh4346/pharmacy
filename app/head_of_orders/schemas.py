@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Annotated
 from enum import Enum
 from fastapi import FastAPI, Path
 from common.schemas import ManufacturedCompanySchema, ProductOutSchema, RegionSchema
@@ -70,6 +70,7 @@ class ExpireDateSchema(BaseModel):
 class PayReservtionDoctors(BaseModel):
     amount: int 
     quantity: int
+    month_number: Annotated[int, Path(title="", gt=0, le=12)] 
     doctor_id: Optional[int] = None 
     product_id: int 
 
@@ -77,7 +78,6 @@ class PayReservtionDoctors(BaseModel):
 class PayReservtionSchema(BaseModel):
     objects: List[PayReservtionDoctors] 
     total: int
-    month_number: int 
     description: Optional[str] = None 
 
 
@@ -91,6 +91,7 @@ class PayHospitalReservtionSchema(BaseModel):
 class PayWholesaleReservtionDoctors(BaseModel):
     amount: int 
     quantity: int
+    month_number: Annotated[int, Path(title="", gt=0, le=12)]
     doctor_id: int 
     product_id: int 
 
@@ -99,7 +100,6 @@ class PayWholesaleReservtionSchema(BaseModel):
     med_rep_id: int 
     pharmacy_id: int 
     total: int 
-    month_number: int
     objects: List[PayWholesaleReservtionDoctors] 
     description: Optional[str] = None 
 

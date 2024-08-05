@@ -126,7 +126,7 @@ class HospitalReservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
-    invoice_number = Column(Integer, invoice_number_seq, server_default=invoice_number_seq.next_value())
+    invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer, default=0)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))

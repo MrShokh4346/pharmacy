@@ -194,7 +194,7 @@ class WholesaleReservation(Base):
     total_amount = Column(Float)
     total_payable = Column(Float)
     total_payable_with_nds = Column(Float)
-    invoice_number = Column(Integer, invoice_number_seq, server_default=invoice_number_seq.next_value())
+    invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
     med_rep_id = Column(Integer, ForeignKey("users.id"))    
@@ -220,7 +220,13 @@ class WholesaleReservation(Base):
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                res_products.append(WholesaleReservationProducts(**product, not_payed_quantity=product['quantity']))
+                reservation_price = (prd.price - prd.price * kwargs['discount'] / 100) * 1.12
+                res_products.append(WholesaleReservationProducts(
+                                    quantity = product['quantity'],
+                                    product_id = product['product_id'],
+                                    price=reservation_price, 
+                                    not_payed_quantity=product['quantity'])
+                                    )
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
             total_payable = total_amount - total_amount * kwargs['discount'] / 100 
@@ -288,18 +294,18 @@ class WholesaleReservation(Base):
             query = text(f'SELECT product_id FROM wholesale_reservation_products WHERE reservation_id={self.id}')
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
-            current = sum([obj['amount'] for obj in kwargs['objects']])
+            current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
             if kwargs['total'] < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                self.debt -= obj['amount']
-                self.profit += obj['amount']
+                self.debt -= obj['amount'] * obj['quantity']
+                self.profit += obj['amount'] * obj['quantity']
                 reservation = WholesaleReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
                                         remainder_sum=kwargs['total'] - current, 
-                                        amount=obj['amount'],
+                                        amount=obj['amount'] * obj['quantity'],
                                         quantity=obj['quantity'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 
@@ -317,8 +323,8 @@ class WholesaleReservation(Base):
                             )   
                 if self.debt < 0:
                     raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-                await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=kwargs['month_number'], db=db)
-                await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=kwargs['month_number'], db=db)
+                await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -339,7 +345,7 @@ class WholesaleReservationProducts(Base):
     quantity = Column(Integer)
     not_payed_quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    price = Column(Integer)
+    price = Column(Float)
     # reservation_discount_price = Column(Integer)
     product = relationship("Products", backref="wholesale_reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))
@@ -347,8 +353,11 @@ class WholesaleReservationProducts(Base):
 
     @classmethod
     async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
-        query = f"update wholesale_reservation_products set not_payed_quantity=not_payed_quantity-{kwargs['quantity']} WHERE reservation_id={kwargs['reservation_id']} AND product_id={kwargs['product_id']}"  
+        query = f"update wholesale_reservation_products set not_payed_quantity=not_payed_quantity-{kwargs['quantity']} WHERE reservation_id={kwargs['reservation_id']} AND product_id={kwargs['product_id']} returning not_payed_quantity"  
         result = await db.execute(text(query))
+        quantity = result.scalar()
+        if quantity < 0:
+            raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
         await db.commit()
 
 class WholesaleOutput(Base):

@@ -303,12 +303,14 @@ async def pay_wholesale_pharmacy_reservation(reservation_id: int, obj: PayWholes
 @router.get('/get-pharmacy-reservation-payed-remiainder/{reservation_id}')
 async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
     data = {}
+    reservaion = await get_or_404(Reservation, reservation_id, db)
     result = await db.execute(select(ReservationPayedAmounts).filter(ReservationPayedAmounts.reservation_id==reservation_id).order_by(ReservationPayedAmounts.id.desc()))
     obj = result.scalars().first()
     result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation_id))
     data = {
+        "debt": reservaion.debt,
         "remiainder_sum": obj.remainder_sum if obj else 0 ,
-        "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity} for prd in result.scalars().all()]
+        "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.reservation_price} for prd in result.scalars().all()]
     }
     return data 
 
@@ -316,12 +318,14 @@ async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: Asy
 @router.get('/get-wholesale-reservation-payed-remiainder/{reservation_id}')
 async def get_wholesale_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
     data = {}
+    reservaion = await get_or_404(WholesaleReservation, reservation_id, db)
     result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id).order_by(WholesaleReservationPayedAmounts.id.desc()))
     obj = result.scalars().first()
     result = await db.execute(select(WholesaleReservationProducts).filter(WholesaleReservationProducts.reservation_id==reservation_id))
     data = {
+        "debt": reservaion.debt,
         "remiainder_sum": obj.remainder_sum if obj else 0 ,
-        "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity} for prd in result.scalars().all()]
+        "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.price} for prd in result.scalars().all()]
     }
     return data 
 
