@@ -154,13 +154,13 @@ class HospitalReservation(Base):
                 res_products.append(HospitalReservationProducts(**product, reservation_price=prd.price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
-            total_payable = total_amount - total_amount * kwargs['discount'] / 100
+            total_payable = round(total_amount - total_amount * kwargs['discount'] / 100)
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
                                 total_payable = total_payable,
-                                total_payable_with_nds = total_payable + total_payable * 0.12,
-                                debt = total_payable + total_payable * 0.12
+                                total_payable_with_nds = round(total_payable + total_payable * 0.12),
+                                debt = round(total_payable + total_payable * 0.12)
                                 )
             db.add(reservation)
             for p in res_products:
@@ -217,28 +217,21 @@ class HospitalReservation(Base):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already checked")
         for product in self.products:
-            product.reservation_price = product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.debt = self.debt * (100 / (100 - self.discount)) * (1 - discount / 100)
+            product.reservation_price = round(product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable = round(self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable_with_nds = round(self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.debt = round(self.debt * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.discount = discount
         await db.commit()
 
     async def pay_reservation(self, db: AsyncSession, **kwargs):
         try:
-            # query = text(f'SELECT product_id FROM hospital_reservation_products WHERE reservation_id={self.id}')
-            # result = await db.execute(query)
-            # product_ids = [row[0] for row in result.all()]
-            # for obj in kwargs['objects']:
-            #     if obj['product_id'] not in product_ids:
-            #         raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
             self.debt -= kwargs['amount']
             self.profit += kwargs['amount']
             reservation = HospitalReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
             await reservation.save(db)
             if self.debt < 0:
                 raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-            # await HospitalBonus.set_bonus(product_id=kwargs['product_id'], doctor_id=kwargs['doctor_id'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

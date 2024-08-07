@@ -239,13 +239,13 @@ class Reservation(Base):
                 res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=reservation_price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
-            total_payable = total_amount - total_amount * kwargs['discount'] / 100 if kwargs['discountable'] == True else total_amount
+            total_payable = round(total_amount - total_amount * kwargs['discount'] / 100) if kwargs['discountable'] == True else total_amount
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
                                 total_payable = total_payable,
-                                total_payable_with_nds = total_payable + total_payable * 0.12,
-                                debt = total_payable + total_payable * 0.12
+                                total_payable_with_nds = round(total_payable + total_payable * 0.12),
+                                debt = round(total_payable + total_payable * 0.12)
                                 )
             db.add(reservation)
             for p in res_products:
@@ -292,10 +292,10 @@ class Reservation(Base):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
-            product.reservation_price = product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.debt = self.debt * (100 / (100 - self.discount)) * (1 - discount / 100)
+            product.reservation_price = round(product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable = round(self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable_with_nds = round(self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.debt = round(self.debt * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.discount = discount
         await db.commit()
 

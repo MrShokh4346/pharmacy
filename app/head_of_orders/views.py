@@ -76,7 +76,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
                 "manufactured_company": rs.manufactured_company.name,
                 "inter_branch_turnover":rs.pharmacy.inter_branch_turnover,
                 "promo":promo,
-                "med_rep":{"full_name":rs.pharmacy.med_rep.full_name},
+                "med_rep":{"id":rs.pharmacy.med_rep.id, "full_name":rs.pharmacy.med_rep.full_name},
                 "region":{"name":rs.pharmacy.region.name }
                 },
             "discount":rs.discount,
@@ -104,7 +104,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
                 "manufactured_company": rs.manufactured_company.name,
                 "promo":promo,
                 "inter_branch_turnover":rs.hospital.inter_branch_turnover,
-                "med_rep":{"full_name":rs.hospital.med_rep.full_name},
+                "med_rep":{"id":rs.hospital.med_rep.id, "full_name":rs.hospital.med_rep.full_name},
                 "region":{"name": rs.hospital.region.name} 
                 },
             "discount":rs.discount,

@@ -337,7 +337,6 @@ class Doctor(Base):
             self.speciality_id = kwargs.get('speciality_id', self.speciality_id)
             self.category_id = kwargs.get('category_id', self.category_id)
             self.medical_organization_id = kwargs.get('medical_organization_id', self.medical_organization_id)
-            db.add(self)
             await db.commit()
             await db.refresh(self)
         except IntegrityError as e:

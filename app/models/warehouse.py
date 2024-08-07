@@ -220,7 +220,7 @@ class WholesaleReservation(Base):
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                reservation_price = (prd.price - prd.price * kwargs['discount'] / 100) * 1.12
+                reservation_price = round((prd.price - prd.price * kwargs['discount'] / 100) * 1.12)
                 res_products.append(WholesaleReservationProducts(
                                     quantity = product['quantity'],
                                     product_id = product['product_id'],
@@ -229,13 +229,13 @@ class WholesaleReservation(Base):
                                     )
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
-            total_payable = total_amount - total_amount * kwargs['discount'] / 100 
+            total_payable = round(total_amount - total_amount * kwargs['discount'] / 100) 
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
                                 total_payable = total_payable,
-                                total_payable_with_nds = total_payable + total_payable * 0.12,
-                                debt = total_payable + total_payable * 0.12
+                                total_payable_with_nds = round(total_payable + total_payable * 0.12),
+                                debt = round(total_payable + total_payable * 0.12)
                                 )
             db.add(reservation)
             for p in res_products:
@@ -282,10 +282,10 @@ class WholesaleReservation(Base):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
-            product.price = product.price * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.total_payable = self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.total_payable_with_nds = self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100)
-        self.debt = self.debt * (100 / (100 - self.discount)) * (1 - discount / 100)
+            product.price = round(product.price * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable =round( self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable_with_nds = round(self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.debt = round(self.debt * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.discount = discount
         await db.commit()
 
