@@ -5,6 +5,7 @@ from .schemas import *
 from fastapi import APIRouter
 from models.users import *
 from models.doctors import DoctorCategory
+from models.pharmacy import PharmacyHotSale, Pharmacy
 from models.dependencies import *
 from models.database import get_db
 from typing import Annotated, List
@@ -182,6 +183,10 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
         user_plans = result1.scalars().all()
         user_plan_data = []
         for user_plan in user_plans:
+            query = f"SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale INNER JOIN pharmacy ON pharmacy.id = pharmacy_hot_sale.pharmacy_id  where pharmacy.med_rep_id={user_plan.med_rep_id} AND pharmacy_hot_sale.product_id={user_plan.product_id}"
+            result = await db.execute(text(query))
+            h_sale = result.first()
+            hot_sales = h_sale[0] if h_sale[0] is not None else 0 
             result = await db.execute(select(DoctorFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
             fact = 0
             fact_price = 0
@@ -194,9 +199,13 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
                 "plan_amount": user_plan.amount - user_plan.current_amount,
                 "plan_price" : (user_plan.amount - user_plan.current_amount) * user_plan.product.price,
                 "plan_bonus" : (user_plan.amount - user_plan.current_amount) * user_plan.product.marketing_expenses, 
+                "hot_sales": hot_sales,
+                "hot_sales_price": hot_sales * user_plan.product.price,
                 "fact": fact,
                 "fact_price": fact *  user_plan.product.price,
-                "vakant": user_plan.current_amount
+                "vakant": user_plan.current_amount,
+                "vakant_price": user_plan.current_amount * user_plan.product.price,
+
             })
         med_rep = {
             'id': user.id,

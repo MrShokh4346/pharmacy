@@ -317,6 +317,7 @@ async def write_proccess_to_excel(month: int, db: AsyncSession):
                     ws.merge_cells(f"CD{count}:CD{count+pharmacy_quantity-1}")
                 ph_compleated_sum = 0
                 row = count  
+                doctor_plan_sum = 0
                 for pharmacy in pharmacies:
                     doctor_fact = None
                     # result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id == doctor.id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))

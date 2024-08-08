@@ -333,22 +333,44 @@ async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | No
     return doctor_att
 
 
-# @router.get('/get-doctor-plan-by-product-id/{product_id}')
-# async def get_doctor_plan_by_product_id(product_id: int, db: AsyncSession = Depends(get_db)):
-#     year = datetime.now().year
-#     num_days = calendar.monthrange(year, month_number)[1]
-#     start_date = datetime(year, month_number, 1)
-#     end_date = datetime(year, month_number, num_days, 23, 59)
-#     query = select(DoctorMonthlyPlan).join(Doctor).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.product_id==product_id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
-#     if med_rep_id:
-#         query = query.filter(Doctor.med_rep_id == med_rep_id)
-#     if region_id:
-#         query = query.filter(MedicalOrganization.region_id == region_id)
-#     if product_id:
-#         query = query.filter(DoctorMonthlyPlan.product_id == product_id)
-#     result = await db.execute(query)
-#     doctor_att = []
-#     doctor_plans = result.scalars().all() 
+@router.get('/get-bonus-by-manufactory')
+async def get_bonus_by_manufactory(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    if start_date is None or end_date is None:
+        if month_number is None:
+            month_number = datetime.now().month 
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = datetime(year, month_number, 1)  
+        end_date = datetime(year, month_number, num_days, 23, 59)
+    result = await db.execute(select(ManufacturedCompany))
+    man_comps = result.scalars().all()
+    data = []
+    for man_comp in man_comps:
+        if man_comp.name == 'HEARTLY':
+            break
+        query = text(f"""SELECT SUM(doctor_postupleniya_fact.fact), SUM(doctor_postupleniya_fact.fact * doctor_postupleniya_fact.price), SUM(doctor_postupleniya_fact.fact * products.marketing_expenses) 
+                    FROM doctor_postupleniya_fact INNER JOIN products ON products.id = doctor_postupleniya_fact.product_id 
+                    WHERE products.man_company_id={man_comp.id} AND  doctor_postupleniya_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND doctor_postupleniya_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD')
+                    GROUP BY products.man_company_id""")
+        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        h_sale = result.first()
+
+        query2 = text(f"""SELECT SUM(user_product_plan.amount), SUM(user_product_plan.amount * user_product_plan.price) FROM user_product_plan 
+                    INNER JOIN products ON products.id = user_product_plan.product_id WHERE products.man_company_id={man_comp.id}
+                    AND user_product_plan.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND user_product_plan.date<=TO_DATE(:end_date, 'YYYY-MM-DD')
+                    GROUP BY products.man_company_id""")
+        result = await db.execute(query2, {'start_date': str(start_date), 'end_date': str(end_date)})
+        plan = result.first()
+
+        data.append({
+            "manufactured_company": man_comp.name,
+            "plan": plan[0] if plan is not None else 0,
+            "plan_price": plan[1] if plan is not None else 0,
+            "saled_products_quantity": h_sale[0] if h_sale is not None else 0,
+            "saled_products_price": h_sale[1] if h_sale is not None else 0, 
+            "saled_products_pbonus_price": h_sale[2] if h_sale is not None else 0, 
+        })
+    return data
 
 
 @router.get('/get-fact')
@@ -404,27 +426,6 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'pre_investment' : bonus.pre_investment if bonus else 0
 
         })
-    # query = select(HospitalFact).join(Hospital).options(joinedload(HospitalFact.hospital), joinedload(HospitalFact.product)).filter(HospitalFact.date >= start_date, HospitalFact.date <= end_date)
-    # if med_rep_id:
-    #     query = query.filter(Hospital.med_rep_id == med_rep_id)
-    # if product_id:
-    #     query = query.filter(HospitalFact.product_id == product_id)
-    # result = await db.execute(query)
-    # for hospital_fact in result.scalars().all():
-    #     result = await db.execute(select(HospitalBonus).filter(HospitalBonus.hospital_id==hospital_fact.hospital_id, HospitalBonus.product_id==hospital_fact.product_id, HospitalBonus.date >= start_date, HospitalBonus.date <= end_date))
-    #     bonus = result.scalars().first()
-    #     doctor_att.append({
-    #         'monthly_plan' : hospital_fact.fact,
-    #         'plan_price' : hospital_fact.fact * hospital_fact.price ,
-    #         'fact' : hospital_fact.fact,
-    #         'fact_price' : hospital_fact.fact * hospital_fact.price ,
-    #         'doctor_name' : hospital_fact.hospital.company_name,
-    #         'doctor_id' : hospital_fact.hospital.id,
-    #         'product_name' : hospital_fact.product.name,
-    #         'bonus_id' : bonus.id if bonus else None,
-    #         'bonus_amount': bonus.amount if bonus else 0,
-    #         'bonus_payed' : bonus.payed if bonus else 0
-    #     })
     return doctor_att
 
 
@@ -470,6 +471,8 @@ async def get_total_plan_fact(
                             start_date: date | None = None,
                             end_date: date | None = None,
                             month_number : int | None = None,
+                            manufactured_company_id : int | None = None,
+                            region_id : int | None = None,
                             db: AsyncSession = Depends(get_db)):
     if month_number:
         year = datetime.now().year
@@ -484,23 +487,32 @@ async def get_total_plan_fact(
     query = select(Users).filter(Users.status=='medical_representative')
     if med_rep_id:
         query = query.filter(Users.id == med_rep_id)
+    if region_id:
+        query = query.filter(Users.region_id == region_id)
     result = await db.execute(query)
     users = result.scalars().all()
-    user_products = []
     data = []
     for user in users:
+        user_products = []
         query = f"SELECT user_product_plan.product_id, products.name, user_product_plan.med_rep_id, sum(user_product_plan.amount) AS sum_1, \
         sum(user_product_plan.amount * user_product_plan.price::NUMERIC) AS plan_price \
         FROM user_product_plan INNER JOIN products ON products.id = user_product_plan.product_id \
-        WHERE user_product_plan.med_rep_id={user.id}"
+        WHERE user_product_plan.med_rep_id={user.id} AND user_product_plan.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND user_product_plan.date<=TO_DATE(:end_date, 'YYYY-MM-DD')"
         if product_id:
             query += f" AND user_product_plan.product_id={product_id}::INT"
+        if manufactured_company_id:
+            query += f" AND products.man_company_id={manufactured_company_id}::INT"
         query += " GROUP BY user_product_plan.product_id, user_product_plan.med_rep_id, products.id"
-        result = await db.execute(text(query))
+        query = text(query)
+        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
         plan = result.all()
         for prod in plan:
-            query = f"SELECT sum(doctor_fact.fact) AS fact, sum(doctor_fact.fact * doctor_fact.price) FROM doctor_fact INNER JOIN doctor ON doctor.id = doctor_fact.doctor_id  where doctor.med_rep_id={user.id} AND doctor_fact.product_id={prod[0]}"
-            result = await db.execute(text(query))
+            query = f"""SELECT sum(doctor_fact.fact) AS fact, sum(doctor_fact.fact * doctor_fact.price) FROM doctor_fact 
+                    INNER JOIN doctor ON doctor.id = doctor_fact.doctor_id  
+                    where doctor.med_rep_id={user.id} AND doctor_fact.product_id={prod[0]}
+                    AND doctor_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND doctor_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD')"""
+            query = text(query)
+            result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
             fact = result.all()
             user_products.append({
                 "product_id": prod[0],
@@ -522,9 +534,10 @@ async def get_total_plan_fact(
 
 @router.get('/get-profit')
 async def get_profit(start_date: date, end_date: date, db: AsyncSession = Depends(get_db)): 
-    query = text(f"SELECT sum(pharmacy_fact.quantity) AS fact, sum(pharmacy_fact.quantity * products.salary_expenses) AS salary_expense, sum(pharmacy_fact.quantity * products.marketing_expenses) AS marketing_expense, products.name FROM pharmacy_fact \
-    INNER JOIN products on products.id = pharmacy_fact.product_id WHERE pharmacy_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD') GROUP BY products.id")
+    query = text(f"SELECT sum(pharmacy_fact.quantity) AS fact, sum(pharmacy_fact.quantity * products.salary_expenses) AS salary_expense, sum(pharmacy_fact.quantity * products.marketing_expenses) AS marketing_expense, products.name, region.name FROM pharmacy_fact \
+    INNER JOIN products on products.id = pharmacy_fact.product_id INNER JOIN pharmacy on pharmacy.id = pharmacy_fact.pharmacy_id INNER JOIN region on region.id = pharmacy.region_id WHERE pharmacy_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD') \
+     GROUP BY products.id, region.id")
     result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
     facts = result.all()
-    data = [{"fact":fact[0], "salary_expense":fact[1], "marketing_expense":fact[2], "product_name":fact[3]} for fact in facts]
+    data = [{"fact":fact[0], "salary_expense":fact[1], "marketing_expense":fact[2], "product_name":fact[3], "region":fact[4]} for fact in facts]
     return data
