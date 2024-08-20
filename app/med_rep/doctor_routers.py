@@ -35,6 +35,12 @@ async def get_all_doctors(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 
+@router.get('/get-all-doctors-with-plan', response_model=List[DoctorListWithPlanSchema])
+async def get_all_doctors(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.doctormonthlyplan)).filter(Doctor.deleted==False))
+    return result.scalars().all()
+
+
 @router.get('/get-doctors-by-med-rep/{med_rep_id}', response_model=List[DoctorListSchema])
 async def get_all_doctors_by_med_rep(med_rep_id: int, db: AsyncSession = Depends(get_db)):
     med_rep = await get_user(med_rep_id, db)

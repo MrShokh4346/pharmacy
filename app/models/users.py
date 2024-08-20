@@ -433,6 +433,9 @@ class Users(Base):
     hashed_password = Column(String)
     status = Column(String)
     deleted = Column(Boolean, default=False)
+    email = Column(String)
+    code = Column(String)
+    expire_date = Column(DateTime)
 
     region = relationship("Region", backref="user")
     region_id = Column(Integer, ForeignKey("region.id"))  #####

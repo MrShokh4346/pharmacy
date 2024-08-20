@@ -414,6 +414,7 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'fact' : fact_d,
             'fact_price' : fact_d * doctor_plan.product.marketing_expenses,
             'fact_postupleniya' : fact_postupleniya,
+            "fact_postupleniya_price": fact_postupleniya * doctor_plan.product.price,
             'doctor_name' : doctor_plan.doctor.full_name,
             'speciality' : doctor_plan.doctor.speciality.name,
             'medical_organization_name' : doctor_plan.doctor.medical_organization.name,

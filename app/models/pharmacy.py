@@ -207,6 +207,7 @@ class Reservation(Base):
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
     discountable = Column(Boolean)
+    # bonusable = Column(Boolean, default=True)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
     total_payable = Column(Float)
@@ -279,16 +280,11 @@ class Reservation(Base):
     async def delete(self, db: AsyncSession):
         if self.checked == True:
             raise HTTPException(status_code=404, detail="This reservstion confirmed")
-        for product in self.products:
-            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
-            wrh = result.scalars().first()
-            wrh.amount += product.quantity
-        # await db.delete(self)
         query = f"delete from reservation WHERE id={self.id}"  
         result = await db.execute(text(query))
         await db.commit()
 
-    async def update_discount(self, discount: int, db: AsyncSession):
+    async def update_discount(self, discount: float, db: AsyncSession):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
@@ -334,6 +330,7 @@ class Reservation(Base):
                     await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
                 else:
                     await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    # if self.bonusable == True:
                     await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
@@ -389,7 +386,6 @@ class PharmacyHotSale(Base):
         try:
             hot_sale = cls(**kwargs)
             db.add(hot_sale)
-            await db.commit()                
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 

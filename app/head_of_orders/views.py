@@ -128,6 +128,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "wholesale":{
                 "id":rs.wholesale.id ,
                 "company_name":rs.wholesale.name,
+                "manufactured_company": rs.manufactured_company.name,
                 "promo":promo,
                 "region":{"name":rs.wholesale.region.name }
                 },
@@ -243,7 +244,7 @@ async def set_discount_to_all_pharmacies(discount: float,  db: AsyncSession = De
 
 
 @router.post('/update-reservation-discount/{reservation_id}')
-async def get_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+async def get_reservation_products(reservation_id: int, discount: float, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -253,7 +254,7 @@ async def get_reservation_products(reservation_id: int, discount: int, db: Async
 
 
 @router.post('/update-hospital-reservation-discount/{reservation_id}')
-async def get_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+async def get_reservation_products(reservation_id: int, discount: float, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(HospitalReservation).where(HospitalReservation.id==reservation_id))
     reservation = result.scalars().first()
     if reservation is None:
@@ -263,7 +264,7 @@ async def get_reservation_products(reservation_id: int, discount: int, db: Async
 
 
 @router.post('/update-wholesale-reservation-discount/{reservation_id}')
-async def get_wholesale_reservation_products(reservation_id: int, discount: int, db: AsyncSession = Depends(get_db)):
+async def get_wholesale_reservation_products(reservation_id: int, discount: float, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(WholesaleReservation).where(WholesaleReservation.id==reservation_id))
     reservation = result.scalars().first()
     await reservation.update_discount(discount = discount, db=db)

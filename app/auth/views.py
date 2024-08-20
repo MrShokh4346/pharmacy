@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from models.users import *
 from models.database import get_db
 from sqlalchemy.future import select
+import string
+import random
 
 router = APIRouter()
 
@@ -68,6 +70,39 @@ async def register_director(user: RegisterSchema, db: Session = Depends(get_db))
 #     return UserOutSchema(**db_user.__dict__)
 
 
-@router.post('/send-email')
-async def send_mail(email: str, msg: str):
-    return await simple_send(email, msg)
+async def code_generator(size=6, chars=string.digits):
+    return ''.join(random.choice(chars) for x in range(size))
+
+
+@router.post('/login-with-email')
+async def send_mail(email: LoginEmailSchema, db: Session = Depends(get_db)):
+    result = await db.execute(select(Users).filter(Users.email == email.email))
+    user = result.scalar()
+    if user:
+        code = await code_generator()
+        user.code = code
+        user.expire_date = datetime.now() + timedelta(minutes = 2)
+        await db.commit()
+        return await simple_send(email.email, code)
+    else:
+        return {"msg":"No user with this email"}
+
+
+@router.post('/check-code')
+async def check_code(obj: LoginEmailCodeSchema, db: Session = Depends(get_db)):
+    result = await db.execute(select(Users).filter(Users.email == obj.email))
+    user = result.scalar()
+    if user is not None and user.code == obj.code:
+        if user.expire_date > datetime.now():
+            user.code = None
+            await db.commit()
+            access_token = create_access_token(data={"sub": str(user.id)})
+            return TokenSchema(id=user.id, access_token=access_token, status=user.status, region_id=user.region_id)
+        else:
+            user.code = None
+            await db.commit()
+            return {"msg": "Code expired"}
+    else:
+        return {"msg": "Wrong code"}
+
+

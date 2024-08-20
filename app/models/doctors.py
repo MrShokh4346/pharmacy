@@ -112,7 +112,7 @@ class DoctorMonthlyPlan(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     price = Column(Integer)
     discount_price = Column(Integer)
-    doctor = relationship("Doctor", cascade="all, delete",  backref="doctormonthlyplan", lazy="selectin")
+    doctor = relationship("Doctor", cascade="all, delete",  back_populates="doctormonthlyplan", lazy="selectin")
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
 
     async def save(self, db: AsyncSession):
@@ -312,6 +312,8 @@ class Doctor(Base):
     category_id = Column(Integer, ForeignKey("doctor_category.id"))
     medical_organization = relationship("MedicalOrganization",  backref="doctor", lazy='selectin')
     medical_organization_id = Column(Integer, ForeignKey("medical_organization.id")) 
+    doctormonthlyplan = relationship("DoctorMonthlyPlan", cascade="all, delete",  back_populates="doctor")
+
 
     async def save(self, db: AsyncSession):
         try:

@@ -60,7 +60,7 @@ class DoctorListSchema(BaseModel):
     speciality: Optional[SpecialitySchema] = None
     medical_organization: Optional[MedicalOrganizationOutSchema] = None
     category: Optional[DoctorCategorySchema] = None
-    
+
 
 class AttachProductsSchema(BaseModel):
     doctor_id: int 
@@ -154,4 +154,16 @@ class DoctorProductPlanOutSchema(BaseModel):
     product: ProductSchema 
     monthly_plan: int 
     date: datetime 
+    
 
+class DoctorListWithPlanSchema(BaseModel):
+    id: int 
+    full_name: str 
+    speciality: Optional[SpecialitySchema] = None
+    medical_organization: Optional[MedicalOrganizationOutSchema] = None
+    category: Optional[DoctorCategorySchema] = None
+    birth_date: Optional[date] = None
+    contact1: str
+    contact2: Optional[str] = None
+    doctormonthlyplan: Optional[List[DoctorProductPlanOutSchema]] = None
+    

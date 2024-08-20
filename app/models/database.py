@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
 
-DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/pharmacy"
+DATABASE_URL = "postgresql+asyncpg://postgres:password@localhost:5432/test_pharmacy"
 
 engine = create_async_engine(DATABASE_URL)
 async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

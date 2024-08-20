@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
 from models.users import *
-from models.doctors import DoctorCategory
+from models.doctors import DoctorCategory, DoctorPostupleniyaFact
 from models.pharmacy import PharmacyHotSale, Pharmacy
 from models.dependencies import *
 from models.database import get_db
@@ -183,8 +183,10 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
         user_plans = result1.scalars().all()
         user_plan_data = []
         for user_plan in user_plans:
-            query = f"SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale INNER JOIN pharmacy ON pharmacy.id = pharmacy_hot_sale.pharmacy_id  where pharmacy.med_rep_id={user_plan.med_rep_id} AND pharmacy_hot_sale.product_id={user_plan.product_id}"
-            result = await db.execute(text(query))
+            query = text(f"""SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale INNER JOIN pharmacy ON pharmacy.id = pharmacy_hot_sale.pharmacy_id  
+                where pharmacy.med_rep_id={user_plan.med_rep_id} AND pharmacy_hot_sale.product_id={user_plan.product_id} 
+                AND pharmacy_hot_sale.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_hot_sale.date<=TO_DATE(:end_date, 'YYYY-MM-DD')""")
+            result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
             h_sale = result.first()
             hot_sales = h_sale[0] if h_sale[0] is not None else 0 
             result = await db.execute(select(DoctorFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
@@ -192,6 +194,10 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
             fact_price = 0
             for f in result.scalars().all():
                 fact += f.fact
+            result = await db.execute(select(DoctorPostupleniyaFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorPostupleniyaFact.product_id==user_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
+            fact_postupleniya = 0
+            for f in result.scalars().all():
+                fact_postupleniya += f.fact
             user_plan_data.append({
                 "id": user_plan.id,
                 "product": user_plan.product.name,
@@ -203,6 +209,8 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
                 "hot_sales_price": hot_sales * user_plan.product.price,
                 "fact": fact,
                 "fact_price": fact *  user_plan.product.price,
+                "fact_postupleniya": fact_postupleniya,
+                "fact_postupleniya_price": fact_postupleniya * user_plan.product.price,
                 "vakant": user_plan.current_amount,
                 "vakant_price": user_plan.current_amount * user_plan.product.price,
 
@@ -216,6 +224,26 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
         }
         data.append(med_rep)
     return data
+
+
+@router.get('/get-all_plan_sum')
+async def get_all_plan_sum(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    if start_date is None or end_date is None:
+        if month_number is None:
+            month_number = datetime.now().month 
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = datetime(year, month_number, 1)  
+        end_date = datetime(year, month_number, num_days, 23, 59)
+    query = text(f"""SELECT sum(user_product_plan.amount*user_product_plan.price), sum(user_product_plan.amount) from user_product_plan 
+                where user_product_plan.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND user_product_plan.date<=TO_DATE(:end_date, 'YYYY-MM-DD')""")
+    result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+    plan_sum = result.first()
+    data_dict = {
+            "plan_sum": plan_sum[0] if plan_sum else 0,
+            "plan": plan_sum[1] if plan_sum else 0,
+            }
+    return data_dict
 
 
 @router.get("/get-med-reps", response_model=List[UserByIdSchema])

@@ -15,10 +15,10 @@ class PharmacyAddSchema(BaseModel):
     longitude: str 
     address: str 
     brand_name: str
-    bank_account_number: str 
+    bank_account_number: Optional[str] = None 
     inter_branch_turnover: str 
-    classification_of_economic_activities: str 
-    VAT_payer_code: str 
+    classification_of_economic_activities: Optional[str] = None 
+    VAT_payer_code: Optional[str] = None 
     pharmacy_director: str 
     region_id: int
 
@@ -54,10 +54,10 @@ class PharmacyOutSchema(BaseModel):
     longitude: str 
     address: str 
     discount: float
-    bank_account_number: str 
+    bank_account_number: Optional[str] = None 
     inter_branch_turnover: str 
-    classification_of_economic_activities: str 
-    VAT_payer_code: str 
+    classification_of_economic_activities: Optional[str] = None 
+    VAT_payer_code: Optional[str] = None 
     pharmacy_director: str
     region: Optional[RegionSchema]
     med_rep: UserOutSchema

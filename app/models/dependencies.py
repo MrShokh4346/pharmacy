@@ -46,18 +46,16 @@ conf = ConnectionConfig(
     VALIDATE_CERTS = True
 )
 
-async def simple_send(email: str, body: str):
-    html = """<p>Hi this test mail, thanks for using Fastapi-mail</p> """
 
+async def simple_send(email: str, body: str):
     message = MessageSchema(
         subject="Fastapi-Mail module",
         recipients=[email],
         body=body,
         subtype=MessageType.html)
-
     fm = FastMail(conf)
     await fm.send_message(message)
-    return {"message": "email has been sent"}
+    return {"msg":"Code sent to your email"}
 
 auth_header = HTTPBearer()
 

@@ -204,16 +204,11 @@ class HospitalReservation(Base):
     async def delete(self, db: AsyncSession):
         if self.checked == True:
             raise HTTPException(status_code=404, detail="This reservstion checked")
-        for product in self.products:
-            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
-            wrh = result.scalars().first()
-            wrh.amount += product.quantity
-        # await db.delete(self)
         query = f"delete from hospital_reservation WHERE id={self.id}"  
         result = await db.execute(text(query))
         await db.commit()
 
-    async def update_discount(self, discount: int, db: AsyncSession):
+    async def update_discount(self, discount: float, db: AsyncSession):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already checked")
         for product in self.products:
