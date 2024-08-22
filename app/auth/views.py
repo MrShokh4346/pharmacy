@@ -106,3 +106,7 @@ async def check_code(obj: LoginEmailCodeSchema, db: Session = Depends(get_db)):
         return {"msg": "Wrong code"}
 
 
+
+
+
+

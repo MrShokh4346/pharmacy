@@ -152,9 +152,9 @@ class WholesaleReservationPayedAmounts(Base):
     __tablename__ = "wholesale_reservation_payed_amounts"
 
     id = Column(Integer, primary_key=True)
-    amount = Column(Integer)
+    amount = Column(Integer, default=0)
     total_sum = Column(Integer)
-    remainder_sum = Column(Integer)
+    remainder_sum = Column(Integer, default=0)
     quantity = Column(Integer)
     description = Column(String)
     date = Column(DateTime, default=date.today())
@@ -167,7 +167,7 @@ class WholesaleReservationPayedAmounts(Base):
     med_rep_id = Column(Integer, ForeignKey("users.id"))
     med_rep = relationship("Users", backref="wholesale_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))
-    reservation = relationship("WholesaleReservation", cascade="all, delete", backref="wholesale_payed_amounts")
+    reservation = relationship("WholesaleReservation", cascade="all, delete", back_populates="wholesale_payed_amounts")
    
     async def save(self, db: AsyncSession):
         try:
@@ -198,6 +198,7 @@ class WholesaleReservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
+    reailized_debt = Column(Integer, default=0)
     med_rep_id = Column(Integer, ForeignKey("users.id"))    
     med_rep = relationship("Users",  backref="wholesale_reservation")
     wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
@@ -205,6 +206,7 @@ class WholesaleReservation(Base):
     products = relationship("WholesaleReservationProducts", cascade="all, delete", back_populates="wholesale_reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     manufactured_company = relationship("ManufacturedCompany", backref="wholesale_reservation", lazy='selectin')
+    wholesale_payed_amounts = relationship("WholesaleReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
 
     @classmethod
@@ -290,18 +292,30 @@ class WholesaleReservation(Base):
             query = text(f'SELECT product_id FROM wholesale_reservation_products WHERE reservation_id={self.id}')
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
-            current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
-            if kwargs['total'] < current:   
-                raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
+            # current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
+            # if kwargs['total'] < current:   
+            #     raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
+            if kwargs['total'] > 0:
+                remaind = kwargs['total'] - self.reailized_debt
+                self.reailized_debt -= kwargs['total']
+                if self.reailized_debt < 0:
+                    self.reailized_debt = 0
+                self.debt -= kwargs['total']
+                if self.debt < 0:
+                    self.debt = 0
+                self.profit += kwargs['total']
+                if remaind > 0:
+                    for prd in self.wholesale_payed_amounts:
+                        prd.remainder_sum = remaind
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                self.debt -= obj['amount'] * obj['quantity']
-                self.profit += obj['amount'] * obj['quantity']
+                # self.debt -= obj['amount'] * obj['quantity']
+                self.reailized_debt += obj['amount'] * obj['quantity']
                 reservation = WholesaleReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
-                                        remainder_sum=kwargs['total'] - current, 
-                                        amount=obj['amount'] * obj['quantity'],
+                                        # remainder_sum=kwargs['total'] - current, 
+                                        # amount=obj['amount'] * obj['quantity'],
                                         quantity=obj['quantity'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 
@@ -317,8 +331,6 @@ class WholesaleReservation(Base):
                             product_id=obj['product_id'],
                             db=db
                             )   
-                if self.debt < 0:
-                    raise HTTPException(status_code=400, detail=f"This reservation already chacked")
                 await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                 await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()

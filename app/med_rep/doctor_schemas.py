@@ -153,7 +153,14 @@ class DoctorProductPlanOutSchema(BaseModel):
     id: int 
     product: ProductSchema 
     monthly_plan: int 
+    postupleniya: int
     date: datetime 
+
+
+class DoctorPostupleniyaSchema(BaseModel):
+    id: int 
+    fact: int
+    product: ProductSchema 
     
 
 class DoctorListWithPlanSchema(BaseModel):
@@ -166,4 +173,5 @@ class DoctorListWithPlanSchema(BaseModel):
     contact1: str
     contact2: Optional[str] = None
     doctormonthlyplan: Optional[List[DoctorProductPlanOutSchema]] = None
+    # postupleniya_fact: Optional[List[DoctorPostupleniyaSchema]] = None
     

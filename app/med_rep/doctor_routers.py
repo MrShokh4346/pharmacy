@@ -37,8 +37,28 @@ async def get_all_doctors(db: AsyncSession = Depends(get_db)):
 
 @router.get('/get-all-doctors-with-plan', response_model=List[DoctorListWithPlanSchema])
 async def get_all_doctors(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.doctormonthlyplan)).filter(Doctor.deleted==False))
-    return result.scalars().all()
+    result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.doctormonthlyplan), selectinload(Doctor.postupleniya_fact)).filter(Doctor.deleted==False))
+    # return result.scalars().all()
+    objects = result.scalars().all()
+    data = []
+    for obj in objects:
+        prd_list = []
+        for plan in obj.doctormonthlyplan:
+            result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==obj.id, DoctorPostupleniyaFact.product_id==plan.product_id))
+            postupleniya = result.scalars().first()
+            prd_list.append({**plan.__dict__, "postupleniya":postupleniya.fact if postupleniya else 0})
+        data.append({
+            "id": obj.id,
+            "full_name": obj.full_name,
+            "birth_date": obj.birth_date,
+            "contact1": obj.contact1,
+            "contact2": obj.contact2,
+            "speciality": {**obj.speciality.__dict__},
+            "medical_organization": {**obj.medical_organization.__dict__},
+            "category": {**obj.category.__dict__},
+            "doctormonthlyplan": prd_list
+        })
+    return data
 
 
 @router.get('/get-doctors-by-med-rep/{med_rep_id}', response_model=List[DoctorListSchema])
