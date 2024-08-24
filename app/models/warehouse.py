@@ -292,30 +292,31 @@ class WholesaleReservation(Base):
             query = text(f'SELECT product_id FROM wholesale_reservation_products WHERE reservation_id={self.id}')
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
-            # current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
-            # if kwargs['total'] < current:   
-            #     raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
-            if kwargs['total'] > 0:
-                remaind = kwargs['total'] - self.reailized_debt
-                self.reailized_debt -= kwargs['total']
-                if self.reailized_debt < 0:
-                    self.reailized_debt = 0
-                self.debt -= kwargs['total']
-                if self.debt < 0:
-                    self.debt = 0
-                self.profit += kwargs['total']
-                if remaind > 0:
-                    for prd in self.wholesale_payed_amounts:
-                        prd.remainder_sum = remaind
+            current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
+            if kwargs['total'] < current:   
+                raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
+            # if kwargs['total'] > 0:
+            #     remaind = kwargs['total'] - self.reailized_debt
+            #     self.reailized_debt -= kwargs['total']
+            #     if self.reailized_debt < 0:
+            #         self.reailized_debt = 0
+            #     self.debt -= kwargs['total']
+            #     if self.debt < 0:
+            #         self.debt = 0
+            #     self.profit += kwargs['total']
+            #     if remaind > 0:
+            #         for prd in self.wholesale_payed_amounts:
+            #             prd.remainder_sum = remaind
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                # self.debt -= obj['amount'] * obj['quantity']
-                self.reailized_debt += obj['amount'] * obj['quantity']
+                self.debt -= obj['amount'] * obj['quantity']
+                self.profit += obj['amount'] * obj['quantity']
+                # self.reailized_debt += obj['amount'] * obj['quantity']
                 reservation = WholesaleReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
-                                        # remainder_sum=kwargs['total'] - current, 
-                                        # amount=obj['amount'] * obj['quantity'],
+                                        remainder_sum=kwargs['total'] - current, 
+                                        amount=obj['amount'] * obj['quantity'],
                                         quantity=obj['quantity'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 

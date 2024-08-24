@@ -359,3 +359,14 @@ async def edit_wholesale_reservation_invoice_number(reservation_id: int, invoice
         raise HTTPException(status_code=400, detail=f"WholesaleReservation not found")
     await reservation.edit_invoice_number(invoice_number, db)
     return reservation
+
+
+@router.post('/return-product/{reservation_id}')
+async def return_product_from_reservation(reservation_id: int, product_id: int, quantity: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
+    reservation = result.scalars().first()
+    if not reservation:
+        raise HTTPException(status_code=400, detail=f"Reservation not found")
+    await reservation.return_product(product_id, quantity, db)
+    return reservation
+

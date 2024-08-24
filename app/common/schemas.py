@@ -26,6 +26,8 @@ class UserUpdateSchema(BaseModel):
     full_name: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None 
+    email: Optional[str] = None 
+
 
 
 class UserSchema(BaseModel):

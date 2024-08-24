@@ -34,12 +34,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 
 conf = ConnectionConfig(
-    MAIL_USERNAME = "shokhruxabdurasulov0",
+    MAIL_USERNAME = "heartly.company",
     MAIL_PASSWORD = os.environ['EMAIL_PASSWORD'],
-    MAIL_FROM = "shokhruxabdurasulov0@email.com",
+    MAIL_FROM = "heartly.company@mail.ru",
     MAIL_PORT = 587,
-    MAIL_SERVER = "smtp.gmail.com",
-    MAIL_FROM_NAME="Pharma_app",
+    MAIL_SERVER = "smtp.mail.ru",
+    MAIL_FROM_NAME="Heartly Company",
     MAIL_STARTTLS = True,
     MAIL_SSL_TLS = False,
     USE_CREDENTIALS = True,
@@ -49,7 +49,7 @@ conf = ConnectionConfig(
 
 async def simple_send(email: str, body: str):
     message = MessageSchema(
-        subject="Fastapi-Mail module",
+        subject="Confirmation code to get token",
         recipients=[email],
         body=body,
         subtype=MessageType.html)

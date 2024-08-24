@@ -11,6 +11,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
 from sqlalchemy.schema import UniqueConstraint
 from .users import UserProductPlan, Products
+from sqlalchemy import text
 import calendar
 
 
@@ -137,9 +138,10 @@ class DoctorMonthlyPlan(Base):
             user_plan.current_amount += difference
             if user_plan.current_amount < 0:
                 raise HTTPException(status_code=404, detail="Med rep plan should be grater than 0 for tis product")
-            db.add(self)
+            if self.monthly_plan == 0:
+                query = f"delete from doctor_monthly_plan WHERE id={self.id}"
+                result = await db.execute(text(query))
             await db.commit()
-            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 

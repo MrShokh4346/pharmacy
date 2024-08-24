@@ -21,7 +21,7 @@ class Status(str, Enum):
 class RegisterForDDSchema(BaseModel):
     password: str
     username: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     full_name: str
     status: Status =  Path(..., title="User Role", description="The role of the user")
     region_id: int

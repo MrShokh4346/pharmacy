@@ -93,6 +93,16 @@ class CurrentBalanceInStock(Base):
             current.amount += amount
         return current
 
+    @classmethod
+    async def minus(cls, pharmacy_id: int, product_id: int, amount: int, db: AsyncSession):
+        result = await db.execute(select(cls).filter(cls.product_id==product_id, cls.pharmacy_id==pharmacy_id))
+        current = result.scalars().first()
+        if not current or current.amount < amount:
+            raise HTTPException(status_code=404, detail='There is not enough product in pharmacy warehouse')
+        else:
+            current.amount -= amount
+        return current
+
 
 class CheckingStockProducts(Base):
     __tablename__ = "checking_stock_products"
@@ -176,6 +186,7 @@ class ReservationPayedAmounts(Base):
     amount = Column(Integer)
     total_sum = Column(Integer)
     remainder_sum = Column(Integer)
+    bonus = Column(Boolean, default=True)
     quantity = Column(Integer)
     description = Column(String)
     date = Column(DateTime, default=date.today())
@@ -203,11 +214,10 @@ class Reservation(Base):
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=date.today())
-    date_implementation = Column(DateTime)
+    date_implementation = Column(DateTime, default=datetime.now())
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
     discountable = Column(Boolean)
-    # bonusable = Column(Boolean, default=True)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
     total_payable = Column(Float)
@@ -313,6 +323,7 @@ class Reservation(Base):
                                         remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'], 
                                         quantity=obj['quantity'], 
+                                        bonus=obj['bonus'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 
                                         product_id=obj['product_id'], 
@@ -330,8 +341,8 @@ class Reservation(Base):
                     await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
                 else:
                     await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                    # if self.bonusable == True:
-                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    if reservation.bonus == True:
+                        await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -344,6 +355,27 @@ class Reservation(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    async def return_product(self, product_id: int, quantity: int, db: AsyncSession):
+        try:
+            result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==self.id, ReservationProducts.product_id==product_id))
+            r_product = result.scalars().first()
+            if r_product.not_payed_quantity < quantity:
+                raise HTTPException(status_code=400, detail="You are trying to return more than not payed")
+            await CurrentBalanceInStock.minus(self.pharmacy_id, product_id, quantity, db)
+            r_product.quantity -= quantity
+            r_product.not_payed_quantity -= quantity
+            if r_product.quantity < 0:
+                raise HTTPException(status_code=400, detail="You are trying to return more than reserved")
+            minus_price = quantity * r_product.product.price
+            minus_price_with_discount = round(minus_price - minus_price * self.discount / 100) if self.discountable == True else minus_price
+            self.total_quantity -= quantity
+            self.total_amount -= minus_price
+            self.total_payable -= minus_price_with_discount
+            self.total_payable_with_nds -= round(minus_price_with_discount + minus_price_with_discount * 0.12)
+            self.debt -= round(minus_price_with_discount + minus_price_with_discount * 0.12)
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=400, detail="Something went wrong!")
 
 
 class ReservationProducts(Base):

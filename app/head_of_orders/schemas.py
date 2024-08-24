@@ -70,6 +70,7 @@ class ExpireDateSchema(BaseModel):
 class PayReservtionDoctors(BaseModel):
     amount: int 
     quantity: int
+    bonus: Optional[bool] = True 
     month_number: Annotated[int, Path(title="", gt=0, le=12)] 
     doctor_id: Optional[int] = None 
     product_id: int 

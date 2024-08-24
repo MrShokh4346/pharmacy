@@ -471,6 +471,7 @@ class Users(Base):
             for key in list(kwargs.keys()):
                 kwargs.pop(key) if kwargs[key]==None else None
             self.full_name = kwargs.get('full_name', self.full_name)
+            self.email = kwargs.get('email', self.email)
             if kwargs.get('username') and kwargs.get('username') != self.username:
                 result = await db.execute(select(Users).filter(Users.username == kwargs.get('username')))
                 user = result.scalars().first()
