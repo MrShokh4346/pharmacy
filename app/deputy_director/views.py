@@ -16,6 +16,8 @@ from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, text
 import calendar
+from .utils import *
+from common_depetencies import StartEndDates
 
 
 router = FastAPI()
@@ -208,9 +210,6 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
             fact +=  fact_d
             fact_price += fact_d *  user_plan.product.price
             fact_p += fact_d 
-        # query = text(f"SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale WHERE pharmacy_hot_sale.product_id={user_plan.product_id}::INT AND pharmacy_hot_sale.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_hot_sale.date<=TO_DATE(:end_date, 'YYYY-MM-DD')")
-        # result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
-        # hot_sale = result.first()
         
         result = await db.execute(select(PharmacyHotSale).join(Pharmacy).filter(Pharmacy.med_rep_id == user_plan.med_rep_id, PharmacyHotSale.product_id==user_plan.product_id))
         hot_sales = [{"company_name": hot_sale.pharmacy.company_name, "company_id": hot_sale.pharmacy.id, "sale": hot_sale.amount} for hot_sale in result.scalars().all()]
@@ -374,17 +373,9 @@ async def get_bonus_by_manufactory(month_number: int | None = None, start_date: 
 
 
 @router.get('/get-fact')
-async def get_fact(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, med_rep_id: int | None = None, region_id: int | None = None, product_id: int | None = None, db: AsyncSession = Depends(get_db)):
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
-    if start_date is None or end_date is None:
-        raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="month_number or start_date / end_date should be exists"
-                )
+async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, region_id: int | None = None, product_id: int | None = None, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     query = select(DoctorMonthlyPlan).join(Doctor).join(MedicalOrganization).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
     if med_rep_id:
         query = query.filter(Doctor.med_rep_id == med_rep_id)
@@ -395,15 +386,10 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
     result = await db.execute(query)
     doctor_att = []
     doctor_plans = result.scalars().all() 
+    doc_s = ''
     for doctor_plan in doctor_plans:
-        result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==doctor_plan.doctor_id, DoctorPostupleniyaFact.product_id==doctor_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
-        fact_postupleniya = 0
-        for f in result.scalars().all():
-            fact_postupleniya += f.fact
-        result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==doctor_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
-        fact_d = 0
-        for f in result.scalars().all():
-            fact_d += f.fact
+        fact_postupleniya = await get_postupleniya_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
+        fact_d = await get_visit_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
         result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==doctor_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
         bonus = result.scalars().first()
         doctor_att.append({
@@ -427,6 +413,8 @@ async def get_fact(month_number: int | None = None, start_date: date | None = No
             'pre_investment' : bonus.pre_investment if bonus else 0
 
         })
+        doc_s+=str(doctor_plan.doctor.id)+'    '+str(doctor_plan.doctor.full_name)+'\n'
+    # print(doc_s)
     return doctor_att
 
 

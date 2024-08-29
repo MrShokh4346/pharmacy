@@ -16,7 +16,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-
+from .utils import *
+from common_depetencies import StartEndDates
 
 
 router = FastAPI()
@@ -168,14 +169,9 @@ async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_d
 
 
 @router.get("/get-medical-representatives")
-async def get_medical_representatives(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
-    if start_date is None or end_date is None:
-        if month_number is None:
-            month_number = datetime.now().month 
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)  
-        end_date = datetime(year, month_number, num_days, 23, 59)
+async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(Users).options(selectinload(Users.region), selectinload(Users.region_manager)).filter(Users.status == 'medical_representative'))
     data = []
     for user in result.scalars().all():
@@ -183,21 +179,9 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
         user_plans = result1.scalars().all()
         user_plan_data = []
         for user_plan in user_plans:
-            query = text(f"""SELECT sum(pharmacy_hot_sale.amount) FROM pharmacy_hot_sale INNER JOIN pharmacy ON pharmacy.id = pharmacy_hot_sale.pharmacy_id  
-                where pharmacy.med_rep_id={user_plan.med_rep_id} AND pharmacy_hot_sale.product_id={user_plan.product_id} 
-                AND pharmacy_hot_sale.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_hot_sale.date<=TO_DATE(:end_date, 'YYYY-MM-DD')""")
-            result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
-            h_sale = result.first()
-            hot_sales = h_sale[0] if h_sale[0] is not None else 0 
-            result = await db.execute(select(DoctorFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
-            fact = 0
-            fact_price = 0
-            for f in result.scalars().all():
-                fact += f.fact
-            result = await db.execute(select(DoctorPostupleniyaFact).join(Doctor).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorPostupleniyaFact.product_id==user_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
-            fact_postupleniya = 0
-            for f in result.scalars().all():
-                fact_postupleniya += f.fact
+            hot_sales = await get_hot_sale(user_plan.med_rep_id, user_plan.product_id, start_date, end_date, db)
+            fact = await get_visit_facts(user_plan.med_rep_id, user_plan.product_id, start_date, end_date, db)
+            fact_postupleniya = await get_postupleniya_facts(user_plan.med_rep_id, user_plan.product_id, start_date, end_date, db)
             user_plan_data.append({
                 "id": user_plan.id,
                 "product": user_plan.product.name,
@@ -213,7 +197,6 @@ async def get_medical_representatives(month_number: int | None = None, start_dat
                 "fact_postupleniya_price": fact_postupleniya * user_plan.product.price,
                 "vakant": user_plan.current_amount,
                 "vakant_price": user_plan.current_amount * user_plan.product.price,
-
             })
         med_rep = {
             'id': user.id,

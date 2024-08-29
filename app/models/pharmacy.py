@@ -218,6 +218,7 @@ class Reservation(Base):
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
     discountable = Column(Boolean)
+    returned_price = Column(Float, default=0)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
     total_payable = Column(Float)
@@ -307,6 +308,11 @@ class Reservation(Base):
 
     async def pay_reservation(self, db: AsyncSession, **kwargs):
         try:
+            year = datetime.now().year
+            month_number = datetime.now().month
+            num_days = calendar.monthrange(year, month_number)[1]
+            start_date = datetime(year, month_number, 1)
+            end_date = datetime(year, month_number, num_days, 23, 59)
             query = text(f'SELECT product_id FROM reservation_products WHERE reservation_id={self.id}')
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
@@ -316,6 +322,10 @@ class Reservation(Base):
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
+                result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date>=end_date))
+                doctor_monthly_plan = result.scalars().first()
+                if not doctor_monthly_plan:
+                    raise HTTPException(status_code=404, detail=f"There is no doctor plan whith this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
                 self.debt -= obj['amount'] * obj['quantity']
                 self.profit += obj['amount'] * obj['quantity']
                 reservation = ReservationPayedAmounts(
@@ -371,6 +381,7 @@ class Reservation(Base):
             self.total_quantity -= quantity
             self.total_amount -= minus_price
             self.total_payable -= minus_price_with_discount
+            self.returned_price += round(minus_price_with_discount + minus_price_with_discount * 0.12)
             self.total_payable_with_nds -= round(minus_price_with_discount + minus_price_with_discount * 0.12)
             self.debt -= round(minus_price_with_discount + minus_price_with_discount * 0.12)
             await db.commit()

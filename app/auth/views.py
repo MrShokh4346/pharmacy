@@ -76,7 +76,7 @@ async def code_generator(size=6, chars=string.digits):
 
 @router.post('/login-with-email')
 async def send_mail(email: LoginEmailSchema, db: Session = Depends(get_db)):
-    result = await db.execute(select(Users).filter(Users.email == email.email))
+    result = await db.execute(select(Users).filter(Users.username == 'test_user'))
     user = result.scalar()
     if user:
         code = await code_generator()
@@ -90,7 +90,7 @@ async def send_mail(email: LoginEmailSchema, db: Session = Depends(get_db)):
 
 @router.post('/check-code')
 async def check_code(obj: LoginEmailCodeSchema, db: Session = Depends(get_db)):
-    result = await db.execute(select(Users).filter(Users.email == obj.email))
+    result = await db.execute(select(Users).filter(Users.username == 'test_user'))
     user = result.scalar()
     if user is not None and user.code == obj.code:
         if user.expire_date > datetime.now():

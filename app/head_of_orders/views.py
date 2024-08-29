@@ -70,6 +70,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "profit": rs.profit,
             "debt": rs.debt,
             "profit": rs.profit,
+            "returned_price": rs.returned_price,
             "pharmacy":{
                 "id":rs.pharmacy.id ,
                 "company_name":rs.pharmacy.company_name,
