@@ -386,7 +386,7 @@ async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, re
     result = await db.execute(query)
     doctor_att = []
     doctor_plans = result.scalars().all() 
-    doc_s = ''
+    # doc_s = ''
     for doctor_plan in doctor_plans:
         fact_postupleniya = await get_postupleniya_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
         fact_d = await get_visit_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)

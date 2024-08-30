@@ -153,7 +153,7 @@ class DoctorProductPlanOutSchema(BaseModel):
     id: int 
     product: ProductSchema 
     monthly_plan: int 
-    postupleniya: int
+    postupleniya: Optional[int] = None
     date: datetime 
 
 

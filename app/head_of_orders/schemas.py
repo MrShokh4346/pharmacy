@@ -82,9 +82,17 @@ class PayReservtionSchema(BaseModel):
     description: Optional[str] = None 
 
 
+class PayHospitalReservtion(BaseModel):
+    amount: int 
+    quantity: int
+    bonus: Optional[bool] = True 
+    month_number: Annotated[int, Path(title="", gt=0, le=12)] 
+    product_id: int 
+
 
 class PayHospitalReservtionSchema(BaseModel):
-    amount: int  
+    objects: List[PayHospitalReservtion] 
+    total: int
     description: Optional[str] = None 
 
 

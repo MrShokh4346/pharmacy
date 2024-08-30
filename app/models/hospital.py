@@ -271,9 +271,9 @@ class HospitalReservation(Base):
                 if self.debt < 0:
                     raise HTTPException(status_code=400, detail=f"This reservation already chacked")
                 else:
-                    await HospitalPostupleniyaFact.set_fact(product_id=obj['product_id'], hospital_id=obj['hospital_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await HospitalPostupleniyaFact.set_fact(product_id=obj['product_id'], hospital_id=self.hospital_id, compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                     if reservation.bonus == True:
-                        await Bonus.set_bonus(product_id=obj['product_id'], hospital_id=obj['hospital_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                        await HospitalBonus.set_bonus(product_id=obj['product_id'], hospital_id=self.hospital_id, product_quantity=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
