@@ -390,6 +390,7 @@ class HospitalPostupleniyaFact(Base):
 
     id = Column(Integer, primary_key=True)
     fact = Column(Integer)
+    fact_price = Column(Integer, default=0)
     price = Column(Integer)
     discount_price = Column(Integer)
     date = Column(DateTime, default=datetime.now())
@@ -409,8 +410,9 @@ class HospitalPostupleniyaFact(Base):
         result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
-            month_fact = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
+            month_fact = cls(fact_price = kwargs['fact_price'], hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['compleated']
+            month_fact.fact_price += kwargs['fact_price']
         # await Bonus.set_bonus(**kwargs, db=db)

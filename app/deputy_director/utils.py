@@ -18,9 +18,10 @@ async def get_visit_facts(doctor_id: int, product_id: int, start_date: datetime,
     return fact[0] if fact[0] is not None else 0 
 
 async def get_postupleniya_facts(doctor_id: int, product_id: int, start_date: datetime, end_date: datetime, db: AsyncSession):
-    query = text(f"""SELECT sum(doctor_postupleniya_fact.fact) FROM doctor_postupleniya_fact where doctor_postupleniya_fact.doctor_id={doctor_id} AND doctor_postupleniya_fact.product_id={product_id} 
+    query = text(f"""SELECT sum(doctor_postupleniya_fact.fact), sum(doctor_postupleniya_fact.fact_price) FROM doctor_postupleniya_fact where doctor_postupleniya_fact.doctor_id={doctor_id} AND doctor_postupleniya_fact.product_id={product_id} 
         AND doctor_postupleniya_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND doctor_postupleniya_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD')""")
     result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
     fact = result.first()
     # print(f"Filter postupleniya: doctor_id: {doctor_id}, soni: {fact[0] if fact[0] is not None else 0}")
-    return fact[0] if fact[0] is not None else 0 
+    return (fact[0] if fact[0] is not None else 0, fact[1] if fact[1] is not None else 0)
+

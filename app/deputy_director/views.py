@@ -166,17 +166,9 @@ async def add_user_products_plan(med_rep_id: int, month_number: int | None = Non
 
 
 @router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
-async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
-    if start_date is None or end_date is None:
-        raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="month_number or start_date / end_date should be exists"
-                )
+async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
@@ -191,18 +183,12 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
         for doctor_plan in doctor_plans:
             result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==user_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
             bonus = result.scalars().first()
-            result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==user_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
-            fact_d = 0
-            for f in result.scalars().all():
-                fact_d += f.fact
-            result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==doctor_plan.doctor_id, DoctorPostupleniyaFact.product_id==doctor_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
-            fact_postupleniya = 0
-            for f in result.scalars().all():
-                fact_postupleniya += f.fact
+            fact_d = await get_visit_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
+            fact_postupleniya = await get_postupleniya_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
             doctor_att.append({
                 'monthly_plan' : doctor_plan.monthly_plan,
                 'fact' : fact_d,
-                'fact_postupleniya': fact_postupleniya,
+                'fact_postupleniya': fact_postupleniya[0],
                 'doctor_name' : doctor_plan.doctor.full_name,
                 'doctor_id' : doctor_plan.doctor.id,
                 'bonus': bonus.amount if bonus else None
@@ -214,7 +200,7 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
         result = await db.execute(select(PharmacyHotSale).join(Pharmacy).filter(Pharmacy.med_rep_id == user_plan.med_rep_id, PharmacyHotSale.product_id==user_plan.product_id))
         hot_sales = [{"company_name": hot_sale.pharmacy.company_name, "company_id": hot_sale.pharmacy.id, "sale": hot_sale.amount} for hot_sale in result.scalars().all()]
         result = await db.execute(select(HospitalFact).join(Hospital).filter(Hospital.med_rep_id == user_plan.med_rep_id, HospitalFact.product_id==user_plan.product_id))
-        hospital_facts = [{"hospital_name": hospital_fact.hospital.company_name, "hospital_id": hospital_fact.hospital.id, "fact": hospital_fact.fact} for hospital_fact in result.scalars().all()]
+        hospital_facts = [{"hospital_name": hospital_fact.hospital.company_name, "hospital_id": hospital_fact.hospital.id, "fact": hospital_fact.fact, "hospital_fact_price": hospital_fact.fact * hospital_fact.price} for hospital_fact in result.scalars().all()]
         user_plan_data.append({
             "id": user_plan.id,
             "product": user_plan.product.name,
@@ -237,17 +223,9 @@ async def get_user_product_plan_by_plan_id(med_rep_id: int, month_number: int | 
 
 
 @router.get('/get-med-rep-product-plan-by-month')
-async def get_user_product_plan_by_plan_id(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
-    if start_date is None or end_date is None:
-        raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="month_number or start_date / end_date should be exists"
-                )
+async def get_user_product_plan_by_plan_id(filter_date:StartEndDates, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
     user_plans = result1.scalars().all()
     user_plan_data = []
@@ -290,37 +268,23 @@ async def get_user_product_plan_by_plan_id(month_number: int | None = None, star
 
 
 @router.get('/get-doctor-bonus-by-med-rep-id/{med_rep_id}')
-async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None,  db: AsyncSession = Depends(get_db)):
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
-    if start_date is None or end_date is None:
-        raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="month_number or start_date / end_date should be exists"
-                )
+async def get_doctor_bonus_by_med_rep_id(filter_date:StartEndDates, med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None,  db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     user = await get_or_404(Users, med_rep_id, db)
     query = select(DoctorMonthlyPlan).join(Doctor).join(MedicalOrganization).options(joinedload(DoctorMonthlyPlan.doctor), joinedload(DoctorMonthlyPlan.product)).filter(Doctor.med_rep_id == user.id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
     result = await db.execute(query)
     doctor_att = []
     doctor_plans = result.scalars().all() 
     for doctor_plan in doctor_plans:
-        result = await db.execute(select(DoctorFact).filter(DoctorFact.doctor_id==doctor_plan.doctor_id, DoctorFact.product_id==doctor_plan.product_id, DoctorFact.date >= start_date, DoctorFact.date <= end_date))
-        fact_d = 0
-        for f in result.scalars().all():
-            fact_d += f.fact
+        fact_d = await get_visit_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
         result = await db.execute(select(Bonus).filter(Bonus.doctor_id==doctor_plan.doctor_id, Bonus.product_id==doctor_plan.product_id, Bonus.date >= start_date, Bonus.date <= end_date))
         bonus = result.scalars().first()
-        result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==doctor_plan.doctor_id, DoctorPostupleniyaFact.product_id==doctor_plan.product_id, DoctorPostupleniyaFact.date >= start_date, DoctorPostupleniyaFact.date <= end_date))
-        fact_postupleniya = 0
-        for f in result.scalars().all():
-            fact_postupleniya += f.fact
+        fact_postupleniya = await get_postupleniya_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
         doctor_att.append({
             'monthly_plan' : doctor_plan.monthly_plan,
             'fact' : fact_d,
-            'fact_postupleniya': fact_postupleniya,
+            'fact_postupleniya': fact_postupleniya[0],
             'doctor_name' : doctor_plan.doctor.full_name,
             'doctor_id' : doctor_plan.doctor.id,
             'product_name' : doctor_plan.product.name,
@@ -333,14 +297,9 @@ async def get_doctor_bonus_by_med_rep_id(med_rep_id: int, month_number: int | No
 
 
 @router.get('/get-bonus-by-manufactory')
-async def get_bonus_by_manufactory(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
-    if start_date is None or end_date is None:
-        if month_number is None:
-            month_number = datetime.now().month 
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)  
-        end_date = datetime(year, month_number, num_days, 23, 59)
+async def get_bonus_by_manufactory(filter_date:StartEndDates, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(ManufacturedCompany))
     man_comps = result.scalars().all()
     data = []
@@ -386,7 +345,6 @@ async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, re
     result = await db.execute(query)
     doctor_att = []
     doctor_plans = result.scalars().all() 
-    # doc_s = ''
     for doctor_plan in doctor_plans:
         fact_postupleniya = await get_postupleniya_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
         fact_d = await get_visit_facts(doctor_plan.doctor_id, doctor_plan.product_id, start_date, end_date, db)
@@ -399,8 +357,8 @@ async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, re
             'plan_price' : doctor_plan.monthly_plan * doctor_plan.price ,
             'fact' : fact_d,
             'fact_price' : fact_d * doctor_plan.product.marketing_expenses,
-            'fact_postupleniya' : fact_postupleniya,
-            "fact_postupleniya_price": fact_postupleniya * doctor_plan.product.price,
+            'fact_postupleniya' : fact_postupleniya[0],
+            "fact_postupleniya_price": fact_postupleniya[1],
             'doctor_name' : doctor_plan.doctor.full_name,
             'speciality' : doctor_plan.doctor.speciality.name,
             'medical_organization_name' : doctor_plan.doctor.medical_organization.name,
@@ -413,8 +371,6 @@ async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, re
             'pre_investment' : bonus.pre_investment if bonus else 0
 
         })
-        doc_s+=str(doctor_plan.doctor.id)+'    '+str(doctor_plan.doctor.full_name)+'\n'
-    # print(doc_s)
     return doctor_att
 
 

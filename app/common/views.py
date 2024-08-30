@@ -193,8 +193,8 @@ async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSessi
                 "hot_sales_price": hot_sales * user_plan.product.price,
                 "fact": fact,
                 "fact_price": fact *  user_plan.product.price,
-                "fact_postupleniya": fact_postupleniya,
-                "fact_postupleniya_price": fact_postupleniya * user_plan.product.price,
+                "fact_postupleniya": fact_postupleniya[0],
+                "fact_postupleniya_price": fact_postupleniya[1],
                 "vakant": user_plan.current_amount,
                 "vakant_price": user_plan.current_amount * user_plan.product.price,
             })

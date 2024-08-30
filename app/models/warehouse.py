@@ -295,6 +295,7 @@ class WholesaleReservation(Base):
             current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
             if kwargs['total'] < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
+            
             # if kwargs['total'] > 0:
             #     remaind = kwargs['total'] - self.reailized_debt
             #     self.reailized_debt -= kwargs['total']
@@ -307,6 +308,8 @@ class WholesaleReservation(Base):
             #     if remaind > 0:
             #         for prd in self.wholesale_payed_amounts:
             #             prd.remainder_sum = remaind
+            
+            
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
@@ -332,7 +335,7 @@ class WholesaleReservation(Base):
                             product_id=obj['product_id'],
                             db=db
                             )   
-                await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                await DoctorPostupleniyaFact.set_fact(fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                 await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:

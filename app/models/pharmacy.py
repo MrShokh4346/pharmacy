@@ -226,6 +226,7 @@ class Reservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
+    reailized_debt = Column(Integer, default=0)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
     products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
@@ -319,16 +320,32 @@ class Reservation(Base):
             current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
             if kwargs['total'] < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
+            
+            # if kwargs['total'] > 0:
+            #     remaind = kwargs['total'] - self.reailized_debt
+            #     self.reailized_debt -= kwargs['total']
+            #     if self.reailized_debt < 0:
+            #         self.reailized_debt = 0
+            #     self.debt -= kwargs['total']
+            #     if self.debt < 0:
+            #         self.debt = 0
+            #     self.profit += kwargs['total']
+            #     if remaind > 0:
+            #         for prd in self.wholesale_payed_amounts:
+            #             prd.remainder_sum = remaind
+            
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
                 result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
-                print(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date>=end_date))
                 doctor_monthly_plan = result.scalars().first()
                 if not doctor_monthly_plan:
                     raise HTTPException(status_code=404, detail=f"There is no doctor plan whith this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
                 self.debt -= obj['amount'] * obj['quantity']
                 self.profit += obj['amount'] * obj['quantity']
+
+                # self.reailized_debt += obj['amount'] * obj['quantity']
+
                 reservation = ReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
                                         remainder_sum=kwargs['total'] - current, 
@@ -347,11 +364,11 @@ class Reservation(Base):
                                             db=db
                                             )
                 if self.debt < 0:
-                    raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+                    raise HTTPException(status_code=400, detail=f"Something went wrong")
                 if obj.get('doctor_id') is None:
                     await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
                 else:
-                    await DoctorPostupleniyaFact.set_fact(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await DoctorPostupleniyaFact.set_fact(fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                     if reservation.bonus == True:
                         await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
