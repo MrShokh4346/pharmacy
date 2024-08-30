@@ -85,6 +85,13 @@ class HospitalMonthlyPlan(Base):
             user_plan.current_amount += difference
             if user_plan.current_amount < 0:
                 raise HTTPException(status_code=404, detail="Med rep plan should be grater than 0 for tis product")
+            if self.monthly_plan == 0:
+                result = await db.execute(select(HospitalPostupleniyaFact).filter(HospitalPostupleniyaFact.hospital_id==self.hospital_id, HospitalPostupleniyaFact.product_id==self.product_id))
+                postupleniya = result.scalars().first()
+                if postupleniya:
+                    raise HTTPException(status_code=400, detail="There is postuplenuya fact whith this product in this hospital")
+                query = f"delete from hospital_monthly_plan WHERE id={self.id}"
+                result = await db.execute(text(query))
             db.add(self)
             await db.commit()
             await db.refresh(self)

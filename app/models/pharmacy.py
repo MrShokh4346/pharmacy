@@ -322,7 +322,8 @@ class Reservation(Base):
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date>=end_date))
+                result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+                print(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date>=end_date))
                 doctor_monthly_plan = result.scalars().first()
                 if not doctor_monthly_plan:
                     raise HTTPException(status_code=404, detail=f"There is no doctor plan whith this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")

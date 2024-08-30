@@ -50,7 +50,8 @@ async def attach_products_to_hospital(hospital_id: int, user_id: int, objects: A
     user = await get_or_404(Users, user_id, db)
     hospital_products = []
     year = datetime.now().year
-    month = datetime.now().month
+    # month = datetime.now().month
+    month = objects.month
     num_days = calendar.monthrange(year, month)[1]
     start_date = datetime(year, month, 1)  
     end_date = datetime(year, month, num_days, 23, 59)
@@ -60,7 +61,7 @@ async def attach_products_to_hospital(hospital_id: int, user_id: int, objects: A
         if hospital_plan is not None:
             raise HTTPException(status_code=404, detail='This product already attached to hospital plan for this month')
         product = await get_or_404(Products, obj.product_id, db)
-        hospital_products.append(HospitalMonthlyPlan(**obj.dict(), hospital_id=hospital_id, price=product.price, discount_price=product.discount_price))
+        hospital_products.append(HospitalMonthlyPlan(**obj.dict(), date=start_date, hospital_id=hospital_id, price=product.price, discount_price=product.discount_price))
         result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
         user_product = result.scalars().first()
         if user_product is None:
