@@ -146,5 +146,5 @@ class ReservationHistorySchema(BaseModel):
     amount: int 
     description: Optional[str] = None
     date: date 
-    product: ProductSchema
-    doctor: DoctorSchema
+    product: Optional[ProductSchema] = None
+    doctor: Optional[DoctorSchema] = None

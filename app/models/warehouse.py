@@ -157,6 +157,7 @@ class WholesaleReservationPayedAmounts(Base):
     remainder_sum = Column(Integer, default=0)
     quantity = Column(Integer)
     description = Column(String)
+    payed = Column(Boolean, default=False)
     date = Column(DateTime, default=date.today())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("Products", cascade="all, delete", backref="wholesale_payed_amounts", lazy='selectin')
@@ -293,32 +294,44 @@ class WholesaleReservation(Base):
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
             current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
-            if kwargs['total'] < current:   
-                raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
+            # if kwargs['total'] < current:   
+            #     raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
             
-            # if kwargs['total'] > 0:
-            #     remaind = kwargs['total'] - self.reailized_debt
-            #     self.reailized_debt -= kwargs['total']
-            #     if self.reailized_debt < 0:
-            #         self.reailized_debt = 0
-            #     self.debt -= kwargs['total']
-            #     if self.debt < 0:
-            #         self.debt = 0
-            #     self.profit += kwargs['total']
-            #     if remaind > 0:
-            #         for prd in self.wholesale_payed_amounts:
-            #             prd.remainder_sum = remaind
+            # agar pul tulansa pulni uzini saqlaydi, hechqaysi obyektga bog'lamasdan, historyda faqat tulangan summa ko'rinishi uchun
+            if kwargs['total'] > 0:
+                remaind = kwargs['total'] - self.reailized_debt
+                self.reailized_debt -= kwargs['total']
+                if self.reailized_debt < 0:
+                    self.reailized_debt = 0
+                self.debt -= kwargs['total']
+                if self.debt < 0:
+                    self.debt = 0
+                self.profit += kwargs['total']
+                if remaind > 0:
+                    for prd in self.wholesale_payed_amounts:
+                        prd.remainder_sum = remaind
+                reservation = WholesaleReservationPayedAmounts(
+                        total_sum=kwargs['total'], 
+                        amount=kwargs['total'],
+                        description=kwargs['description'], 
+                        reservation_id=self.id, 
+                        payed=True
+                        )
+                await reservation.save(db)
+                await db.commit()
             
             
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                self.debt -= obj['amount'] * obj['quantity']
-                self.profit += obj['amount'] * obj['quantity']
-                # self.reailized_debt += obj['amount'] * obj['quantity']
+                # self.debt -= obj['amount'] * obj['quantity']
+                # self.profit += obj['amount'] * obj['quantity']
+                self.reailized_debt += obj['amount'] * obj['quantity']
+
+                # agar pul kiritmasdan dorilarni kiritsa doctorga fact va bonus yozadi
                 reservation = WholesaleReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
-                                        remainder_sum=kwargs['total'] - current, 
+                                        # remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'],
                                         quantity=obj['quantity'], 
                                         description=kwargs['description'], 

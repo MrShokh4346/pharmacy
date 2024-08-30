@@ -226,7 +226,6 @@ class Reservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
-    reailized_debt = Column(Integer, default=0)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
     products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')

@@ -108,7 +108,7 @@ async def get_hospital_reservation(reservation_id: int, db: AsyncSession = Depen
 
 @router.get('/get-wholesale-reservation-history/{reservation_id}', response_model=List[ReservationHistorySchema])
 async def get_reservation_history(reservation_id: int, db: AsyncSession = Depends(get_db)):
-    history = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id))
+    history = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id, WholesaleReservationPayedAmounts.payed==True))
     return history.scalars().all()
 
 
