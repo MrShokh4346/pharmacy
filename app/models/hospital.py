@@ -94,7 +94,6 @@ class HospitalMonthlyPlan(Base):
                 result = await db.execute(text(query))
             db.add(self)
             await db.commit()
-            await db.refresh(self)
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 

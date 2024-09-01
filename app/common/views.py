@@ -210,16 +210,11 @@ async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSessi
 
 
 @router.get('/get-all_plan_sum')
-async def get_all_plan_sum(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
-    if start_date is None or end_date is None:
-        if month_number is None:
-            month_number = datetime.now().month 
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)  
-        end_date = datetime(year, month_number, num_days, 23, 59)
+async def get_all_plan_sum(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     query = text(f"""SELECT sum(user_product_plan.amount*user_product_plan.price), sum(user_product_plan.amount) from user_product_plan 
-                where user_product_plan.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND user_product_plan.date<=TO_DATE(:end_date, 'YYYY-MM-DD')""")
+                where user_product_plan.plan_month>=TO_DATE(:start_date, 'YYYY-MM-DD') AND user_product_plan.plan_month<=TO_DATE(:end_date, 'YYYY-MM-DD')""")
     result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
     plan_sum = result.first()
     data_dict = {
