@@ -92,3 +92,6 @@
 
 -- SELECT update_postupleniya_hospital()
 
+
+
+

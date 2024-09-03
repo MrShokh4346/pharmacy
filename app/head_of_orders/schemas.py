@@ -106,8 +106,8 @@ class PayWholesaleReservtionDoctors(BaseModel):
 
 
 class PayWholesaleReservtionSchema(BaseModel):
-    med_rep_id: int 
-    pharmacy_id: int 
+    med_rep_id: Optional[int] = 0  
+    pharmacy_id: Optional[int] = 0  
     total: Optional[int] = 0 
     objects: Optional[List[PayWholesaleReservtionDoctors]] = []
     description: Optional[str] = None 

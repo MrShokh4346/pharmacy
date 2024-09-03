@@ -169,6 +169,7 @@ async def add_user_products_plan(med_rep_id: int, month_number: int | None = Non
 async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']
+    print(start_date, end_date)
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
@@ -197,9 +198,9 @@ async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_i
             fact_price += fact_d *  user_plan.product.price
             fact_p += fact_d 
         
-        result = await db.execute(select(PharmacyHotSale).join(Pharmacy).filter(Pharmacy.med_rep_id == user_plan.med_rep_id, PharmacyHotSale.product_id==user_plan.product_id))
+        result = await db.execute(select(PharmacyHotSale).join(Pharmacy).filter(Pharmacy.med_rep_id == user_plan.med_rep_id, PharmacyHotSale.product_id==user_plan.product_id, PharmacyHotSale.date >= start_date, PharmacyHotSale.date <= end_date))
         hot_sales = [{"company_name": hot_sale.pharmacy.company_name, "company_id": hot_sale.pharmacy.id, "sale": hot_sale.amount} for hot_sale in result.scalars().all()]
-        result = await db.execute(select(HospitalFact).join(Hospital).filter(Hospital.med_rep_id == user_plan.med_rep_id, HospitalFact.product_id==user_plan.product_id))
+        result = await db.execute(select(HospitalFact).join(Hospital).filter(Hospital.med_rep_id == user_plan.med_rep_id, HospitalFact.product_id==user_plan.product_id, HospitalFact.date >= start_date, HospitalFact.date <= end_date))
         hospital_facts = [{"hospital_name": hospital_fact.hospital.company_name, "hospital_id": hospital_fact.hospital.id, "fact": hospital_fact.fact, "hospital_fact_price": hospital_fact.fact * hospital_fact.price} for hospital_fact in result.scalars().all()]
         user_plan_data.append({
             "id": user_plan.id,

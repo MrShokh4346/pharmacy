@@ -13,6 +13,7 @@ from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import selectinload
 from sqlalchemy import update, text 
+from common_depetencies import StartEndDates
 
 
 router = FastAPI()
@@ -54,9 +55,11 @@ async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
 
 
 @router.get('/get-all-reservations')
-async def get_reservation(db: AsyncSession = Depends(get_db)):
+async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     data = []
-    result = await db.execute(select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)))
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)).filter(Reservation.date>=start_date, Reservation.date<=end_date))
     for rs in result.scalars().all():
         promo = 0
         for pr in rs.products:
@@ -69,6 +72,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
             "debt": rs.debt,
+            "prosrochenniy_debt": rs.prosrochenniy_debt,
             "profit": rs.profit,
             "returned_price": rs.returned_price,
             "pharmacy":{
@@ -84,7 +88,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "total_payable_with_nds":rs.total_payable_with_nds,
             "checked":rs.checked
             })
-    result = await db.execute(select(HospitalReservation).options(selectinload(HospitalReservation.products)))
+    result = await db.execute(select(HospitalReservation).options(selectinload(HospitalReservation.products)).filter(HospitalReservation.date>=start_date, HospitalReservation.date<=end_date))
     # data.extend(result.scalars().all())
     for rs in result.scalars().all():
         promo = 0
@@ -98,6 +102,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
             "debt": rs.debt,
+            "prosrochenniy_debt": rs.prosrochenniy_debt,
             "profit": rs.profit,
             "hospital":{
                 "id":rs.hospital.id ,
@@ -112,7 +117,7 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "total_payable_with_nds":rs.total_payable_with_nds,
             "checked":rs.checked
         })
-    result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.products)))
+    result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.products)).filter(WholesaleReservation.date>=start_date, WholesaleReservation.date<=end_date))
     for rs in result.scalars().all():
         promo = 0
         for pr in rs.products:
@@ -124,7 +129,9 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "date_implementation": rs.date_implementation,
             "invoice_number": rs.invoice_number,
             "profit": rs.profit,
+            "prosrochenniy_debt": rs.prosrochenniy_debt,
             "debt": rs.debt,
+            "reailized_debt": rs.reailized_debt,
             "profit": rs.profit,
             "wholesale":{
                 "id":rs.wholesale.id ,
@@ -138,6 +145,100 @@ async def get_reservation(db: AsyncSession = Depends(get_db)):
             "checked":rs.checked
             })
     return data
+
+
+@router.get('/get-reservations-debt')
+async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    data = []
+    result = await db.execute(select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)).filter(Reservation.debt >=10000, Reservation.date>=start_date, Reservation.date<=end_date))
+    for rs in result.scalars().all():
+        promo = 0
+        for pr in rs.products:
+            promo += pr.product.marketing_expenses * pr.quantity
+        data.append({
+            "id":rs.id,
+            "date":rs.date,
+            "expire_date":rs.expire_date,
+            "date_implementation": rs.date_implementation,
+            "invoice_number": rs.invoice_number,
+            "profit": rs.profit,
+            "debt": rs.debt,
+            "prosrochenniy_debt": rs.prosrochenniy_debt,
+            "profit": rs.profit,
+            "returned_price": rs.returned_price,
+            "pharmacy":{
+                "id":rs.pharmacy.id ,
+                "company_name":rs.pharmacy.company_name,
+                "manufactured_company": rs.manufactured_company.name,
+                "inter_branch_turnover":rs.pharmacy.inter_branch_turnover,
+                "promo":promo,
+                "med_rep":{"id":rs.pharmacy.med_rep.id, "full_name":rs.pharmacy.med_rep.full_name},
+                "region":{"name":rs.pharmacy.region.name }
+                },
+            "discount":rs.discount,
+            "total_payable_with_nds":rs.total_payable_with_nds,
+            "checked":rs.checked
+            })
+    result = await db.execute(select(HospitalReservation).options(selectinload(HospitalReservation.products)).filter(HospitalReservation.debt >=10000, HospitalReservation.date>=start_date, HospitalReservation.date<=end_date))
+    # data.extend(result.scalars().all())
+    for rs in result.scalars().all():
+        promo = 0
+        for pr in rs.products:
+            promo += pr.product.marketing_expenses * pr.quantity
+        data.append({
+            "id":rs.id,
+            "date":rs.date,
+            "expire_date":rs.expire_date,
+            "date_implementation": rs.date_implementation,
+            "invoice_number": rs.invoice_number,
+            "profit": rs.profit,
+            "debt": rs.debt,
+            "prosrochenniy_debt": rs.prosrochenniy_debt,
+            "profit": rs.profit,
+            "hospital":{
+                "id":rs.hospital.id ,
+                "company_name":rs.hospital.company_name,
+                "manufactured_company": rs.manufactured_company.name,
+                "promo":promo,
+                "inter_branch_turnover":rs.hospital.inter_branch_turnover,
+                "med_rep":{"id":rs.hospital.med_rep.id, "full_name":rs.hospital.med_rep.full_name},
+                "region":{"name": rs.hospital.region.name} 
+                },
+            "discount":rs.discount,
+            "total_payable_with_nds":rs.total_payable_with_nds,
+            "checked":rs.checked
+        })
+    result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.products)).filter(WholesaleReservation.debt >=10000, WholesaleReservation.date>=start_date, WholesaleReservation.date<=end_date))
+    for rs in result.scalars().all():
+        promo = 0
+        for pr in rs.products:
+            promo += pr.product.marketing_expenses * pr.quantity
+        data.append({
+            "id":rs.id,
+            "date":rs.date,
+            "expire_date":rs.expire_date,
+            "date_implementation": rs.date_implementation,
+            "invoice_number": rs.invoice_number,
+            "profit": rs.profit,
+            "debt": rs.debt,
+            "prosrochenniy_debt": rs.prosrochenniy_debt,
+            "reailized_debt": rs.reailized_debt,
+            "profit": rs.profit,
+            "wholesale":{
+                "id":rs.wholesale.id ,
+                "company_name":rs.wholesale.name,
+                "manufactured_company": rs.manufactured_company.name,
+                "promo":promo,
+                "region":{"name":rs.wholesale.region.name }
+                },
+            "discount":rs.discount,
+            "total_payable_with_nds":rs.total_payable_with_nds,
+            "checked":rs.checked
+            })
+    return data
+
 
 
 @router.post('/check-reservation/{reservation_id}')
