@@ -15,22 +15,16 @@ async def delete_expired_objects():
             async with session.begin():
                 query = "delete from reservation WHERE expire_date <= now() and checked='0'"
                 query2 = "delete from hospital_reservation WHERE expire_date <= now() and checked='0'"
+                query3 = "delete from wholesale_reservation WHERE expire_date <= now() and checked='0'"
+                query4 = "update wholesale_reservation set prosrochenniy_debt='1' where expire_date <= now() and checked='0' and debt >= 10000"
+                query5 = "update hospital_reservation set prosrochenniy_debt='1' where expire_date <= now() and checked='0' and debt >= 10000"
+                query6 = "update reservation set prosrochenniy_debt='1' where expire_date <= now() and checked='0' and debt >= 10000"
                       
                 result = await session.execute(text(query))
                 result = await session.execute(text(query2))
+                result = await session.execute(text(query3))
+                result = await session.execute(text(query4))
+                result = await session.execute(text(query5))
+                result = await session.execute(text(query6))
 
-
-            #     result = await session.execute(
-            #         select(Reservation).filter(Reservation.expire_date < datetime.now(), Reservation.checked == False)
-            #     )
-            #     reservations = result.scalars().all()
-            #     for reservation in reservations:
-            #         await session.delete(reservation)
-            #     result1 = await session.execute(
-            #         select(HospitalReservation).filter(HospitalReservation.expire_date < datetime.now(), HospitalReservation.checked == False)
-            #     )
-            #     h_reservations = result1.scalars().all()
-            #     for reservation in h_reservations:
-            #         await session.delete(reservation)
-            # await session.commit()
         await asyncio.sleep(86400)
