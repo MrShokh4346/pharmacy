@@ -127,13 +127,13 @@ class DoctorMonthlyPlan(Base):
     async def update(self, amount: int, db: AsyncSession):
         try:
             year = datetime.now().year
-            month = datetime.now().month  
+            month = self.date.month  
             num_days = calendar.monthrange(year, month)[1]
             start_date = datetime(year, month, 1)  
             end_date = datetime(year, month, num_days, 23, 59)
             difference = self.monthly_plan - amount
             self.monthly_plan = amount
-            result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==self.doctor.med_rep_id, UserProductPlan.product_id==self.product_id, UserProductPlan.date>=start_date, UserProductPlan.date<=end_date))
+            result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==self.doctor.med_rep_id, UserProductPlan.product_id==self.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
             user_plan = result.scalars().first()
             user_plan.current_amount += difference
             if user_plan.current_amount < 0:

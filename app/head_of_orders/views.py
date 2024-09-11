@@ -148,11 +148,17 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
 
 
 @router.get('/get-reservations-debt')
-async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
-    start_date = filter_date['start_date']
-    end_date = filter_date['end_date']
+async def get_reservation(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
+    if month_number:
+        year = datetime.now().year
+        num_days = calendar.monthrange(year, month_number)[1]
+        start_date = datetime(year, month_number, 1)
+        end_date = datetime(year, month_number, num_days, 23, 59)
     data = []
-    result = await db.execute(select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)).filter(Reservation.debt >=10000, Reservation.date>=start_date, Reservation.date<=end_date))
+    query = select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)).filter(Reservation.debt >=10000, Reservation.checked ==True)
+    if (start_date is not None) and (end_date is not None): 
+        query = query.filter(Reservation.date>=start_date, Reservation.date<=end_date)
+    result = await db.execute(query)
     for rs in result.scalars().all():
         promo = 0
         for pr in rs.products:
@@ -181,7 +187,10 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
             "total_payable_with_nds":rs.total_payable_with_nds,
             "checked":rs.checked
             })
-    result = await db.execute(select(HospitalReservation).options(selectinload(HospitalReservation.products)).filter(HospitalReservation.debt >=10000, HospitalReservation.date>=start_date, HospitalReservation.date<=end_date))
+    query = select(HospitalReservation).options(selectinload(HospitalReservation.products), selectinload(HospitalReservation.manufactured_company)).filter(HospitalReservation.debt >=10000, HospitalReservation.checked ==True)
+    if (start_date is not None) and (end_date is not None): 
+        query = query.filter(HospitalReservation.date>=start_date, HospitalReservation.date<=end_date)
+    result = await db.execute(query)
     # data.extend(result.scalars().all())
     for rs in result.scalars().all():
         promo = 0
@@ -210,7 +219,10 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
             "total_payable_with_nds":rs.total_payable_with_nds,
             "checked":rs.checked
         })
-    result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.products)).filter(WholesaleReservation.debt >=10000, WholesaleReservation.date>=start_date, WholesaleReservation.date<=end_date))
+    query = select(WholesaleReservation).options(selectinload(WholesaleReservation.products), selectinload(WholesaleReservation.manufactured_company)).filter(WholesaleReservation.debt >=10000, WholesaleReservation.checked ==True)
+    if (start_date is not None) and (end_date is not None): 
+        query = query.filter(WholesaleReservation.date>=start_date, WholesaleReservation.date<=end_date)
+    result = await db.execute(query)
     for rs in result.scalars().all():
         promo = 0
         for pr in rs.products:
@@ -238,7 +250,6 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
             "checked":rs.checked
             })
     return data
-
 
 
 @router.post('/check-reservation/{reservation_id}')
