@@ -169,7 +169,6 @@ async def add_user_products_plan(med_rep_id: int, month_number: int | None = Non
 async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']
-    print(start_date, end_date)
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []

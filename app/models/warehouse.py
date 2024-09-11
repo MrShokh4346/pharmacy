@@ -299,6 +299,7 @@ class WholesaleReservation(Base):
             #     raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
             
             # agar pul tulansa pulni uzini saqlaydi, hechqaysi obyektga bog'lamasdan, historyda faqat tulangan summa ko'rinishi uchun
+            remaind = None
             if kwargs['total'] > 0:
                 remaind = kwargs['total'] - self.reailized_debt
                 self.reailized_debt -= kwargs['total']
@@ -328,6 +329,8 @@ class WholesaleReservation(Base):
                 # self.debt -= obj['amount'] * obj['quantity']
                 # self.profit += obj['amount'] * obj['quantity']
                 self.reailized_debt += obj['amount'] * obj['quantity']
+                # if remaind in not None:
+                    
 
                 # agar pul kiritmasdan dorilarni kiritsa doctorga fact va bonus yozadi
                 reservation = WholesaleReservationPayedAmounts(
