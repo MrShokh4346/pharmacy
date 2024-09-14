@@ -221,7 +221,7 @@ class DoctorPostupleniyaFact(Base):
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
-            month_fact = cls(date=start_date, fact_price=kwargs['fact_price'], doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
+            month_fact = cls(date=start_date, fact_price=kwargs['fact_price'], doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=kwargs['price'])
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['compleated']

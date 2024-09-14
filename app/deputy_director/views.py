@@ -173,8 +173,10 @@ async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_i
     result1 = await db.execute(select(UserProductPlan).filter(UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==med_rep_id))
     user_plans = result1.scalars().all()
     user_plan_data = []
-    fact = 0
-    fact_price = 0
+    fact_realizatsiya = 0
+    fact_realizatsiya_price = 0
+    fact_postupleniya_amount = 0
+    fact_postupleniya_price = 0
     for user_plan in user_plans:
         query = select(DoctorMonthlyPlan).join(Doctor).options(joinedload(DoctorMonthlyPlan.doctor)).filter(Doctor.med_rep_id == user_plan.med_rep_id, DoctorMonthlyPlan.product_id == user_plan.product_id, DoctorMonthlyPlan.date >= start_date, DoctorMonthlyPlan.date <= end_date)
         result = await db.execute(query)
@@ -190,12 +192,15 @@ async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_i
                 'monthly_plan' : doctor_plan.monthly_plan,
                 'fact' : fact_d,
                 'fact_postupleniya': fact_postupleniya[0],
+                'fact_postupleniya_price': fact_postupleniya[1],
                 'doctor_name' : doctor_plan.doctor.full_name,
                 'doctor_id' : doctor_plan.doctor.id,
                 'bonus': bonus.amount if bonus else None
             })
-            fact +=  fact_d
-            fact_price += fact_d *  user_plan.product.price
+            fact_realizatsiya +=  fact_d
+            fact_postupleniya_amount += fact_postupleniya[0]
+            fact_postupleniya_price += fact_postupleniya[1]
+            fact_realizatsiya_price += fact_d *  user_plan.product.price
             fact_p += fact_d 
         
         result = await db.execute(select(PharmacyHotSale).join(Pharmacy).filter(Pharmacy.med_rep_id == user_plan.med_rep_id, PharmacyHotSale.product_id==user_plan.product_id, PharmacyHotSale.date >= start_date, PharmacyHotSale.date <= end_date))
@@ -217,8 +222,10 @@ async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_i
         })
     data = {
         'plan' : user_plan_data,
-        'fact' : fact,
-        'fact_price' : fact_price
+        'fact' : fact_realizatsiya,
+        'fact_price' : fact_realizatsiya_price,
+        'fact_postupleniya' : fact_postupleniya_amount,
+        'fact_postupleniya_price' : fact_postupleniya_price,
     }
     return data
 
@@ -357,7 +364,7 @@ async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, re
             'region': doctor_plan.doctor.medical_organization.region.name,
             'plan_price' : doctor_plan.monthly_plan * doctor_plan.price ,
             'fact' : fact_d,
-            'fact_price' : fact_d * doctor_plan.product.marketing_expenses,
+            'fact_price' : fact_d * doctor_plan.product.price,
             'fact_postupleniya' : fact_postupleniya[0],
             "fact_postupleniya_price": fact_postupleniya[1],
             'doctor_name' : doctor_plan.doctor.full_name,
