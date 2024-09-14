@@ -4,17 +4,18 @@ from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
 from models.dependencies import create_access_token, simple_send
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import *
 from models.database import get_db
 from sqlalchemy.future import select
 import string
+from common_depetencies import StartEndDates
 import random
 
 router = APIRouter()
 
 
-async def authenticate_user(db: Session, username: str, password: str):
+async def authenticate_user(db: AsyncSession, username: str, password: str):
     result = await db.execute(select(Users).filter(Users.username == username))
     user = result.scalar()
     if not user:
@@ -25,7 +26,7 @@ async def authenticate_user(db: Session, username: str, password: str):
 
 
 @router.post("/login")
-async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db)) -> TokenSchema:
+async def login_for_access_token(user: LoginSchema, db: AsyncSession = Depends(get_db)) -> TokenSchema:
     user = await authenticate_user(db, user.username, user.password)
     if not user:
         raise HTTPException(
@@ -38,7 +39,7 @@ async def login_for_access_token(user: LoginSchema, db: Session = Depends(get_db
 
 
 @router.post('/register')
-async def register_director(user: RegisterSchema, db: Session = Depends(get_db)) -> UserOutSchema:
+async def register_director(user: RegisterSchema, db: AsyncSession = Depends(get_db)) -> UserOutSchema:
     result = await db.execute(select(Users).filter(Users.username == user.username))
     db_user = result.scalar()
     if db_user:
@@ -53,13 +54,13 @@ async def register_director(user: RegisterSchema, db: Session = Depends(get_db))
 
 
 # @router.get('/getuser/{user_id}')
-# async def get_user_by_id(user_id: int, db: Session = Depends(get_db)) -> UserOutSchema:
+# async def get_user_by_id(user_id: int, db: AsyncSession = Depends(get_db)) -> UserOutSchema:
 #     db_user = db.query(Users).filter(Users.id == user_id).first()
 #     return UserOutSchema(**db_user.__dict__)
 
 
 # @router.put('/update-user/{user_id}')
-# async def update_user(user: UpdateUserSchema, user_id: int, db: Session = Depends(get_db)) -> UserOutSchema:
+# async def update_user(user: UpdateUserSchema, user_id: int, db: AsyncSession = Depends(get_db)) -> UserOutSchema:
 #     db_user = db.query(Users).filter(Users.id == user_id).first()
 #     if not db_user:
 #         raise HTTPException(
@@ -75,7 +76,7 @@ async def code_generator(size=6, chars=string.digits):
 
 
 @router.post('/login-with-email')
-async def send_mail(email: LoginEmailSchema, db: Session = Depends(get_db)):
+async def send_mail(email: LoginEmailSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Users).filter(Users.username == 'test_user'))
     user = result.scalar()
     if user:
@@ -89,7 +90,7 @@ async def send_mail(email: LoginEmailSchema, db: Session = Depends(get_db)):
 
 
 @router.post('/check-code')
-async def check_code(obj: LoginEmailCodeSchema, db: Session = Depends(get_db)):
+async def check_code(obj: LoginEmailCodeSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Users).filter(Users.username == 'test_user'))
     user = result.scalar()
     if user is not None and user.code == obj.code:
@@ -106,6 +107,41 @@ async def check_code(obj: LoginEmailCodeSchema, db: Session = Depends(get_db)):
         return {"msg": "Wrong code"}
 
 
+@router.post('/login-time-write')
+async def login_time_write(monitoring_data: UserLoginMonitoringSchema, db: AsyncSession = Depends(get_db)):
+    monitoring = UserLoginMonitoring(**monitoring_data.dict())
+    await monitoring.save(db)
+    return {'monitoring_id':monitoring.id}
+
+
+@router.post('/logout-time-write')
+async def logout_time_write(monitoring_data: UserLogoutMonitoringSchema, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(UserLoginMonitoring).filter(UserLoginMonitoring.id==monitoring_data.monitoring_id)) 
+    monitoring = result.scalar()
+    delta = monitoring_data.logout_date - monitoring.login_date
+    await monitoring.update(monitoring_data.logout_date, delta, db)
+    return {'msg':'Success'}
+
+
+@router.get('/get-login-monitoring')
+async def get_login_monitoring(user_id: int | None = None, filter_date: StartEndDates = None, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    query = select(UserLoginMonitoring).filter(UserLoginMonitoring.login_date>=start_date, UserLoginMonitoring.login_date<=end_date)
+    if user_id:
+        query = query.filter(UserLoginMonitoring.user_id==user_id)
+    result = await db.execute(query)
+    data = []
+    for i in result.scalars().all():
+        data.append({
+            'login_date': i.login_date,
+            'logout_date': i.logout_date,
+            'durstion': i.duration,
+            'user_id': i.user_id,
+            'user_full_name': i.user.full_name,
+            'user_status': i.user.status
+        })
+    return data 
 
 
 

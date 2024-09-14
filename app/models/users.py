@@ -434,6 +434,36 @@ class EditablePlanMonths(Base):
     updated_at = Column(DateTime, default=datetime.now())
 
 
+class UserLoginMonitoring(Base):
+    __tablename__ = "user_login_monitoring"
+
+    id = Column(Integer, primary_key=True)
+
+    login_date = Column(DateTime)
+    logout_date = Column(DateTime)
+    duration = Column(String)
+
+    user = relationship("Users", backref="monitoring", lazy='selectin')
+    user_id = Column(Integer, ForeignKey("users.id"))
+
+    async def save(self, db: AsyncSession):
+        try:
+            db.add(self)
+            await db.commit()
+            await db.refresh(self)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, logout_date: datetime, delta: timedelta, db: AsyncSession):
+        try:
+            self.logout_date = logout_date
+            duration = f"{delta.seconds//3600}:{(delta.seconds%3600)//60}:{(delta.seconds%3600)%60}"
+            self.duration = duration
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
 class Users(Base):
     __tablename__ = "users"
 

@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, EmailStr
 from typing import Literal, Optional
 from enum import Enum
 from fastapi import FastAPI, Path
+from datetime import datetime
 
 
 class Status(str, Enum):
@@ -49,3 +50,13 @@ class LoginEmailSchema(BaseModel):
 class LoginEmailCodeSchema(BaseModel):
     email: EmailStr
     code: str
+
+
+class UserLoginMonitoringSchema(BaseModel):
+    login_date: datetime
+    user_id: int 
+
+
+class UserLogoutMonitoringSchema(BaseModel):
+    logout_date: datetime
+    monitoring_id: int 
