@@ -168,7 +168,7 @@ class DoctorFact(Base):
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
         year = datetime.now().year
-        month = datetime.now().month  
+        month = kwargs['visit_date'].month 
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
@@ -176,7 +176,7 @@ class DoctorFact(Base):
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
-            month_fact = cls(doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
+            month_fact = cls(date=kwargs['visit_date'], doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['compleated']
@@ -267,7 +267,7 @@ class Bonus(Base):
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_bonus = result.scalars().first()
         if month_bonus is None:
-            month_bonus = cls(doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=amount)
+            month_bonus = cls(date=start_date, doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=amount)
             db.add(month_bonus)
         else:
             month_bonus.amount += amount

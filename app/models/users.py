@@ -424,6 +424,16 @@ class UserProductPlan(Base):
         product.current_amount -= kwargs['quantity']
 
 
+class EditablePlanMonths(Base):
+    __tablename__ = "editable_plan_months"
+
+    id = Column(Integer, primary_key=True)
+    month = Column(Integer)
+    status = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now())
+    updated_at = Column(DateTime, default=datetime.now())
+
+
 class Users(Base):
     __tablename__ = "users"
 

@@ -18,6 +18,7 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import cast, Date
 import calendar
+from .utils import *
 
 
 router = APIRouter()
@@ -173,6 +174,7 @@ async def get_doctor_attached_products(doctor_id: int, month: int | None = None,
 @router.put('/update-doctor-product-plan/{plan_id}', response_model=DoctorProductPlanOutSchema)
 async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(DoctorMonthlyPlan, plan_id, db)
+    await check_if_plan_is_editable(plan, db)
     await plan.update(amount, db)
     return plan 
 

@@ -145,7 +145,7 @@ async def pharmacy_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSe
     plan = await get_or_404(PharmacyPlan, visit_id, db)
     await plan.update(description=visit.description, status=True, db=db)
     if visit.doctors is not None:
-        fact = await PharmacyFact.save(**visit.dict(), pharmacy_id=plan.pharmacy_id, db=db)
+        fact = await PharmacyFact.save(**visit.dict(), visit_date=plan.date, pharmacy_id=plan.pharmacy_id, db=db)
     return {"msg":"Done"}
 
 

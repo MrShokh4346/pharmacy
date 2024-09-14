@@ -470,7 +470,7 @@ class PharmacyFact(Base):
     async def save(cls, db: AsyncSession, **kwargs):
         try:
             year = datetime.now().year
-            month = datetime.now().month  
+            month = kwargs['visit_date'].month  
             num_days = calendar.monthrange(year, month)[1]
             start_date = datetime(year, month, 1)  
             end_date = datetime(year, month, num_days, 23, 59)
@@ -489,9 +489,9 @@ class PharmacyFact(Base):
                     if not prod:
                         raise HTTPException(status_code=404, detail=f"This product(id={product['product_id']}) is not attached to this doctor(id={doctor['doctor_id']}) for this month")
                     prod.fact =  product['compleated']
-                    p_fact = cls(pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
+                    p_fact = cls(date=kwargs['visit_date'], pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
                     db.add(p_fact)
-                    await DoctorFact.set_fact(pharmacy_id=kwargs['pharmacy_id'], doctor_id=doctor['doctor_id'], product_id=product['product_id'], compleated=product['compleated'], db=db)                    
+                    await DoctorFact.set_fact(visit_date=kwargs['visit_date'], pharmacy_id=kwargs['pharmacy_id'], doctor_id=doctor['doctor_id'], product_id=product['product_id'], compleated=product['compleated'], db=db)                    
                     if product_dict.get(product['product_id']):
                         product_dict[product['product_id']] += product['compleated'] 
                     else:

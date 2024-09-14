@@ -138,6 +138,7 @@ async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession 
 @router.put('/update-user-product-plan/{plan_id}', response_model=UserProductPlanOutSchema)
 async def add_user_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(UserProductPlan, plan_id, db)
+    await check_if_plan_is_editable(plan, db)
     await plan.update(amount, db)
     return plan 
 
