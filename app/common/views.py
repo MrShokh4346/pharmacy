@@ -187,7 +187,7 @@ async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSessi
                 "product": user_plan.product.name,
                 "product_id": user_plan.product.id,
                 "plan_amount": user_plan.amount - user_plan.current_amount,
-                "plan_price" : (user_plan.amount - user_plan.current_amount) * user_plan.product.price,
+                "plan_price" : (user_plan.amount - user_plan.current_amount) * user_plan.price * 1.12,
                 "plan_bonus" : (user_plan.amount - user_plan.current_amount) * user_plan.product.marketing_expenses, 
                 "hot_sales": hot_sales,
                 "hot_sales_price": hot_sales * user_plan.product.price,

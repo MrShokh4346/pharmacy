@@ -122,3 +122,8 @@ class ReservationOutSchema(BaseModel):
     profit: Optional[int] = None 
     debt: Optional[int] = None 
 
+
+class AddReservationProductSchema(BaseModel):
+    product_id: int 
+    quantity: int 
+    reservation_id: int 

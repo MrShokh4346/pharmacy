@@ -418,7 +418,7 @@ class ReservationProducts(Base):
     reservation_discount_price = Column(Integer)
     product = relationship("Products", backref="reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-    reservation = relationship("Reservation", cascade="all, delete", back_populates="products")
+    reservation = relationship("Reservation", cascade="all, delete", back_populates="products", lazy='selectin')
 
     @classmethod
     async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
@@ -428,6 +428,58 @@ class ReservationProducts(Base):
         if quantity < 0:
             raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
         await db.commit()
+
+    @classmethod
+    async def add(cls, db: AsyncSession, **kwargs):
+        try:
+            discount = kwargs['discount']
+            del kwargs['discount']
+            product = await get_or_404(Products, kwargs['product_id'], db)
+            reservation_price = (product.price - product.price * discount / 100) * 1.12
+            res_product = cls(**kwargs, not_payed_quantity=kwargs['quantity'], reservation_price=reservation_price)
+            db.add(res_product)
+            result = await db.execute(select(Reservation).filter(Reservation.id==kwargs['reservation_id']))
+            reservation = result.scalar()
+            difference_sum = round((kwargs['quantity'] * product.price * 1.12) * (100 - discount)/100)
+            reservation.total_quantity += kwargs['quantity']
+            reservation.total_amount += kwargs['quantity'] * product.price
+            reservation.total_payable += round((kwargs['quantity'] * product.price) * (100 - discount)/100)
+            reservation.total_payable_with_nds += difference_sum
+            reservation.debt += difference_sum
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def update(self, db: AsyncSession, **kwargs):
+        try:
+            difference = kwargs['quantity'] - self.quantity
+            self.quantity = kwargs['quantity']
+            self.not_payed_quantity = kwargs['quantity']
+            discount = self.reservation.discount
+            difference_sum = round((difference * self.product.price * 1.12) * (100 - discount)/100)
+            self.reservation.total_quantity += difference
+            self.reservation.total_amount += difference * self.product.price
+            self.reservation.total_payable += round((difference * self.product.price) * (100 - discount)/100)
+            self.reservation.total_payable_with_nds += difference_sum
+            self.reservation.debt += difference_sum
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    async def delete(self, db: AsyncSession, **kwargs):
+        try:
+            query = f"delete from reservation_products WHERE id={self.id}"
+            discount = self.reservation.discount
+            difference_sum = round((self.quantity * self.product.price * 1.12) * (100 - discount)/100)
+            self.reservation.total_quantity -= self.quantity
+            self.reservation.total_amount -= self.quantity * self.product.price
+            self.reservation.total_payable -= round((self.quantity * self.product.price) * (100 - discount)/100)
+            self.reservation.total_payable_with_nds -= difference_sum
+            self.reservation.debt -= difference_sum
+            await db.commit()
+            result = await db.execute(text(query))
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class PharmacyHotSale(Base):

@@ -417,12 +417,12 @@ async def pay_wholesale_pharmacy_reservation(reservation_id: int, obj: PayWholes
 @router.get('/get-pharmacy-reservation-payed-remiainder/{reservation_id}')
 async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
     data = {}
-    reservaion = await get_or_404(Reservation, reservation_id, db)
+    reservation = await get_or_404(Reservation, reservation_id, db)
     result = await db.execute(select(ReservationPayedAmounts).filter(ReservationPayedAmounts.reservation_id==reservation_id).order_by(ReservationPayedAmounts.id.desc()))
     obj = result.scalars().first()
     result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation_id))
     data = {
-        "debt": reservaion.debt,
+        "debt": reservation.debt,
         "remiainder_sum": obj.remainder_sum if obj else 0 ,
         "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.reservation_price} for prd in result.scalars().all()]
     }
@@ -432,12 +432,12 @@ async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: Asy
 @router.get('/get-wholesale-reservation-payed-remiainder/{reservation_id}')
 async def get_wholesale_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
     data = {}
-    reservaion = await get_or_404(WholesaleReservation, reservation_id, db)
+    reservation = await get_or_404(WholesaleReservation, reservation_id, db)
     result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id).order_by(WholesaleReservationPayedAmounts.id.desc()))
     obj = result.scalars().first()
     result = await db.execute(select(WholesaleReservationProducts).filter(WholesaleReservationProducts.reservation_id==reservation_id))
     data = {
-        "debt": reservaion.debt,
+        "debt": reservation.debt,
         "remiainder_sum": obj.remainder_sum if obj else 0 ,
         "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.price} for prd in result.scalars().all()]
     }
@@ -483,3 +483,29 @@ async def return_product_from_reservation(reservation_id: int, product_id: int, 
     await reservation.return_product(product_id, quantity, db)
     return reservation
 
+
+@router.post('/add-reservation-product')
+async def add_reservation_product(obj: AddReservationProductSchema, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, obj.reservation_id, db)
+    if reservation.checked == True:
+        raise HTTPException(status_code=400, detail="This reservation is already checked")
+    await ReservationProducts.add(**obj.dict(), discount=reservation.discount, db=db)
+    return {'msg': 'Success'}
+
+
+@router.put('/update-reservation-product/{reservation_product_id}')
+async def update_reservation_product(reservation_product_id: int, quantity: int, db: AsyncSession = Depends(get_db)):
+    obj = await get_or_404(ReservationProducts, reservation_product_id, db)
+    if obj.reservation.checked == True:
+        raise HTTPException(status_code=400, detail="This reservation is already checked")
+    await obj.update(quantity=quantity, db=db)
+    return {'msg': 'Success'}
+
+
+@router.delete('/delete-reservation-product/{reservation_product_id}')
+async def delete_reservation_product(reservation_product_id: int, db: AsyncSession = Depends(get_db)):
+    obj = await get_or_404(ReservationProducts, reservation_product_id, db)
+    if obj.reservation.checked == True:
+        raise HTTPException(status_code=400, detail="This reservation is already checked")
+    await obj.delete(db)
+    return {'msg': 'Success'}
