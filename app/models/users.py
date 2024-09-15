@@ -441,6 +441,9 @@ class UserLoginMonitoring(Base):
 
     login_date = Column(DateTime)
     logout_date = Column(DateTime)
+    location = Column(String)
+    latitude = Column(String)
+    longitude = Column(String)
     duration = Column(String)
 
     user = relationship("Users", backref="monitoring", lazy='selectin')

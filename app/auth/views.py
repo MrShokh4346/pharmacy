@@ -136,6 +136,9 @@ async def get_login_monitoring(user_id: int | None = None, filter_date: StartEnd
         data.append({
             'login_date': i.login_date,
             'logout_date': i.logout_date,
+            'location': i.location,
+            'latitude': i.latitude,
+            'longitude': i.longitude,
             'durstion': i.duration,
             'user_id': i.user_id,
             'user_full_name': i.user.full_name,

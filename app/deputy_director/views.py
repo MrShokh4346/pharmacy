@@ -213,7 +213,7 @@ async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_i
             "product": user_plan.product.name,
             "product_id": user_plan.product.id,
             "plan_amount": user_plan.amount,
-            "plan_price" : user_plan.amount * user_plan.price * 1.12,
+            "plan_price" : user_plan.amount * user_plan.price * 1.12 * 0.95,
             "date": user_plan.date,
             "doctor_plans": doctor_att,
             "vakant": user_plan.current_amount,
@@ -263,7 +263,7 @@ async def get_user_product_plan_by_plan_id(filter_date:StartEndDates, month_numb
             "product": user_plan.product.name,
             "product_id": user_plan.product.id,
             "plan_amount": user_plan.amount,
-            "plan_price" : user_plan.amount * user_plan.product.price,
+            "plan_price" : user_plan.amount * user_plan.price * 1.12 * 0.95,
             "date": user_plan.date,
             "doctor_plans": doctor_att,
             "vakant": user_plan.current_amount
@@ -363,7 +363,7 @@ async def get_fact(filter_date: StartEndDates, med_rep_id: int | None = None, re
             'monthly_plan' : doctor_plan.monthly_plan,
             'med_rep': doctor_plan.doctor.med_rep.full_name,
             'region': doctor_plan.doctor.medical_organization.region.name,
-            'plan_price' : doctor_plan.monthly_plan * doctor_plan.price * 1.12,
+            'plan_price' : doctor_plan.monthly_plan * doctor_plan.price * 1.12 * 0.95,
             'fact' : fact_d,
             'fact_price' : fact_d * doctor_plan.price,
             'fact_postupleniya' : fact_postupleniya[0],
@@ -472,7 +472,7 @@ async def get_total_plan_fact(
                 "product_id": prod[0],
                 "product_name" : prod[1],
                 "plan": prod[3],
-                "plan_price": float(prod[4]) ,
+                "plan_price": float(prod[4]) * 1.12 * 0.95,
                 "fact": fact[0][0],
                 "fact_price": fact[0][1] 
             })
