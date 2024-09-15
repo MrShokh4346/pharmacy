@@ -125,6 +125,7 @@ async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession 
     end_date = date(year, plan.month, num_days)
     plan_date = date(year, plan.month, day)
     data = plan.dict()
+    await check_if_month_is_addable(data['month'], db)
     del data['month']
     result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==plan.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==plan.med_rep_id))
     user_product = result.scalars().first()
@@ -136,7 +137,7 @@ async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession 
 
 
 @router.put('/update-user-product-plan/{plan_id}', response_model=UserProductPlanOutSchema)
-async def add_user_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
+async def update_user_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(UserProductPlan, plan_id, db)
     await check_if_plan_is_editable(plan, db)
     await plan.update(amount, db)
@@ -144,7 +145,7 @@ async def add_user_product_plan(plan_id: int, amount: int, db: AsyncSession = De
 
 
 @router.delete('/delete-user-product-plan/{plan_id}')
-async def add_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(UserProductPlan, plan_id, db)
     query = f"delete from user_product_plan WHERE id={plan_id}"
     result = await db.execute(text(query))
@@ -154,7 +155,7 @@ async def add_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_db)
 
 
 @router.get('/get-user-products-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])
-async def add_user_products_plan(med_rep_id: int, month_number: int | None = None, db: AsyncSession = Depends(get_db)):
+async def get_user_products_plan(med_rep_id: int, month_number: int | None = None, db: AsyncSession = Depends(get_db)):
     query = select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id)
     if month_number:
         year = datetime.now().year

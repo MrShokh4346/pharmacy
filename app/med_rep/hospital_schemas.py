@@ -92,11 +92,6 @@ class HospitalReservationOutSchema(BaseModel):
     debt: Optional[int] = None 
 
 
-class PayReservtionSchema(BaseModel):
-    amount: int 
-    description: Optional[str] = None 
-
-
 class CheckSchema(BaseModel):
     checked: bool 
 

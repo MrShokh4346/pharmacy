@@ -10,6 +10,7 @@ from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from .users import Products, UserProductPlan
+from .doctors import DoctorFact, DoctorPostupleniyaFact, Bonus
 import calendar
 
 
@@ -106,6 +107,8 @@ class HospitalReservationPayedAmounts(Base):
     total_sum = Column(Integer)
     remainder_sum = Column(Integer)
     bonus = Column(Boolean, default=True)
+    bonus_discount = Column(Integer)
+    doctor_id = Column(Integer)
     quantity = Column(Integer)
     description = Column(String)
     date = Column(DateTime, default=date.today())
@@ -232,59 +235,24 @@ class HospitalReservation(Base):
         self.discount = discount
         await db.commit()
 
-    # async def pay_reservation(self, db: AsyncSession, **kwargs):
-    #     try:
-    #         self.debt -= kwargs['amount']
-    #         self.profit += kwargs['amount']
-    #         reservation = HospitalReservationPayedAmounts(amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
-    #         await reservation.save(db)
-    #         if self.debt < 0:
-    #             raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-    #         await db.commit()
-    #     except IntegrityError as e:
-    #         raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-
     async def pay_reservation(self, db: AsyncSession, **kwargs):
         try:
-            query = text(f'SELECT product_id FROM hospital_reservation_products WHERE reservation_id={self.id}')
-            result = await db.execute(query)
-            product_ids = [row[0] for row in result.all()]
-            current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
-            if kwargs['total'] < current:   
-                raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
-            for obj in kwargs['objects']:
-                if obj['product_id'] not in product_ids:
-                    raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                self.debt -= obj['amount'] * obj['quantity']
-                self.profit += obj['amount'] * obj['quantity']
-                reservation = HospitalReservationPayedAmounts(
-                                        total_sum=kwargs['total'], 
-                                        remainder_sum=kwargs['total'] - current, 
-                                        amount=obj['amount'] * obj['quantity'], 
-                                        quantity=obj['quantity'], 
-                                        bonus=obj['bonus'], 
-                                        description=kwargs['description'], 
-                                        reservation_id=self.id, 
-                                        product_id=obj['product_id']
-                                        )
-                await reservation.save(db)
-                await HospitalReservationProducts.set_payed_quantity(
-                                            quantity=obj['quantity'],
-                                            reservation_id=reservation.reservation_id,
-                                            product_id=obj['product_id'],
-                                            db=db
-                                            )
-                if self.debt < 0:
-                    raise HTTPException(status_code=400, detail=f"This reservation already chacked")
-                else:
-                    await HospitalPostupleniyaFact.set_fact(product_id=obj['product_id'], hospital_id=self.hospital_id, compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                    if reservation.bonus == True:
-                        await HospitalBonus.set_bonus(product_id=obj['product_id'], hospital_id=self.hospital_id, product_quantity=obj['quantity'], month_number=obj['month_number'], db=db)
+            self.debt -= kwargs['amount']
+            self.profit += kwargs['amount']
+            reservation = HospitalReservationPayedAmounts(doctor_id=kwargs['doctor_id'], bonus_discount=kwargs['bonus_discount'], amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
+            await reservation.save(db)
+            if self.debt < 0:
+                raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+            for prd in self.products:
+                product_price = (prd.product.price * 1.12) * (100 - self.discount)/100
+                fact_price = prd.quantity * product_price
+                bonus_sum = fact_price * kwargs['bonus_discount']/100
+                await DoctorFact.set_fact_to_hospital(month_number=kwargs['month_number'], doctor_id=kwargs['doctor_id'], product_id=prd.product.id, compleated=prd.quantity, db=db)
+                await DoctorPostupleniyaFact.set_fact(price=product_price, fact_price=fact_price, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
+                await Bonus.set_bonus_to_hospital(bonus_sum=bonus_sum, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
     async def edit_invoice_number(self, invoice_number: int, db: AsyncSession):
         try:
@@ -337,21 +305,21 @@ class HospitalBonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
-        year = datetime.now().year
-        month = datetime.now().month  
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
+        # year = datetime.now().year
+        # month = datetime.now().month  
+        # num_days = calendar.monthrange(year, month)[1]
+        # start_date = datetime(year, month, 1)  
+        # end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
-        amount = product.marketing_expenses * kwargs['product_quantity']
-        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_bonus = result.scalars().first()
-        if month_bonus is None:
-            month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=amount)
-            db.add(month_bonus)
-        else:
-            month_bonus.amount += amount
-            month_bonus.product_quantity += kwargs['product_quantity']
+        # amount = product.marketing_expenses * kwargs['product_quantity']
+        # result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        # month_bonus = result.scalars().first()
+        # if month_bonus is None:
+        month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=kwargs['bonus_sum'])
+        db.add(month_bonus)
+        # else:
+        #     month_bonus.amount += amount
+        #     month_bonus.product_quantity += kwargs['product_quantity']
 
 
 class HospitalFact(Base):

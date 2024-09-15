@@ -182,6 +182,23 @@ class DoctorFact(Base):
             month_fact.fact += kwargs['compleated']
         # await Bonus.set_bonus(**kwargs, db=db)
 
+    @classmethod
+    async def set_fact_to_hospital(cls, db: AsyncSession, **kwargs):
+        year = datetime.now().year
+        month = kwargs['month_number'] 
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = datetime(year, month, 1)  
+        end_date = datetime(year, month, num_days, 23, 59)
+        product = await get_or_404(Products, kwargs['product_id'], db)
+        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'],  cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        month_fact = result.scalars().first()
+        if month_fact is None:
+            month_fact = cls(date=start_date, doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
+            db.add(month_fact)
+        else:
+            month_fact.fact += kwargs['compleated']
+        # await Bonus.set_bonus(**kwargs, db=db)
+
 
 class BonusPayedAmounts(Base):
     __tablename__ = "bonus_payed_amounts"
@@ -274,6 +291,30 @@ class Bonus(Base):
             month_bonus.product_quantity += kwargs['compleated']
             if month_bonus.pre_investment >= amount:
                 month_bonus.pre_investment -= amount
+            else:
+                month_bonus.pre_investment = 0 
+
+    @classmethod
+    async def set_bonus_to_hospital(cls, db: AsyncSession, **kwargs):
+        year = datetime.now().year
+        if kwargs.get('month_number') is None:
+            month = datetime.now().month  
+        else:
+            month = kwargs.get('month_number')  
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = datetime(year, month, 1)  
+        end_date = datetime(year, month, num_days, 23, 59)
+        product = await get_or_404(Products, kwargs['product_id'], db)
+        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
+        month_bonus = result.scalars().first()
+        if month_bonus is None:
+            month_bonus = cls(date=start_date, doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=kwargs['bonus_sum'])
+            db.add(month_bonus)
+        else:
+            month_bonus.amount += kwargs['bonus_sum']
+            month_bonus.product_quantity += kwargs['compleated']
+            if month_bonus.pre_investment >= kwargs['bonus_sum']:
+                month_bonus.pre_investment -= kwargs['bonus_sum']
             else:
                 month_bonus.pre_investment = 0 
 

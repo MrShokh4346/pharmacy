@@ -33,5 +33,11 @@ async def check_if_plan_is_editable(plan: UserProductPlan, db: AsyncSession):
     plan_date = plan.plan_month
     result = await db.execute(select(EditablePlanMonths).filter(EditablePlanMonths.month==plan_date.month)) 
     if result.scalar().status == False:
-        raise HTTPException(status_code=400, detail=f"You can not edit plan in this month")
+        raise HTTPException(status_code=400, detail=f"You cannot edit plan in this month")
+    return True
+
+async def check_if_month_is_addable(month: int, db: AsyncSession):
+    result = await db.execute(select(EditablePlanMonths).filter(EditablePlanMonths.month==month)) 
+    if result.scalar().status == False:
+        raise HTTPException(status_code=400, detail=f"You cannot edit plan in this month")
     return True
