@@ -196,6 +196,7 @@ class ReservationSchema(BaseModel):
 
 
 class ReservationProductOutSchema(BaseModel):
+    id: int
     product: Optional[ProductOutSchema] 
     quantity: int
 

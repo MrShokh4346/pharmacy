@@ -11,6 +11,7 @@ from sqlalchemy.future import select
 import string
 from common_depetencies import StartEndDates
 import random
+from typing import Any, List
 
 router = APIRouter()
 
@@ -51,24 +52,6 @@ async def register_director(user: RegisterSchema, db: AsyncSession = Depends(get
     new_user = Users(**user.dict())
     await new_user.save(db=db)
     return UserOutSchema(**new_user.__dict__)
-
-
-# @router.get('/getuser/{user_id}')
-# async def get_user_by_id(user_id: int, db: AsyncSession = Depends(get_db)) -> UserOutSchema:
-#     db_user = db.query(Users).filter(Users.id == user_id).first()
-#     return UserOutSchema(**db_user.__dict__)
-
-
-# @router.put('/update-user/{user_id}')
-# async def update_user(user: UpdateUserSchema, user_id: int, db: AsyncSession = Depends(get_db)) -> UserOutSchema:
-#     db_user = db.query(Users).filter(Users.id == user_id).first()
-#     if not db_user:
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="There is not this user"
-#         )
-#     db_user.update(**user.dict(), db=db)
-#     return UserOutSchema(**db_user.__dict__)
 
 
 async def code_generator(size=6, chars=string.digits):
@@ -147,5 +130,15 @@ async def get_login_monitoring(user_id: int | None = None, filter_date: StartEnd
     return data 
 
 
+@router.get('/get-editable-months', response_model=List[EditablePlanMonthsSchema])
+async def get_editable_months(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(EditablePlanMonths))
+    return result.scalars().all()
 
 
+@router.post('/update-editable-month-status/{id}', response_model=List[EditablePlanMonthsSchema])
+async def update_editable_month_status(id: int, status: bool, db: AsyncSession = Depends(get_db)):
+    month = await get_or_404(EditablePlanMonths, id, db)
+    await month.update(status, db)
+    result = await db.execute(select(EditablePlanMonths))
+    return result.scalars().all()

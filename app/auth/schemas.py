@@ -63,3 +63,9 @@ class UserLoginMonitoringSchema(BaseModel):
 class UserLogoutMonitoringSchema(BaseModel):
     logout_date: datetime
     monitoring_id: int 
+
+
+class EditablePlanMonthsSchema(BaseModel):
+    id: int
+    month: int
+    status: bool 

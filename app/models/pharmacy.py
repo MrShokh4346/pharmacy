@@ -476,8 +476,8 @@ class ReservationProducts(Base):
             self.reservation.total_payable -= round((self.quantity * self.product.price) * (100 - discount)/100)
             self.reservation.total_payable_with_nds -= difference_sum
             self.reservation.debt -= difference_sum
-            await db.commit()
             result = await db.execute(text(query))
+            await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 

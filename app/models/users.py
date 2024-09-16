@@ -433,6 +433,13 @@ class EditablePlanMonths(Base):
     created_at = Column(DateTime, default=datetime.now())
     updated_at = Column(DateTime, default=datetime.now())
 
+    async def update(self, status: int, db: AsyncSession):
+        try:
+            self.status = status
+            self.updated_at = datetime.now()
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 class UserLoginMonitoring(Base):
     __tablename__ = "user_login_monitoring"
