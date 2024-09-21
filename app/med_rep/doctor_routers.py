@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .doctor_schemas import *
 from .pharmacy_schemas import PharmacyListSchema
-from fastapi import APIRouter
+from fastapi import APIRouter, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.doctors import *
 from models.users import Users, DoctorPlan, Notification, DoctorVisitInfo, UserProductPlan
@@ -204,6 +204,8 @@ async def get_doctor_attached_pharmacies_list(doctor_id: int, db: AsyncSession =
 
 @router.post('/paying-bonus/{bonus_id}', response_model=BonusOutSchema)
 async def paying_bonus(bonus_id: int, amount: int, description: str | None = None, db: AsyncSession = Depends(get_db)):
+    if amount < 0:
+        raise HTTPException(status_code=400, detail="Amount should be greater  then 0")
     bonus = await get_or_404(Bonus, bonus_id, db)
     await bonus.paying_bonus(amount, description, db)    
     return bonus

@@ -198,8 +198,8 @@ class HospitalReservation(Base):
             if (not wrh) or wrh.amount < product.quantity: 
                 raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in warehouse")
             wrh.amount -= product.quantity
-            await UserProductPlan.user_plan_minus(product_id=product.product_id, med_rep_id=self.hospital.med_rep_id, quantity=product.quantity, db=db)
-            await HospitalFact.set_fact(product_id=product.product_id, product_quantity=product.quantity, hospital_id=self.hospital_id, db=db)
+            # await UserProductPlan.user_plan_minus(product_id=product.product_id, med_rep_id=self.hospital.med_rep_id, quantity=product.quantity, db=db)
+            # await HospitalFact.set_fact(product_id=product.product_id, product_quantity=product.quantity, hospital_id=self.hospital_id, db=db)
         await db.commit()
 
     async def check_if_payed_reservation(self, db: AsyncSession, **kwargs):

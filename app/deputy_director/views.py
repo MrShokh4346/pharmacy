@@ -9,11 +9,13 @@ from models.doctors import DoctorFact, Doctor, Bonus, DoctorPostupleniyaFact
 from models.pharmacy import PharmacyHotSale, Pharmacy
 from models.database import get_db, get_or_404
 from models.dependencies import *
+from models.write_report import *
 from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 import calendar
 from .utils import *
@@ -399,10 +401,11 @@ async def get_proccess_report(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Doctor).filter(Doctor.deleted==False))
     return result.scalars().all()
 
-
+# excelga yozish uchun sinxron yozildi
 @router.get('/get-proccess-report-ecxel')
 async def get_proccess_report(month: int, db: AsyncSession = Depends(get_db)):
-    return await write_proccess_to_excel(month, db)
+    # return await write_proccess_to_excel(month, db)
+    return await write_to_excel(month, db)
 
 
 @router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)

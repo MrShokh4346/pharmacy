@@ -54,7 +54,7 @@ class LoginEmailCodeSchema(BaseModel):
 
 class UserLoginMonitoringSchema(BaseModel):
     login_date: datetime
-    location: str
+    location: Optional[str] = None
     latitude: Optional[str] = None
     longitude: Optional[str] = None
     user_id: int 
