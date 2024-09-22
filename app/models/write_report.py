@@ -83,7 +83,7 @@ class Excel:
         self.done_persent = count
 
 
-def get_format(workbook, color, rotation=0):
+def get_format(workbook, color='white', rotation=0):
     format = workbook.add_format(
         {
             "bold": 1,
@@ -99,31 +99,33 @@ def get_format(workbook, color, rotation=0):
 
 async def begining_template(excel, workbook, worksheet):
 
+    column_format = get_format(workbook)
+
     merge_format =  get_format(workbook, '#4F95E3')
     pm_merge_format =  get_format(workbook, '#4F95E3', 90)
 
-    worksheet.set_column(excel.product_manager, excel.product_manager, 5)
+    worksheet.set_column(excel.product_manager, excel.product_manager, 5, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.product_manager, excel.start_row - 1, excel.product_manager, "Продукт Менеджер", pm_merge_format)
     
-    worksheet.set_column(excel.medical_representative, excel.medical_representative, 25)
+    worksheet.set_column(excel.medical_representative, excel.medical_representative, 25, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.medical_representative, excel.start_row - 1, excel.medical_representative, "РМ/МП", merge_format)
     
-    worksheet.set_column(excel.doctor, excel.doctor, 25)
+    worksheet.set_column(excel.doctor, excel.doctor, 25, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.doctor, excel.start_row - 1, excel.doctor, "ФИО Врача", merge_format)
     
-    worksheet.set_column(excel.doctor_contact, excel.doctor_contact, 20)
+    worksheet.set_column(excel.doctor_contact, excel.doctor_contact, 20, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.doctor_contact, excel.start_row - 1, excel.doctor_contact, "Контакт врача", merge_format)
     
-    worksheet.set_column(excel.speciality, excel.speciality, 20)
+    worksheet.set_column(excel.speciality, excel.speciality, 20, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.speciality, excel.start_row - 1, excel.speciality, "Специальность", merge_format)
 
-    worksheet.set_column(excel.medical_organization, excel.medical_organization, 25)
+    worksheet.set_column(excel.medical_organization, excel.medical_organization, 25, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.medical_organization, excel.start_row - 1, excel.medical_organization, "ЛПУ", merge_format)
     
-    worksheet.set_column(excel.region, excel.region, 25)
+    worksheet.set_column(excel.region, excel.region, 25, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.region, excel.start_row - 1, excel.region, "Регион", merge_format)
     
-    
+    worksheet.set_column(excel.doctor, excel.doctor, 10, column_format)
     worksheet.merge_range(excel.start_row - 4, excel.category, excel.start_row - 2, excel.category, "Категория врача", merge_format)
     worksheet.write(excel.start_row - 1, excel.category, "(VIP, A, B)", merge_format)
     
@@ -136,6 +138,7 @@ async def get_product_name_and_price(id, product_list):
 async def plan_products_template(excel, workbook, worksheet, products_list):
 
     merge_format = get_format(workbook, 'gray')
+    column_format = get_format(workbook)
     
     for zavod in excel.plan_product_template:
         manufacturer_format = get_format(workbook, zavod['color'])
@@ -143,7 +146,7 @@ async def plan_products_template(excel, workbook, worksheet, products_list):
         worksheet.merge_range(excel.start_row - 4, zavod['start_marge'], excel.start_row - 4, zavod['end_marge'], zavod['name'], manufacturer_format)
         for key, value in zavod['products'].items():
             product_name, product_price = await get_product_name_and_price(key, products_list)
-            worksheet.set_column(value, value, 3)
+            worksheet.set_column(value, value, 3, column_format)
             worksheet.write(excel.start_row - 3, value, product_name, product_format)
             worksheet.write(excel.start_row - 2, value, product_price, product_format)
 
@@ -154,6 +157,8 @@ async def plan_products_template(excel, workbook, worksheet, products_list):
 async def fact_products_template(excel, workbook, worksheet, products_list):
 
     merge_format = get_format(workbook, 'gray')
+    column_format = get_format(workbook)
+
 
     for zavod in excel.fact_product_template:
         manufacturer_format = get_format(workbook, zavod['color'])
@@ -161,7 +166,7 @@ async def fact_products_template(excel, workbook, worksheet, products_list):
         worksheet.merge_range(excel.start_row - 4, zavod['start_marge'], excel.start_row - 4, zavod['end_marge'], zavod['name'], manufacturer_format)
         for key, value in zavod['products'].items():
             product_name, product_price = await get_product_name_and_price(key, products_list)
-            worksheet.set_column(value, value, 3)
+            worksheet.set_column(value, value, 3, column_format)
             worksheet.write(excel.start_row - 3, value, product_name, product_format)
             worksheet.write(excel.start_row - 2, value, product_price, product_format)
 
@@ -237,7 +242,7 @@ async def write_med_rep(row, user, excel, format, worksheet, start_date, end_dat
     worksheet.write(row - 1, excel.sum_plan, user_fact['med_rep_total_paln_sum'], format)
     worksheet.write(row - 1, excel.sum_fact, user_fact['med_rep_total_fact_sum'], format)
 
-    print(user.full_name, ': ', row, end_row)
+    # print(user.full_name, ': ', row, end_row)
 
     return end_row
 
@@ -258,7 +263,7 @@ async def write_product_manager(row, pm, excel, format, workbook, worksheet, sta
         end_row = row
 
     worksheet.merge_range(merge_row, excel.product_manager, end_row, excel.product_manager, pm.full_name, pm_format)
-    print('\t', pm.full_name, ": ", merge_row, end_row)
+    # print('\t', pm.full_name, ": ", merge_row, end_row)
     return end_row
 
 
