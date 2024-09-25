@@ -36,7 +36,7 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 conf = ConnectionConfig(
     MAIL_USERNAME = "heartly.company",
     MAIL_PASSWORD = os.environ['EMAIL_PASSWORD'],
-    MAIL_FROM = "heartly.company@mail.ru",
+    MAIL_FROM = os.environ['SMTP_USER'],
     MAIL_PORT = 587,
     MAIL_SERVER = "smtp.mail.ru",
     MAIL_FROM_NAME="Heartly Company",

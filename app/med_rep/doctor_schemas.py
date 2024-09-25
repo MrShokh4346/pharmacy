@@ -1,9 +1,10 @@
 from pydantic import BaseModel, validator
-from typing import List, Optional
 from models.doctors import Speciality
 from common.schemas import RegionSchema, DoctorCategorySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema, ManufacturedCompanySchema, ProductCategorySchema
 from datetime import date, datetime
 from enum import Enum
+from typing import List, Optional, Annotated
+from fastapi import Path
 
 
 class DoctorInSchema(BaseModel):
@@ -174,4 +175,13 @@ class DoctorListWithPlanSchema(BaseModel):
     contact2: Optional[str] = None
     doctormonthlyplan: Optional[List[DoctorProductPlanOutSchema]] = None
     # postupleniya_fact: Optional[List[DoctorPostupleniyaSchema]] = None
+
+
+class MovedDoctor(BaseModel):
+    doctor_id: int 
+    quantity: Annotated[int, Path(title="", ge=0)] 
+
+
+class DoctorPlanMoveShema(BaseModel):
+    doctors: List[MovedDoctor]
     

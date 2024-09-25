@@ -110,7 +110,7 @@ async def logout_time_write(monitoring_data: UserLogoutMonitoringSchema, db: Asy
 async def get_login_monitoring(user_id: int | None = None, filter_date: StartEndDates = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']
-    query = select(UserLoginMonitoring).filter(UserLoginMonitoring.login_date>=start_date, UserLoginMonitoring.login_date<=end_date)
+    query = select(UserLoginMonitoring).filter(UserLoginMonitoring.logout_date!=None, UserLoginMonitoring.login_date>=start_date, UserLoginMonitoring.login_date<=end_date)
     if user_id:
         query = query.filter(UserLoginMonitoring.user_id==user_id)
     result = await db.execute(query)

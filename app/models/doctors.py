@@ -149,6 +149,40 @@ class DoctorMonthlyPlan(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    @classmethod
+    async def move_plan(cls, db: AsyncSession, **kwargs):
+        try:
+            plan = kwargs['plan']
+            if kwargs['remainder_amount'] > plan.monthly_plan:
+                raise HTTPException(status_code=404, detail='Something went wrong')
+            elif kwargs['remainder_amount'] == plan.monthly_plan:
+                query = f"delete from doctor_monthly_plan WHERE id = {plan.id}"
+            else:
+                query = f"update doctor_monthly_plan set monthly_plan={kwargs['remainder_amount']} WHERE id = {plan.id}"
+            total_quantity = 0
+            for doctor in kwargs['doctors']:
+                total_quantity += doctor['quantity']
+                result = await db.execute(select(cls).filter(cls.doctor_id==doctor['doctor_id'], cls.product_id==doctor['quantity']))
+                current_doctor = result.scalar()
+                if current_doctor:
+                    current_doctor.monthly_plan += doctor['quantity']
+                else:
+                    current_doctor = cls(
+                        monthly_plan = doctor['quantity'],
+                        product_id = plan.product_id,
+                        price = plan.price,
+                        discount_price = plan.discount_price,
+                        doctor_id = doctor['doctor_id'],
+                        date = plan.date
+                    )
+                    db.add(current_doctor)
+            if total_quantity != plan.monthly_plan - kwargs['remainder_amount']:
+                raise HTTPException(status_code=404, detail='Something went wrong')
+            result = await db.execute(text(query))
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
 
 class DoctorFact(Base):
     __tablename__ = "doctor_fact"

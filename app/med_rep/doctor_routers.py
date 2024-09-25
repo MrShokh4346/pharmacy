@@ -179,6 +179,13 @@ async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession
     return plan 
 
 
+@router.post('/move-doctor-plan/{plan_id}')
+async def move_doctor_plan(plan_id: int, remainder_amount: int, doctors: DoctorPlanMoveShema, db: AsyncSession = Depends(get_db)):
+    plan = await get_or_404(DoctorMonthlyPlan, plan_id, db)
+    await DoctorMonthlyPlan.move_plan(**doctors.dict(), remainder_amount=remainder_amount, plan=plan, db=db)
+    return {'msg': 'Success'} 
+
+
 @router.patch('/update-doctor/{id}', response_model=DoctorOutSchema)
 async def update_doctor(id: int, data: DoctorUpdateSchema, db: AsyncSession = Depends(get_db)):
     doctor = await get_doctor_or_404(id, db)
