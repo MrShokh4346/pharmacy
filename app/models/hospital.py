@@ -111,7 +111,7 @@ class HospitalReservationPayedAmounts(Base):
     doctor_id = Column(Integer)
     quantity = Column(Integer)
     description = Column(String)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("Products", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
@@ -133,7 +133,7 @@ class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     date_implementation = Column(DateTime)
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)

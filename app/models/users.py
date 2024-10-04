@@ -331,7 +331,7 @@ class Notification(Base):
     theme = Column(String)
     description = Column(String)
     description2 = Column(String)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     unread = Column(Boolean, default=True)
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     med_rep = relationship("Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])

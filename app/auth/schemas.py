@@ -69,3 +69,6 @@ class EditablePlanMonthsSchema(BaseModel):
     id: int
     month: int
     status: bool 
+
+
+    # region, product_manager

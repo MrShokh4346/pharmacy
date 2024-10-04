@@ -30,7 +30,7 @@ class IncomingBalanceInStock(Base):
     __tablename__ = "incoming_balance_in_stock"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     description = Column(String)
 
     wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
@@ -123,7 +123,7 @@ class CheckingBalanceInStock(Base):
     __tablename__ = "checking_balance_in_stock"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     description = Column(String)
 
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
@@ -158,7 +158,7 @@ class Debt(Base):
     description = Column(String)
     amount = Column(Integer)
     payed = Column(Boolean, default=False) 
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", cascade="all, delete", backref="debts")
 
@@ -189,7 +189,7 @@ class ReservationPayedAmounts(Base):
     bonus = Column(Boolean, default=True)
     quantity = Column(Integer)
     description = Column(String)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("Products", cascade="all, delete", backref="reservation_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
@@ -213,7 +213,7 @@ class Reservation(Base):
     __tablename__ = "reservation"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     date_implementation = Column(DateTime, default=datetime.now())
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
@@ -365,12 +365,12 @@ class Reservation(Base):
                                             )
                 if self.debt < 0:
                     raise HTTPException(status_code=400, detail=f"Something went wrong")
-                if obj.get('doctor_id') is None:
-                    await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
-                else:
-                    await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                    if reservation.bonus == True:
-                        await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                # if obj.get('doctor_id') is None:
+                #     await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
+                # else:
+                await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                if reservation.bonus == True:
+                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

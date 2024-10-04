@@ -240,7 +240,7 @@ class BonusPayedAmounts(Base):
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
     description = Column(String)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     bonus_id = Column(Integer, ForeignKey("bonus.id", ondelete="CASCADE"))
     bonus = relationship("Bonus", cascade="all, delete", backref="bonus_payed_amounts")
 

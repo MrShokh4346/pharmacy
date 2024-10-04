@@ -15,7 +15,7 @@ class ReportFactoryWerehouse(Base):
     __tablename__ = "report_factory_warehouse"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     quantity = Column(Integer)
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
     factory = relationship("ManufacturedCompany", backref="factory_report_werehouse", lazy='selectin')
@@ -107,7 +107,7 @@ class Wholesale(Base):
 #     id = Column(Integer, primary_key=True)
 #     quantity = Column(Integer)
 #     price = Column(Integer)
-#     date = Column(DateTime, default=date.today())
+#     date = Column(DateTime, default=datetime.now())
 #     factory_id = Column(Integer, ForeignKey("manufactured_company.id"), nullable=True)
 #     factory = relationship("ManufacturedCompany", backref="wholesale_report_warehouse", lazy='selectin')
 #     wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
@@ -158,7 +158,7 @@ class WholesaleReservationPayedAmounts(Base):
     quantity = Column(Integer)
     description = Column(String)
     payed = Column(Boolean, default=False)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("Products", cascade="all, delete", backref="wholesale_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
@@ -186,7 +186,7 @@ class WholesaleReservation(Base):
     __tablename__ = "wholesale_reservation"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     date_implementation = Column(DateTime)
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=60)))
     discount = Column(Float, default=0)
@@ -352,7 +352,7 @@ class WholesaleReservation(Base):
                             product_id=obj['product_id'],
                             db=db
                             )   
-                await DoctorPostupleniyaFact.set_fact(fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                 await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
@@ -387,7 +387,7 @@ class WholesaleReservationProducts(Base):
         quantity = result.scalar()
         if quantity < 0:
             raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
-        await db.commit()
+
 
 class WholesaleOutput(Base):
     __tablename__ = "wholesale_output"
@@ -395,7 +395,7 @@ class WholesaleOutput(Base):
     id = Column(Integer, primary_key=True)
 
     amount = Column(Integer)
-    date = Column(DateTime, default=date.today())
+    date = Column(DateTime, default=datetime.now())
     pharmacy = Column(String)
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("Products", backref="wholesale_output", lazy='selectin')

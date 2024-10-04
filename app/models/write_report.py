@@ -309,8 +309,9 @@ async def write_to_excel(month: int, db: AsyncSession):
 
     z, p = await products(db)
     excel = Excel(z)
+    date = datetime.now()
 
-    source_excel_file = 'app/report/Report.xlsx'
+    source_excel_file = f'app/report/Report_{date.strftime('%Y-%m-%d %H:%M')}.xlsx'
     filename = 'Report.xlsx'
 
     if os.path.exists(source_excel_file):
