@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from models.dependencies import create_access_token, simple_send
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import *
+from models.pharmacy import Reservation
 from models.database import get_db
 from sqlalchemy.future import select
 import string
@@ -144,3 +145,11 @@ async def update_editable_month_status(id: int, status: bool, db: AsyncSession =
     await month.update(status, db)
     result = await db.execute(select(EditablePlanMonths))
     return result.scalars().all()
+
+
+@router.post('/delete-postupleniya/{reservation_id}')
+async def delete_postupleniya(reservation_id: int, db: AsyncSession = Depends(get_db)):
+    reservation = await get_or_404(Reservation, reservation_id, db)
+    await reservation.delete_postupleniya(db)
+    return {"msg":"Success"}
+

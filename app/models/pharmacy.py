@@ -186,16 +186,22 @@ class ReservationPayedAmounts(Base):
     amount = Column(Integer)
     total_sum = Column(Integer)
     remainder_sum = Column(Integer)
+    nds_sum = Column(Integer , default=0)
+    fot_sum = Column(Integer , default=0)
+    promo_sum = Column(Integer , default=0)
+    skidka_sum = Column(Integer , default=0)
+    pure_proceeds = Column(Integer , default=0)
     bonus = Column(Boolean, default=True)
     quantity = Column(Integer)
     description = Column(String)
+    month_number=Column(Integer)
     date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("Products", cascade="all, delete", backref="reservation_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", backref="reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-    reservation = relationship("Reservation", cascade="all, delete", backref="payed_amounts")
+    reservation = relationship("Reservation", cascade="all, delete", back_populates="payed_amounts")
    
     async def save(self, db: AsyncSession):
         try:
@@ -230,6 +236,7 @@ class Reservation(Base):
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
     products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
+    payed_amounts = relationship("ReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
     manufactured_company = relationship("ManufacturedCompany", backref="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
@@ -345,16 +352,25 @@ class Reservation(Base):
                 self.profit += obj['amount'] * obj['quantity']
 
                 # self.reailized_debt += obj['amount'] * obj['quantity']
-
+                result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
+                product = resu.scalar()
+                nds_sum = obj['amount'] - obj['amount']/1.12 
+                skidka_sum = product.price - obj['amount']/1.12 
                 reservation = ReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
                                         remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'], 
                                         quantity=obj['quantity'], 
+                                        fot_sum = obj['quantity'] * product.salary_expenses,
+                                        promo_sum = obj['quantity'] * product.marketing_expenses,
+                                        pure_proceeds = obj['quantity'] * product.price,
+                                        nds_sum = nds_sum * obj['quantity'],
+                                        skidka_sum = skidka_sum * obj['quantity'],
                                         bonus=obj['bonus'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 
                                         product_id=obj['product_id'], 
+                                        month_number=obj['month_number'],
                                         doctor_id=obj['doctor_id'])
                 await reservation.save(db)
                 await ReservationProducts.set_payed_quantity(
@@ -406,6 +422,18 @@ class Reservation(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=400, detail="Something went wrong!")
 
+    async def delete_postupleniya(self, db: AsyncSession):
+        for res_product in self.payed_amounts:
+            await DoctorPostupleniyaFact.delete_postupleniya(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, amount=res_product.amount, db=db)
+            if res_product.bonus == True:
+                await Bonus.delete_bonus(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, db=db)
+            await ReservationProducts.set_default_payed_quantity(reservation_id=self.id, product_id=res_product.product_id, db=db)
+            
+        await db.execute(update(Reservation).where(Reservation.id == self.id).values(profit=0, debt=self.total_payable_with_nds))
+        query = f"delete from reservation_payed_amounts WHERE reservation_id={self.id}"
+        result = await db.execute(text(query))
+        await db.commit()
+
 
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"
@@ -428,6 +456,14 @@ class ReservationProducts(Base):
         if quantity < 0:
             raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
         await db.commit()
+
+    @classmethod
+    async def set_default_payed_quantity(cls, db: AsyncSession, **kwargs):
+        query = f"update reservation_products set not_payed_quantity=quantity WHERE reservation_id={kwargs['reservation_id']} AND product_id={kwargs['product_id']} returning not_payed_quantity"  
+        result = await db.execute(text(query))
+        quantity = result.scalar()
+        if quantity < 0:
+            raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
 
     @classmethod
     async def add(cls, db: AsyncSession, **kwargs):

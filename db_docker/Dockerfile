@@ -4,11 +4,11 @@ RUN mkdir /db
 
 WORKDIR /db
 
-COPY pharmacy.sql .
+COPY pharmacy.sql /docker-entrypoint-initdb.d/
 
-COPY db.sh .
+COPY db.sh /docker-entrypoint-initdb.d/
 
-RUN chmod a+x *.sh
+RUN chmod a+x /docker-entrypoint-initdb.d/db.sh
 
 #WORKDIR src
 

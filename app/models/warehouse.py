@@ -155,6 +155,11 @@ class WholesaleReservationPayedAmounts(Base):
     amount = Column(Integer, default=0)
     total_sum = Column(Integer)
     remainder_sum = Column(Integer, default=0)
+    nds_sum = Column(Integer , default=0)
+    fot_sum = Column(Integer , default=0)
+    promo_sum = Column(Integer , default=0)
+    skidka_sum = Column(Integer , default=0)
+    pure_proceeds = Column(Integer , default=0)
     quantity = Column(Integer)
     description = Column(String)
     payed = Column(Boolean, default=False)
@@ -330,6 +335,12 @@ class WholesaleReservation(Base):
                 # self.profit += obj['amount'] * obj['quantity']
                 self.reailized_debt += obj['amount'] * obj['quantity']
                 # if remaind in not None:
+
+                result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
+                product = resu.scalar()
+                nds_sum = obj['amount'] - obj['amount']/1.12 
+                skidka_sum = product.price - obj['amount']/1.12 
+
                     
 
                 # agar pul kiritmasdan dorilarni kiritsa doctorga fact va bonus yozadi
@@ -337,6 +348,11 @@ class WholesaleReservation(Base):
                                         total_sum=kwargs['total'], 
                                         # remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'],
+                                        fot_sum = obj['quantity'] * product.salary_expenses,
+                                        promo_sum = obj['quantity'] * product.marketing_expenses,
+                                        pure_proceeds = obj['quantity'] * product.price,
+                                        nds_sum = nds_sum * obj['quantity'],
+                                        skidka_sum = skidka_sum * obj['quantity'],
                                         quantity=obj['quantity'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 

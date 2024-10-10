@@ -127,7 +127,7 @@ async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession 
     end_date = date(year, plan.month, num_days)
     plan_date = date(year, plan.month, day)
     data = plan.dict()
-    await check_if_month_is_addable(data['month'], db)
+    # await check_if_month_is_addable(data['month'], db)
     del data['month']
     result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==plan.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==plan.med_rep_id))
     user_product = result.scalars().first()
@@ -498,3 +498,17 @@ async def get_profit(start_date: date, end_date: date, db: AsyncSession = Depend
     facts = result.all()
     data = [{"fact":fact[0], "salary_expense":fact[1], "marketing_expense":fact[2], "product_name":fact[3], "region":fact[4]} for fact in facts]
     return data
+
+
+@router.get('/get-users-sales-report')
+async def get_users_sales_report(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    result = await db.execute(select(Users).filter(Users.status=='product_manager'))
+    data = []
+    for pm in result.scalars().all():
+        pm_sales = await get_pm_sales(pm, start_date, end_date, db)
+        data.append(pm_sales)
+    return data 
+
+
