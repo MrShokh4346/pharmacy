@@ -325,7 +325,7 @@ class WholesaleReservation(Base):
                         payed=True
                         )
                 await reservation.save(db)
-                await db.commit()
+                # await db.commit()
             
             
             for obj in kwargs['objects']:
@@ -337,15 +337,13 @@ class WholesaleReservation(Base):
                 # if remaind in not None:
 
                 result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
-                product = resu.scalar()
+                product = result.scalar()
                 nds_sum = obj['amount'] - obj['amount']/1.12 
                 skidka_sum = product.price - obj['amount']/1.12 
-
                     
-
                 # agar pul kiritmasdan dorilarni kiritsa doctorga fact va bonus yozadi
                 reservation = WholesaleReservationPayedAmounts(
-                                        total_sum=kwargs['total'], 
+                                        # total_sum=kwargs['total'], 
                                         # remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'],
                                         fot_sum = obj['quantity'] * product.salary_expenses,

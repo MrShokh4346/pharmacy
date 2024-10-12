@@ -347,13 +347,13 @@ class Reservation(Base):
                 result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
                 doctor_monthly_plan = result.scalars().first()
                 if not doctor_monthly_plan:
-                    raise HTTPException(status_code=404, detail=f"There is no doctor plan whith this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
+                    raise HTTPException(status_code=404, detail=f"There is no doctor plan with this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
                 self.debt -= obj['amount'] * obj['quantity']
                 self.profit += obj['amount'] * obj['quantity']
 
                 # self.reailized_debt += obj['amount'] * obj['quantity']
                 result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
-                product = resu.scalar()
+                product = result.scalar()
                 nds_sum = obj['amount'] - obj['amount']/1.12 
                 skidka_sum = product.price - obj['amount']/1.12 
                 reservation = ReservationPayedAmounts(

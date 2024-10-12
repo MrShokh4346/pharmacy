@@ -253,12 +253,12 @@ class HospitalReservation(Base):
             reservation = HospitalReservationPayedAmounts(nds_sum=nds_sum, quantity=self.total_quantity, doctor_id=kwargs['doctor_id'], bonus_discount=kwargs['bonus_discount'], amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
             await reservation.save(db)
             if self.debt < 0:
-                raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+                raise HTTPException(status_code=400, detail=f"Something went wr")
             for prd in self.products:
-                fot_sum += prd.quantity * product.salary_expenses
-                promo_sum += prd.quantity * product.marketing_expenses
-                pure_proceeds += prd.quantity * product.price
-                skidka_sum += prd.quantity * product.price * self.discount
+                fot_sum += prd.quantity * prd.product.salary_expenses
+                promo_sum += prd.quantity * prd.product.marketing_expenses
+                pure_proceeds += prd.quantity * prd.product.price
+                skidka_sum += prd.quantity * prd.product.price * self.discount
                 product_price = (prd.product.price * 1.12) * (100 - self.discount)/100
                 fact_price = prd.quantity * product_price
                 bonus_sum = fact_price * kwargs['bonus_discount']/100
