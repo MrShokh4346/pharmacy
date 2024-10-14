@@ -16,7 +16,7 @@ async def get_hot_sale(doctor_id: int, product_id: int, start_date: datetime, en
         AND pharmacy_hot_sale.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND pharmacy_hot_sale.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')""")
     result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
     h_sale = result.first()
-    return h_sale[0] if h_sale[0] is not None else 0 
+    return h_sale[0] if h_sale[0] is  not None else 0 
 
 async def get_visit_facts(doctor_id: int, product_id: int, start_date: datetime, end_date: datetime, db: AsyncSession):
     query = text(f"""SELECT sum(doctor_fact.fact) FROM doctor_fact where doctor_fact.doctor_id={doctor_id} AND doctor_fact.product_id={product_id} 
@@ -46,7 +46,7 @@ async def check_if_month_is_addable(month: int, db: AsyncSession):
     return True
 
 async def calculate_postupleniya(pm_id, model, start_date, end_date, db):
-    table = model.__tablename__
+    table = model.__tablename__         #0                  #1              #2          #3                  #4                          #5                  #6                      #7                      #8                      #9                                      
     query = text(f"""SELECT sum({table}.quantity), sum({table}.amount), users.id, users.full_name, users.product_manager_id, sum({table}.nds_sum), sum({table}.fot_sum), sum({table}.promo_sum), sum({table}.skidka_sum), sum({table}.pure_proceeds) FROM {table} INNER JOIN doctor on doctor.id={table}.doctor_id 
         INNER JOIN users on users.id=doctor.med_rep_id WHERE users.product_manager_id={pm_id}
         AND {table}.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND {table}.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS') GROUP BY users.id""")
@@ -108,11 +108,11 @@ async def get_pm_sales(pm: Users, start_date: datetime, end_date: datetime, db: 
             })
         pm_sale_quantity += value[0]
         pm_sale_sum += value[1]
-        nds_sum = value[5]
-        fot_sum = value[6]
-        promo_sum = value[7]
-        skidka_sum = value[8]
-        pure_proceeds = value[9]
+        nds_sum += value[5]
+        fot_sum += value[6]
+        promo_sum += value[7]
+        skidka_sum += value[8]
+        pure_proceeds += value[9]
 
     data = {
         "id": pm.id,
