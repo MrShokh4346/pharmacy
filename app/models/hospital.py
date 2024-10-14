@@ -149,6 +149,8 @@ class HospitalReservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer, default=0)
+    med_rep_id = Column(Integer, ForeignKey("users.id"))        
+    med_rep = relationship("Users",  backref="hospital_reservation")
     prosrochenniy_debt = Column(Boolean, default=False)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')

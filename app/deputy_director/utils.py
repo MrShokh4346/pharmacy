@@ -2,9 +2,9 @@ from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from models.users import EditablePlanMonths, UserProductPlan, Users
-from models.pharmacy import ReservationPayedAmounts
-from models.warehouse import WholesaleReservationPayedAmounts
-from models.hospital import HospitalReservationPayedAmounts
+from models.pharmacy import ReservationPayedAmounts, Reservation
+from models.warehouse import WholesaleReservationPayedAmounts, WholesaleReservation
+from models.hospital import HospitalReservationPayedAmounts, HospitalReservation
 from sqlalchemy.future import select
 from fastapi import HTTPException
 from collections import defaultdict
@@ -45,84 +45,147 @@ async def check_if_month_is_addable(month: int, db: AsyncSession):
         raise HTTPException(status_code=400, detail=f"You cannot edit plan in this month")
     return True
 
-async def calculate_postupleniya(pm_id, model, start_date, end_date, db):
-    table = model.__tablename__         #0                  #1              #2          #3                  #4                          #5                  #6                      #7                      #8                      #9                                      
-    query = text(f"""SELECT sum({table}.quantity), sum({table}.amount), users.id, users.full_name, users.product_manager_id, sum({table}.nds_sum), sum({table}.fot_sum), sum({table}.promo_sum), sum({table}.skidka_sum), sum({table}.pure_proceeds) FROM {table} INNER JOIN doctor on doctor.id={table}.doctor_id 
-        INNER JOIN users on users.id=doctor.med_rep_id WHERE users.product_manager_id={pm_id}
-        AND {table}.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND {table}.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS') GROUP BY users.id""")
+async def calculate_postupleniya(pm_id, model, start_date, end_date, db, med_rep_id=None, region_id=None):
+    table = model.__tablename__                                                
+    query = f"""SELECT sum({table}.total_payable_with_nds), users.id, users.full_name, users.product_manager_id FROM {table} 
+        INNER JOIN users on users.id={table}.med_rep_id  WHERE users.product_manager_id={pm_id}"""
+    if med_rep_id:
+        query += f" AND users.id={med_rep_id}"
+    if region_id:
+        query += f" AND users.region_id ={region_id}"
+
+    query += f""" AND {table}.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND {table}.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS') GROUP BY users.id"""
+    query = text(query)
     result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
     data = result.all()
     return data
 
 
 def merge_data(data_list, combined_data):
-    quantities = 0
-    amounts = 0 
     for tup in data_list:
-        key = tup[2]  # Using name as the key
-        quantities += tup[0] if tup[0] is not None else 0
-        amounts += tup[1] 
-        combined_data[key][0] += tup[0] if tup[0] is not None else 0
-        combined_data[key][1] += tup[1]
-        combined_data[key][2] = tup[2]  # Assuming we take the last occurrence of this value
+        key = tup[1]  
+        combined_data[key][0] += tup[0]
+        combined_data[key][1] = tup[1]
+        combined_data[key][2] = tup[2]  
         combined_data[key][3] = tup[3]
-        combined_data[key][4] = tup[4] 
-        combined_data[key][5] += tup[5] 
-        combined_data[key][6] += tup[6] 
-        combined_data[key][7] += tup[7] 
-        combined_data[key][8] += tup[8] 
-        combined_data[key][9] += tup[9] 
     return combined_data
 
 
-
 async def get_pm_sales(pm: Users, start_date: datetime, end_date: datetime, db: AsyncSession):
-    ph_sales = await calculate_postupleniya(pm.id, ReservationPayedAmounts, start_date, end_date, db)
-    wh_sales = await calculate_postupleniya(pm.id, WholesaleReservationPayedAmounts, start_date, end_date, db)
-    h_sales = await calculate_postupleniya(pm.id, HospitalReservationPayedAmounts, start_date, end_date, db)
+    ph_sales = await calculate_postupleniya(pm.id, Reservation, start_date, end_date, db)
+    wh_sales = await calculate_postupleniya(pm.id, WholesaleReservation, start_date, end_date, db)
+    h_sales = await calculate_postupleniya(pm.id, HospitalReservation, start_date, end_date, db)
 
-    pm_sale_quantity = 0
-    pm_sale_sum = 0
-    nds_sum = 0
-    fot_sum = 0
-    promo_sum = 0
-    skidka_sum = 0
-    pure_proceeds = 0
+    combined_data = defaultdict(lambda: [0, 0, '', 0])
 
-    combined_data = defaultdict(lambda: [0, 0, 0, '', 0, 0, 0, 0, 0, 0])
-
-    # Merge all the lists
     combined_data = merge_data(ph_sales, combined_data)
     combined_data = merge_data(wh_sales, combined_data)
     combined_data = merge_data(h_sales, combined_data)
 
     updated_list = []
+    amount = 0
 
     for value in combined_data.values():
         updated_list.append({
-            "product_quantity": value[0],
-            "postupleniya_sum": value[1],
-            "med_rep_id": value[2],
-            "med_rep_name": value[3],
-            "pm_id": value[4]
+            "sum": value[0],
+            "med_rep_id": value[1],
+            "med_rep_name": value[2]
             })
-        pm_sale_quantity += value[0]
-        pm_sale_sum += value[1]
-        nds_sum += value[5]
-        fot_sum += value[6]
-        promo_sum += value[7]
-        skidka_sum += value[8]
-        pure_proceeds += value[9]
+        amount += value[0]
 
     data = {
         "id": pm.id,
         "product_manager": pm.full_name,
-        "total_quantity": pm_sale_quantity,
-        "total_sum": pm_sale_sum,
+        "total_sum": amount,
         "med_reps": updated_list
     }
 
-    return data, (pm_sale_sum, nds_sum, fot_sum, promo_sum, skidka_sum, pure_proceeds) 
+    return data 
 
 
+async def get_sum_reservations(
+            start_date,
+            end_date,
+            db,
+            med_rep_id=None,
+            product_manager_id=None,
+            pharmacy_id=None,
+            hospital_id=None,
+            wholesale_id=None,
+            region_id=None,
+            man_company_id=None
+            ):
+  
+    tables = [Reservation, WholesaleReservation, HospitalReservation]
 
+    data = {
+        "umumiy_savdo": 0,
+        "tushum": 0,
+        "qarz": 0,
+        "nds_summa": 0,
+        "skidka": 0,
+        "zavod_narxi": 0,
+        "fot_sum": 0,
+        "promo_sum": 0
+    }
+
+    for table in tables: 
+        subquery = "" 
+        if pharmacy_id:
+            if not getattr(table, 'pharmacy_id', False):
+                continue
+            subquery += f" r.pharmacy_id = {pharmacy_id} AND"
+        if hospital_id:
+            if not getattr(table, 'hospital_id', False):
+                continue
+            subquery += f" r.hospital_id = {hospital_id} AND"
+        if wholesale_id:
+            if not getattr(table, 'wholesale_id', False):
+                continue
+            subquery += f" r.wholesale_id = {wholesale_id} AND"
+        if med_rep_id:
+            subquery += f" r.med_rep_id = {med_rep_id} AND"
+        if region_id:
+            subquery += f" u.region_id = {region_id} AND"
+        if man_company_id:
+            subquery += f" r.manufactured_company_id = {man_company_id} AND"
+        if product_manager_id:
+            subquery += f" u.product_manager_id = {product_manager_id} AND"
+
+        query = f"""
+            SELECT 
+                SUM(r.total_payable_with_nds) AS umumiy_savdo,  
+                SUM(r.profit) AS tushum,                        
+                SUM(r.debt) AS qarz,                           
+                SUM(r.total_payable_with_nds - r.total_payable) AS nds_summa, 
+                SUM(r.total_amount - r.total_payable) AS skidka,             
+                SUM(r.total_amount) AS zavod_narxi,       
+                SUM(rp.quantity * p.salary_expenses) AS fot_sum,      
+                SUM(rp.quantity * p.marketing_expenses) AS promo_sum   
+            FROM 
+                {table.__tablename__} r
+            JOIN 
+                {table.__tablename__}_products rp ON r.id = rp.reservation_id
+            JOIN 
+                products p ON rp.product_id = p.id
+            JOIN 
+                users u ON r.med_rep_id = u.id
+            WHERE
+                {subquery}
+                r.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND r.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')
+            GROUP BY 
+                r.id;
+        """
+        query = text(query)
+        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        res = result.first()
+        if res:
+            data["umumiy_savdo"] += res[0]
+            data["tushum"] += res[1]
+            data["qarz"] += res[2]
+            data["nds_summa"] += res[3]
+            data["skidka"] += res[4]
+            data["zavod_narxi"] += res[5]
+            data["fot_sum"] += res[6]
+            data["promo_sum"] += res[7]
+    return data 

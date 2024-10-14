@@ -501,35 +501,36 @@ async def get_profit(start_date: date, end_date: date, db: AsyncSession = Depend
 
 
 @router.get('/get-users-sales-report')
-async def get_users_sales_report(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+async def get_users_sales_report(filter_date: StartEndDates, product_manager_id: int | None = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']
-    result = await db.execute(select(Users).filter(Users.status=='product_manager'))
+
+    query = select(Users).filter(Users.status=='product_manager') 
+    if product_manager_id:
+        query = query.filter(Users.id == product_manager_id)
+
+    result = await db.execute(query)
     product_managers = []
-    sale_sum = 0
-    nds_sum = 0
-    fot_sum = 0
-    promo_sum = 0
-    skidka_sum = 0
-    pure_proceeds = 0
     for pm in result.scalars().all():
-        pm_sales, report = await get_pm_sales(pm, start_date, end_date, db)
+        pm_sales = await get_pm_sales(pm, start_date, end_date, db)
         product_managers.append(pm_sales)
-        sale_sum += report[0]
-        nds_sum += report[1]
-        fot_sum += report[2]
-        promo_sum += report[3]
-        skidka_sum += report[4]
-        pure_proceeds += report[5]
-    data = {
-        "sale_sum": sale_sum,
-        "nds_sum": nds_sum,
-        "fot_sum": fot_sum,
-        "promo_sum": promo_sum,
-        "skidka_sum": skidka_sum,
-        "pure_proceeds": pure_proceeds,
-        "product_managers": product_managers
-    }
-    return data 
+    return product_managers 
 
 
+
+@router.get('/get-reservations-sales-report')
+async def get_reservations_sales_report(
+            filter_date: StartEndDates, 
+            product_manager_id: int | None = None,
+            med_rep_id=None,
+            pharmacy_id=None,
+            hospital_id=None,
+            wholesale_id=None,
+            region_id=None,
+            man_company_id=None,
+            db: AsyncSession = Depends(get_db)
+):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
+    return data
