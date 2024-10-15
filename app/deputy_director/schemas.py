@@ -16,6 +16,8 @@ class Status(str, Enum):
     product_manager = "product_manager"
     head_of_orders = "head_of_orders"
     wholesale_manager = "wholesale_manager"
+    hr = "hr"
+    financier = "financier"
 
 
 class RegisterForDDSchema(BaseModel):

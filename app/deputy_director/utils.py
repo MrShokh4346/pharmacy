@@ -192,7 +192,7 @@ async def get_sum_reservations(
     return data 
 
 
-async def get_sale_by_doctor(doctor_id=None, product_id=None, db):
+async def get_sale_by_doctor(db, doctor_id=None, product_id=None):
     tables = [ReservationpayedAmounts, WholesaleReservationpayedAmounts, HospitalReservationpayedAmounts]
 
     for table in tables: 
