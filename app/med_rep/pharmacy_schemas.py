@@ -259,13 +259,13 @@ class ReplyNotification(BaseModel):
 class PharmacyHotSaleSchema(BaseModel):
     id: int 
     amount: int 
-    date: date 
+    date: datetime
     product: ProductSchema
 
 
 class ReservationHistorySchema(BaseModel):
     amount: int 
     description: Optional[str] = None
-    date: date 
+    date: datetime
     product: ProductSchema
     doctor: DoctorSchema

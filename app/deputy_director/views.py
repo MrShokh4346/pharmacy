@@ -534,3 +534,17 @@ async def get_reservations_sales_report(
     end_date = filter_date['end_date']
     data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
     return data
+
+
+
+@router.get('/get-sales-report-by-doctor')
+async def get_reservations_sales_report(
+            filter_date: StartEndDates, 
+            doctor_id: int | None = None,
+            product_id: int | None = None,
+            db: AsyncSession = Depends(get_db)
+):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
+    return data

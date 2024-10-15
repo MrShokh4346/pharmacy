@@ -45,6 +45,7 @@ async def check_if_month_is_addable(month: int, db: AsyncSession):
         raise HTTPException(status_code=400, detail=f"You cannot edit plan in this month")
     return True
 
+
 async def calculate_postupleniya(pm_id, model, start_date, end_date, db, med_rep_id=None, region_id=None):
     table = model.__tablename__                                                
     query = f"""SELECT sum({table}.total_payable_with_nds), users.id, users.full_name, users.product_manager_id FROM {table} 
@@ -189,3 +190,40 @@ async def get_sum_reservations(
             data["fot_sum"] += res[6]
             data["promo_sum"] += res[7]
     return data 
+
+
+async def get_sale_by_doctor(doctor_id=None, product_id=None, db):
+    tables = [ReservationpayedAmounts, WholesaleReservationpayedAmounts, HospitalReservationpayedAmounts]
+
+    for table in tables: 
+        subquery = "" 
+        if doctor_id:
+            subquery += f" rp.doctor_id = {doctor_id} AND"
+        if product_id:
+            subquery += f" rp.product_id = {product_id} AND"
+
+        query = f"""
+            SELECT 
+                SUM(rp.amount) AS amount,  
+                SUM(rp.nds_summa) AS nds_summa, 
+                SUM(rp.skidka_sum) AS skidka,             
+                SUM(rp.pure_proceeds) AS zavod_narxi,       
+                SUM(rp.fot_sum) AS fot_sum,      
+                SUM(rp.promo_sum) AS promo_sum   
+            FROM 
+                {table.__tablename__} rp
+            JOIN 
+                {table.__tablename__[:-14]} r ON r.id = rp.reservation_id
+            JOIN 
+                products p ON rp.product_id = p.id
+            JOIN 
+                users u ON r.med_rep_id = u.id
+            WHERE
+                {subquery}
+                r.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND r.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')
+            GROUP BY 
+                r.id;
+        """
+        query = text(query)
+        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        res = result.first()

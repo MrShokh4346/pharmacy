@@ -101,7 +101,7 @@ class CheckPayedSchema(BaseModel):
 
 
 class ExpireDateSchema(BaseModel):
-    date: date
+    date: datetime
 
 
 class BonusOutSchema(BaseModel):
@@ -152,4 +152,4 @@ class DoctorSchema(BaseModel):
 class ReservationHistorySchema(BaseModel):
     amount: int 
     description: Optional[str] = None
-    date: date 
+    date: datetime
