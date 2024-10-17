@@ -269,3 +269,22 @@ class ReservationHistorySchema(BaseModel):
     date: datetime
     product: ProductSchema
     doctor: DoctorSchema
+
+
+class WarehouseProductSchema(BaseModel):
+    id: int
+    name: str
+
+
+class PharmacyWarehouse(BaseModel):
+    amount: int 
+    product: WarehouseProductSchema
+
+
+class PharmacyWarehouseSchema(BaseModel):
+    id: int
+    company_name: str
+    region: RegionSchema
+    currntbalanceinstock: List[PharmacyWarehouse]
+
+

@@ -78,9 +78,9 @@ class CurrentBalanceInStock(Base):
     amount = Column(Integer)
 
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="currntbalanceinstock")
+    product = relationship("Products", backref="currntbalanceinstock", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='currntbalanceinstock')
+    pharmacy = relationship("Pharmacy", cascade="all, delete", back_populates='currntbalanceinstock', lazy='selectin')
 
     @classmethod
     async def add(cls, pharmacy_id: int, product_id: int, amount: int, db: AsyncSession):
@@ -322,22 +322,20 @@ class Reservation(Base):
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
             current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
-            if kwargs['total'] < current:   
+            
+            if kwargs['total'] > 0:
+                self.reailized_debt -= kwargs['total']
+                if self.reailized_debt < 0:
+                    self.reailized_debt = 0
+                self.debt -= kwargs['total']
+                self.profit += kwargs['total']
+                remaind = self.profit - self.total_payable_with_nds
+                if remaind > 0:
+                    RemainderSumFromReservation.set_remainder(amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
+
+            if self.profit < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
-            
-            # if kwargs['total'] > 0:
-            #     remaind = kwargs['total'] - self.reailized_debt
-            #     self.reailized_debt -= kwargs['total']
-            #     if self.reailized_debt < 0:
-            #         self.reailized_debt = 0
-            #     self.debt -= kwargs['total']
-            #     if self.debt < 0:
-            #         self.debt = 0
-            #     self.profit += kwargs['total']
-            #     if remaind > 0:
-            #         for prd in self.wholesale_payed_amounts:
-            #             prd.remainder_sum = remaind
-            
+
             for obj in kwargs['objects']:
                 year = datetime.now().year
                 month_number = obj['month_number']
@@ -350,24 +348,13 @@ class Reservation(Base):
                 doctor_monthly_plan = result.scalars().first()
                 if not doctor_monthly_plan:
                     raise HTTPException(status_code=404, detail=f"There is no doctor plan with this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
-                self.debt -= obj['amount'] * obj['quantity']
-                self.profit += obj['amount'] * obj['quantity']
 
-                # self.reailized_debt += obj['amount'] * obj['quantity']
-                result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
-                product = result.scalar()
-                nds_sum = obj['amount'] - obj['amount']/1.12 
-                skidka_sum = product.price - obj['amount']/1.12 
+                self.reailized_debt += obj['amount'] * obj['quantity']
                 reservation = ReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
                                         remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'], 
                                         quantity=obj['quantity'], 
-                                        fot_sum = obj['quantity'] * product.salary_expenses,
-                                        promo_sum = obj['quantity'] * product.marketing_expenses,
-                                        pure_proceeds = obj['quantity'] * product.price,
-                                        nds_sum = nds_sum * obj['quantity'],
-                                        skidka_sum = skidka_sum * obj['quantity'],
                                         bonus=obj['bonus'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 
@@ -381,11 +368,6 @@ class Reservation(Base):
                                             product_id=obj['product_id'],
                                             db=db
                                             )
-                if self.debt < 0:
-                    raise HTTPException(status_code=400, detail=f"Something went wrong")
-                # if obj.get('doctor_id') is None:
-                #     await PharmacyHotSale.save(amount=obj['quantity'], product_id=obj['product_id'], pharmacy_id=self.pharmacy_id, db=db)
-                # else:
                 await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                 if reservation.bonus == True:
                     await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
@@ -638,6 +620,7 @@ class Pharmacy(Base):
     region = relationship("Region", backref="pharmacy", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id")) 
     doctors = relationship("Doctor",  secondary="pharmacy_doctor", passive_deletes=True, back_populates="pharmacy")
+    currntbalanceinstock = relationship("CurrentBalanceInStock", cascade="all, delete", back_populates='pharmacy', lazy='selectin')
 
     async def save(self, db: AsyncSession):
         try:
@@ -699,6 +682,8 @@ class Pharmacy(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
+    # @classmethod
+    # async def get_warehouse(cls, db: AsyncSession):
 
 
 

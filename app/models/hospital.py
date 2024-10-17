@@ -326,21 +326,9 @@ class HospitalBonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
-        # year = datetime.now().year
-        # month = datetime.now().month  
-        # num_days = calendar.monthrange(year, month)[1]
-        # start_date = datetime(year, month, 1)  
-        # end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Products, kwargs['product_id'], db)
-        # amount = product.marketing_expenses * kwargs['product_quantity']
-        # result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        # month_bonus = result.scalars().first()
-        # if month_bonus is None:
         month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=kwargs['bonus_sum'])
         db.add(month_bonus)
-        # else:
-        #     month_bonus.amount += amount
-        #     month_bonus.product_quantity += kwargs['product_quantity']
 
 
 class HospitalFact(Base):
@@ -371,7 +359,6 @@ class HospitalFact(Base):
             db.add(month_fact)
         else:
             month_fact.fact += kwargs['product_quantity']
-        # await HospitalBonus.set_bonus(**kwargs, start_date=start_date, end_date=end_date, db=db)
 
 
 class HospitalPostupleniyaFact(Base):
@@ -391,7 +378,6 @@ class HospitalPostupleniyaFact(Base):
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
         year = datetime.now().year
-        # month = datetime.now().month  
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
         start_date = datetime(year, kwargs['month_number'], 1)  
         end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
@@ -404,4 +390,35 @@ class HospitalPostupleniyaFact(Base):
         else:
             month_fact.fact += kwargs['compleated']
             month_fact.fact_price += kwargs['fact_price']
-        # await Bonus.set_bonus(**kwargs, db=db)
+
+
+class RemainderSumFromReservation(Base):
+    __tablename__ = "remainder_sum_from_reservation"
+
+    id = Column(Integer, primary_key=True)
+    amonut = Column(Integer)
+    date = Column(DateTime, default=datetime.now())
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='remainder')
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
+    wholesale = relationship("Wholesale", backref="remainder", cascade="all, delete", lazy='selectin')
+    reservation_invoice_number = Column(Integer)
+
+    @classmethod
+    async def set_remainder(cls, db: AsyncSession, **kwargs):
+        try:
+            obj = cls(**kwargs)
+            db.add(obj)
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+    @classmethod
+    async def get_reminder(cls, db: AsyncSession, **kwargs):
+        if kwargs.get('pharmacy_id', None):
+            query = select(cls).filter(cls.pharmacy_id==kwargs['phatmacy_id'])
+        elif kwargs.get('wholesale_id', None):
+            query = select(cls).filter(cls.wholesale_id==kwargs['wholesale_id'])
+        result = await execute(query)
+        remainder = result.scalar()
+        return remainder
+

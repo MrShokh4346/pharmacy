@@ -418,12 +418,14 @@ async def pay_wholesale_pharmacy_reservation(reservation_id: int, obj: PayWholes
 async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
     data = {}
     reservation = await get_or_404(Reservation, reservation_id, db)
-    result = await db.execute(select(ReservationPayedAmounts).filter(ReservationPayedAmounts.reservation_id==reservation_id).order_by(ReservationPayedAmounts.id.desc()))
-    obj = result.scalars().first()
+
+    remainder = await RemainderSumFromReservation.get_reminder(pharmacy_id=reservation.pharmacy_id, db=db)
+
     result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation_id))
     data = {
         "debt": reservation.debt,
-        "remiainder_sum": obj.remainder_sum if obj else 0 ,
+        "remiainder_sum": remainder.amount if remainder else 0,
+        "invoice_number": remainder.reservation_invoice_number if remainder else None,
         "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.reservation_price} for prd in result.scalars().all()]
     }
     return data 
@@ -433,8 +435,9 @@ async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: Asy
 async def get_wholesale_reservation_payed_remiainder(reservation_id: int, db: AsyncSession = Depends(get_db)):
     data = {}
     reservation = await get_or_404(WholesaleReservation, reservation_id, db)
-    result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id==reservation_id).order_by(WholesaleReservationPayedAmounts.id.desc()))
-    obj = result.scalars().first()
+
+    remainder = await RemainderSumFromReservation.get_reminder(wholesale_id=reservation.wholesale_id, db=db)
+
     result = await db.execute(select(WholesaleReservationProducts).filter(WholesaleReservationProducts.reservation_id==reservation_id))
     data = {
         "debt": reservation.debt,

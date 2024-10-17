@@ -268,3 +268,10 @@ async def get_pharmacy_hot_sales(pharmacy_id: int, month: int | None = None, db:
     end_date = datetime(year, month, num_days, 23, 59)
     result = await db.execute(select(PharmacyHotSale).filter(PharmacyHotSale.pharmacy_id==pharmacy_id))
     return result.scalars().all()
+
+
+@router.get('/get-pharmacy-warehouse', response_model=List[PharmacyWarehouseSchema])
+async def get_pharmacy_warehouse(db: AsyncSession = Depends(get_db)):
+    # pharmacies = await Pharmacy.get_warehouse(db)
+    pharmacy_warehouse = await db.execute(select(Pharmacy))
+    return pharmacy_warehouse.scalars().all()
