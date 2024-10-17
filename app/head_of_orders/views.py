@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
 from models.pharmacy import Pharmacy, ReservationPayedAmounts, ReservationProducts
-from models.hospital import HospitalReservation
+from models.hospital import HospitalReservation, RemainderSumFromReservation
 from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, WholesaleReservation, WholesaleReservationPayedAmounts, WholesaleReservationProducts
 from models.dependencies import *
 from typing import Any, List
@@ -62,8 +62,9 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
     result = await db.execute(select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)).filter(Reservation.date>=start_date, Reservation.date<=end_date))
     for rs in result.scalars().all():
         promo = 0
-        for pr in rs.products:
-            promo += pr.product.marketing_expenses * pr.quantity
+        if rs.bonus == True:
+            for pr in rs.products:
+                promo += pr.product.marketing_expenses * pr.quantity
         data.append({
             "id":rs.id,
             "date":rs.date,
@@ -92,8 +93,9 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
     # data.extend(result.scalars().all())
     for rs in result.scalars().all():
         promo = 0
-        for pr in rs.products:
-            promo += pr.product.marketing_expenses * pr.quantity
+        if rs.bonus == True:
+            for pr in rs.products:
+                promo += pr.product.marketing_expenses * pr.quantity
         data.append({
             "id":rs.id,
             "date":rs.date,
@@ -120,8 +122,9 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
     result = await db.execute(select(WholesaleReservation).options(selectinload(WholesaleReservation.products)).filter(WholesaleReservation.date>=start_date, WholesaleReservation.date<=end_date))
     for rs in result.scalars().all():
         promo = 0
-        for pr in rs.products:
-            promo += pr.product.marketing_expenses * pr.quantity
+        if rs.bonus == True:
+            for pr in rs.products:
+                promo += pr.product.marketing_expenses * pr.quantity
         data.append({
             "id":rs.id,
             "date":rs.date,
@@ -423,6 +426,7 @@ async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: Asy
 
     result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation_id))
     data = {
+        "description": reservation.description,
         "debt": reservation.debt,
         "remiainder_sum": remainder.amount if remainder else 0,
         "invoice_number": remainder.reservation_invoice_number if remainder else None,

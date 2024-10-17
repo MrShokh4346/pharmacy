@@ -162,7 +162,12 @@ async def get_sum_reservations(
                 SUM(r.total_amount - r.total_payable) AS skidka,             
                 SUM(r.total_amount) AS zavod_narxi,       
                 SUM(rp.quantity * p.salary_expenses) AS fot_sum,      
-                SUM(rp.quantity * p.marketing_expenses) AS promo_sum   
+                SUM(
+                    CASE 
+                        WHEN r.bonus = true THEN rp.quantity * p.marketing_expenses
+                        ELSE 0
+                    END
+                ) AS promo_sum    
             FROM 
                 {table.__tablename__} r
             JOIN 

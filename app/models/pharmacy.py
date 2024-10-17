@@ -224,6 +224,8 @@ class Reservation(Base):
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
     discountable = Column(Boolean)
+    bonus = Column(Boolean, default=True)
+    description = Column(String)
     returned_price = Column(Float, default=0)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
@@ -261,13 +263,13 @@ class Reservation(Base):
                 res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=reservation_price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * prd.price
-            total_payable = round(total_amount - total_amount * kwargs['discount'] / 100) if kwargs['discountable'] == True else total_amount
+            total_payable = (total_amount - total_amount * kwargs['discount'] / 100) if kwargs['discountable'] == True else total_amount
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
                                 total_amount = total_amount,
                                 total_payable = total_payable,
-                                total_payable_with_nds = round(total_payable + total_payable * 0.12),
-                                debt = round(total_payable + total_payable * 0.12)
+                                total_payable_with_nds = (total_payable + total_payable * 0.12),
+                                debt = (total_payable + total_payable * 0.12)
                                 )
             db.add(reservation)
             for p in res_products:
@@ -309,10 +311,10 @@ class Reservation(Base):
         if self.checked == True:
             raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
-            product.reservation_price = round(product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
-        self.total_payable = round(self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
-        self.total_payable_with_nds = round(self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100))
-        self.debt = round(self.debt * (100 / (100 - self.discount)) * (1 - discount / 100))
+            product.reservation_price = (product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable = (self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.total_payable_with_nds = (self.total_payable_with_nds * (100 / (100 - self.discount)) * (1 - discount / 100))
+        self.debt = (self.debt * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.discount = discount
         await db.commit()
 
@@ -395,13 +397,13 @@ class Reservation(Base):
             if r_product.quantity < 0:
                 raise HTTPException(status_code=400, detail="You are trying to return more than reserved")
             minus_price = quantity * r_product.product.price
-            minus_price_with_discount = round(minus_price - minus_price * self.discount / 100) if self.discountable == True else minus_price
+            minus_price_with_discount = (minus_price - minus_price * self.discount / 100) if self.discountable == True else minus_price
             self.total_quantity -= quantity
             self.total_amount -= minus_price
             self.total_payable -= minus_price_with_discount
-            self.returned_price += round(minus_price_with_discount + minus_price_with_discount * 0.12)
-            self.total_payable_with_nds -= round(minus_price_with_discount + minus_price_with_discount * 0.12)
-            self.debt -= round(minus_price_with_discount + minus_price_with_discount * 0.12)
+            self.returned_price += (minus_price_with_discount + minus_price_with_discount * 0.12)
+            self.total_payable_with_nds -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            self.debt -= (minus_price_with_discount + minus_price_with_discount * 0.12)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=400, detail="Something went wrong!")
@@ -460,10 +462,10 @@ class ReservationProducts(Base):
             db.add(res_product)
             result = await db.execute(select(Reservation).filter(Reservation.id==kwargs['reservation_id']))
             reservation = result.scalar()
-            difference_sum = round((kwargs['quantity'] * product.price * 1.12) * (100 - discount)/100)
+            difference_sum = ((kwargs['quantity'] * product.price * 1.12) * (100 - discount)/100)
             reservation.total_quantity += kwargs['quantity']
             reservation.total_amount += kwargs['quantity'] * product.price
-            reservation.total_payable += round((kwargs['quantity'] * product.price) * (100 - discount)/100)
+            reservation.total_payable += ((kwargs['quantity'] * product.price) * (100 - discount)/100)
             reservation.total_payable_with_nds += difference_sum
             reservation.debt += difference_sum
             await db.commit()
@@ -476,10 +478,10 @@ class ReservationProducts(Base):
             self.quantity = kwargs['quantity']
             self.not_payed_quantity = kwargs['quantity']
             discount = self.reservation.discount
-            difference_sum = round((difference * self.product.price * 1.12) * (100 - discount)/100)
+            difference_sum = ((difference * self.product.price * 1.12) * (100 - discount)/100)
             self.reservation.total_quantity += difference
             self.reservation.total_amount += difference * self.product.price
-            self.reservation.total_payable += round((difference * self.product.price) * (100 - discount)/100)
+            self.reservation.total_payable += ((difference * self.product.price) * (100 - discount)/100)
             self.reservation.total_payable_with_nds += difference_sum
             self.reservation.debt += difference_sum
             await db.commit()
@@ -490,10 +492,10 @@ class ReservationProducts(Base):
         try:
             query = f"delete from reservation_products WHERE id={self.id}"
             discount = self.reservation.discount
-            difference_sum = round((self.quantity * self.product.price * 1.12) * (100 - discount)/100)
+            difference_sum = ((self.quantity * self.product.price * 1.12) * (100 - discount)/100)
             self.reservation.total_quantity -= self.quantity
             self.reservation.total_amount -= self.quantity * self.product.price
-            self.reservation.total_payable -= round((self.quantity * self.product.price) * (100 - discount)/100)
+            self.reservation.total_payable -= ((self.quantity * self.product.price) * (100 - discount)/100)
             self.reservation.total_payable_with_nds -= difference_sum
             self.reservation.debt -= difference_sum
             result = await db.execute(text(query))
