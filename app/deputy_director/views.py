@@ -548,3 +548,26 @@ async def get_reservations_sales_report(
     end_date = filter_date['end_date']
     data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
     return data
+
+
+@router.get('/get-postupleniya')
+async def get_postupleniya(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    
+    query1 = text("SELECT SUM(rp.amount) AS amount FROM reservation_payed_amounts rp WHERE rp.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND rp.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')")
+    query2 = text("SELECT SUM(rp.amount) AS amount FROM hospital_reservation_payed_amounts rp WHERE rp.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND rp.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')")
+    query3 = text("SELECT SUM(rp.amount) AS amount FROM wholesale_reservation_payed_amounts rp WHERE rp.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND rp.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')")
+    
+    result1 = await db.execute(query1, {'start_date': str(start_date), 'end_date': str(end_date)})
+    result2 = await db.execute(query2, {'start_date': str(start_date), 'end_date': str(end_date)})
+    result3 = await db.execute(query3, {'start_date': str(start_date), 'end_date': str(end_date)})
+
+    data1 = result1.first() 
+    data2 = result2.first() 
+    data3 = result3.first() 
+    data = data1[0] if data1[0] is not None else 0
+    data += data2[0] if data2[0] is not None else 0
+    data += data3[0] if data3[0] is not None else 0
+
+    return {"amount": data} 

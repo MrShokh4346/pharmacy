@@ -226,6 +226,7 @@ class Reservation(Base):
     discountable = Column(Boolean)
     bonus = Column(Boolean, default=True)
     description = Column(String)
+    reailized_debt = Column(Integer, default=0)
     returned_price = Column(Float, default=0)
     total_quantity = Column(Integer)
     total_amount = Column(Float)
@@ -339,17 +340,19 @@ class Reservation(Base):
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
 
             for obj in kwargs['objects']:
-                year = datetime.now().year
-                month_number = obj['month_number']
-                num_days = calendar.monthrange(year, month_number)[1]
-                start_date = datetime(year, month_number, 1)
-                end_date = datetime(year, month_number, num_days, 23, 59)
+                if obj['month_number'] is not None:
+                    year = datetime.now().year
+                    month_number = obj['month_number']
+                    num_days = calendar.monthrange(year, month_number)[1]
+                    start_date = datetime(year, month_number, 1)
+                    end_date = datetime(year, month_number, num_days, 23, 59)
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
-                doctor_monthly_plan = result.scalars().first()
-                if not doctor_monthly_plan:
-                    raise HTTPException(status_code=404, detail=f"There is no doctor plan with this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
+                if obj['doctor_id'] is not None:
+                    result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+                    doctor_monthly_plan = result.scalars().first()
+                    if not doctor_monthly_plan:
+                        raise HTTPException(status_code=404, detail=f"There is no doctor plan with this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
 
                 self.reailized_debt += obj['amount'] * obj['quantity']
                 reservation = ReservationPayedAmounts(
@@ -370,8 +373,8 @@ class Reservation(Base):
                                             product_id=obj['product_id'],
                                             db=db
                                             )
-                await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                if reservation.bonus == True:
+                if self.bonus == True:
+                    await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                     await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
@@ -436,12 +439,14 @@ class ReservationProducts(Base):
 
     @classmethod
     async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
-        query = f"update reservation_products set not_payed_quantity=not_payed_quantity-{kwargs['quantity']} WHERE reservation_id={kwargs['reservation_id']} AND product_id={kwargs['product_id']} returning not_payed_quantity"  
-        result = await db.execute(text(query))
-        quantity = result.scalar()
-        if quantity < 0:
+        try:
+            query = f"update reservation_products set not_payed_quantity=not_payed_quantity-{kwargs['quantity']} WHERE reservation_id={kwargs['reservation_id']} AND product_id={kwargs['product_id']} returning not_payed_quantity"  
+            result = await db.execute(text(query))
+            quantity = result.scalar()
+            if quantity < 0:
+                raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
+        except:
             raise HTTPException(status_code=400, detail="Quantity couldn't be lower then 0")
-        await db.commit()
 
     @classmethod
     async def set_default_payed_quantity(cls, db: AsyncSession, **kwargs):
