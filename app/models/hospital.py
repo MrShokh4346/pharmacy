@@ -106,11 +106,6 @@ class HospitalReservationPayedAmounts(Base):
     amount = Column(Integer)
     total_sum = Column(Integer)
     remainder_sum = Column(Integer)
-    nds_sum = Column(Integer , default=0)
-    fot_sum = Column(Integer , default=0)
-    promo_sum = Column(Integer , default=0)
-    skidka_sum = Column(Integer , default=0)
-    pure_proceeds = Column(Integer , default=0)
     bonus = Column(Boolean, default=True)
     bonus_discount = Column(Integer)
     doctor_id = Column(Integer)
@@ -233,8 +228,8 @@ class HospitalReservation(Base):
         await db.commit()
 
     async def update_discount(self, discount: float, db: AsyncSession):
-        if self.checked == True:
-            raise HTTPException(status_code=400, detail=f"This reservation already checked")
+        # if self.checked == True:
+        #     raise HTTPException(status_code=400, detail=f"This reservation already checked")
         for product in self.products:
             product.reservation_price = (product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.total_payable = (self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
@@ -247,31 +242,18 @@ class HospitalReservation(Base):
         try:
             self.debt -= kwargs['amount']
             self.profit += kwargs['amount']
-            nds_sum = kwargs['amount'] - kwargs['amount']/1.12 
-            fot_sum = 0
-            promo_sum = 0
-            pure_proceeds = 0
-            skidka_sum = 0
-
-            reservation = HospitalReservationPayedAmounts(nds_sum=nds_sum, quantity=self.total_quantity, doctor_id=kwargs['doctor_id'], bonus_discount=kwargs['bonus_discount'], amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
+            reservation = HospitalReservationPayedAmounts(quantity=self.total_quantity, doctor_id=kwargs['doctor_id'], bonus_discount=kwargs['bonus_discount'], amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
             await reservation.save(db)
             if self.debt < 0:
                 raise HTTPException(status_code=400, detail=f"Something went wr")
             for prd in self.products:
-                fot_sum += prd.quantity * prd.product.salary_expenses
-                promo_sum += prd.quantity * prd.product.marketing_expenses
-                pure_proceeds += prd.quantity * prd.product.price
-                skidka_sum += prd.quantity * prd.product.price * self.discount
                 product_price = (prd.product.price * 1.12) * (100 - self.discount)/100
                 fact_price = prd.quantity * product_price
                 bonus_sum = fact_price * kwargs['bonus_discount']/100
                 await DoctorFact.set_fact_to_hospital(month_number=kwargs['month_number'], doctor_id=kwargs['doctor_id'], product_id=prd.product.id, compleated=prd.quantity, db=db)
                 await DoctorPostupleniyaFact.set_fact(price=product_price, fact_price=fact_price, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
-                await Bonus.set_bonus_to_hospital(bonus_sum=bonus_sum, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
-            reservation.fot_sum = fot_sum
-            reservation.promo_sum = promo_sum
-            reservation.pure_proceeds = pure_proceeds
-            reservation.skidka_sum = skidka_sum
+                if self.bonus == True:
+                    await Bonus.set_bonus_to_hospital(bonus_sum=bonus_sum, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

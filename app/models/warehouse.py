@@ -284,8 +284,8 @@ class WholesaleReservation(Base):
         await db.commit()
 
     async def update_discount(self, discount: float, db: AsyncSession):
-        if self.checked == True:
-            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+        # if self.checked == True:
+        #     raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
             product.price = (product.price * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.total_payable =( self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))

@@ -288,6 +288,7 @@ class PharmacyWarehouseSchema(BaseModel):
     id: int
     company_name: str
     region: RegionSchema
+    med_rep: UserOutSchema
     currntbalanceinstock: List[PharmacyWarehouse]
 
 

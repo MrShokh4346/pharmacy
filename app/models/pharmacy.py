@@ -186,11 +186,6 @@ class ReservationPayedAmounts(Base):
     amount = Column(Integer)
     total_sum = Column(Integer)
     remainder_sum = Column(Integer)
-    nds_sum = Column(Integer , default=0)
-    fot_sum = Column(Integer , default=0)
-    promo_sum = Column(Integer , default=0)
-    skidka_sum = Column(Integer , default=0)
-    pure_proceeds = Column(Integer , default=0)
     bonus = Column(Boolean, default=True)
     quantity = Column(Integer)
     description = Column(String)
@@ -309,8 +304,8 @@ class Reservation(Base):
         await db.commit()
 
     async def update_discount(self, discount: float, db: AsyncSession):
-        if self.checked == True:
-            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+        # if self.checked == True:
+        #     raise HTTPException(status_code=400, detail=f"This reservation already chacked")
         for product in self.products:
             product.reservation_price = (product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.total_payable = (self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
@@ -340,15 +335,14 @@ class Reservation(Base):
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
 
             for obj in kwargs['objects']:
-                if obj['month_number'] is not None:
+                if obj['product_id'] not in product_ids:
+                    raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
+                if obj['doctor_id'] is not None:
                     year = datetime.now().year
                     month_number = obj['month_number']
                     num_days = calendar.monthrange(year, month_number)[1]
                     start_date = datetime(year, month_number, 1)
                     end_date = datetime(year, month_number, num_days, 23, 59)
-                if obj['product_id'] not in product_ids:
-                    raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                if obj['doctor_id'] is not None:
                     result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==obj['doctor_id'], DoctorMonthlyPlan.product_id==obj['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
                     doctor_monthly_plan = result.scalars().first()
                     if not doctor_monthly_plan:

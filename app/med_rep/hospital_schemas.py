@@ -58,6 +58,7 @@ class HospitalReservationProductSchema(BaseModel):
 class HospitalReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
+    bonus: bool
     discount: Optional[int] = 0
     products: List[HospitalReservationProductSchema]
 

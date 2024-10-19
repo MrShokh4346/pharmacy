@@ -150,42 +150,69 @@ async def get_sum_reservations(
             subquery += f" u.region_id = {region_id} AND"
         if man_company_id:
             subquery += f" r.manufactured_company_id = {man_company_id} AND"
-        if product_manager_id:
-            subquery += f" u.product_manager_id = {product_manager_id} AND"
+        # if product_manager_id:
+        #     subquery += f" u.product_manager_id = {product_manager_id} AND"
+        print(subquery)
+        print(table.__tablename__)
 
         query = f"""
-            SELECT 
-                SUM(r.total_payable_with_nds) AS umumiy_savdo,  
-                SUM(r.profit) AS tushum,                        
-                SUM(r.debt) AS qarz,                           
-                SUM(r.total_payable_with_nds - r.total_payable) AS nds_summa, 
-                SUM(r.total_amount - r.total_payable) AS skidka,             
-                SUM(r.total_amount) AS zavod_narxi,       
-                SUM(rp.quantity * p.salary_expenses) AS fot_sum,      
-                SUM(
-                    CASE 
-                        WHEN r.bonus = true THEN rp.quantity * p.marketing_expenses
-                        ELSE 0
-                    END
-                ) AS promo_sum    
-            FROM 
-                {table.__tablename__} r
-            JOIN 
-                {table.__tablename__}_products rp ON r.id = rp.reservation_id
-            JOIN 
-                products p ON rp.product_id = p.id
-            JOIN 
-                users u ON r.med_rep_id = u.id
-            WHERE
-                {subquery}
-                r.date>=TO_TIMESTAMP(:start_date, 'YYYY-MM-DD HH24:MI:SS') AND r.date<=TO_TIMESTAMP(:end_date, 'YYYY-MM-DD HH24:MI:SS')
-            GROUP BY 
-                r.id;
+                SELECT 
+                    SUM(reservation_data.umumiy_savdo) AS umumiy_savdo,  
+                    SUM(reservation_data.tushum) AS tushum,                        
+                    SUM(reservation_data.qarz) AS qarz,                           
+                    SUM(reservation_data.nds_summa) AS nds_summa, 
+                    SUM(reservation_data.skidka) AS skidka,             
+                    SUM(product_data.zavod_narxi) AS zavod_narxi,       
+                    SUM(product_data.fot_sum) AS fot_sum,      
+                    SUM(product_data.promo_sum) AS promo_sum    
+                FROM 
+                    (SELECT 
+                        r.id,
+                        r.total_payable_with_nds AS umumiy_savdo,
+                        r.profit AS tushum,
+                        r.debt AS qarz,
+                        (r.total_payable_with_nds - r.total_payable) AS nds_summa,
+                        (r.total_amount - r.total_payable) AS skidka
+                    FROM 
+                        {table.__tablename__} r
+                    WHERE
+                        r.checked='1' 
+                        AND r.date >= '2024-10-01 00:00:00' 
+                        AND r.date <= '2024-10-30 23:59:59'
+                    ) AS reservation_data
+                JOIN 
+                    (SELECT 
+                        rp.reservation_id,
+                        SUM(rp.quantity * p.discount_price) AS zavod_narxi,
+                        SUM(rp.quantity * p.salary_expenses) AS fot_sum,
+                        SUM(
+                            CASE 
+                                WHEN r.bonus = true THEN rp.quantity * p.marketing_expenses
+                                ELSE 0
+                            END
+                        ) AS promo_sum
+                    FROM 
+                        {table.__tablename__}_products rp
+                    JOIN 
+                        products p ON rp.product_id = p.id
+                    JOIN 
+                        {table.__tablename__} r ON rp.reservation_id = r.id
+                    WHERE
+                        r.checked='1' 
+                        AND r.date >= '2024-10-01 00:00:00' 
+                        AND r.date <= '2024-10-30 23:59:59'
+                    GROUP BY 
+                        rp.reservation_id
+                    ) AS product_data
+                ON reservation_data.id = product_data.reservation_id;
+
         """
         query = text(query)
-        result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        # result = await db.execute(query, {'start_date': str(start_date), 'end_date': str(end_date)})
+        result = await db.execute(query)
         res = result.first()
-        if res:
+        print(res)
+        if res[0]:
             data["umumiy_savdo"] += res[0]
             data["tushum"] += res[1]
             data["qarz"] += res[2]
@@ -194,6 +221,8 @@ async def get_sum_reservations(
             data["zavod_narxi"] += res[5]
             data["fot_sum"] += res[6]
             data["promo_sum"] += res[7]
+        # from pprint import pprint
+        # pprint(data)
     return data 
 
 
