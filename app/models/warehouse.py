@@ -226,11 +226,12 @@ class WholesaleReservation(Base):
             products = kwargs.pop('products')
             for product in products:
                 prd = await get_or_404(Products, product['product_id'], db)
+                price = product['price'] if product['price'] else prd.price
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                reservation_price = ((prd.price - prd.price * kwargs['discount'] / 100) * 1.12)
+                reservation_price = ((price - price * kwargs['discount'] / 100) * 1.12)
                 res_products.append(WholesaleReservationProducts(
                                     quantity = product['quantity'],
                                     product_id = product['product_id'],
@@ -238,7 +239,7 @@ class WholesaleReservation(Base):
                                     not_payed_quantity=product['quantity'])
                                     )
                 total_quantity += product['quantity']
-                total_amount += product['quantity'] * prd.price
+                total_amount += product['quantity'] * price
             total_payable = (total_amount - total_amount * kwargs['discount'] / 100) 
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
@@ -300,8 +301,6 @@ class WholesaleReservation(Base):
             result = await db.execute(query)
             product_ids = [row[0] for row in result.all()]
             current = sum([obj['amount'] * obj['quantity'] for obj in kwargs['objects']])
-            # if kwargs['total'] < current:   
-            #     raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
             
             # agar pul tulansa pulni uzini saqlaydi, hechqaysi obyektga bog'lamasdan, historyda faqat tulangan summa ko'rinishi uchun
             remaind = None
@@ -325,16 +324,11 @@ class WholesaleReservation(Base):
                         payed=True
                         )
                 await reservation.save(db)
-                # await db.commit()
-            
             
             for obj in kwargs['objects']:
                 if obj['product_id'] not in product_ids:
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
-                # self.debt -= obj['amount'] * obj['quantity']
-                # self.profit += obj['amount'] * obj['quantity']
                 self.reailized_debt += obj['amount'] * obj['quantity']
-                # if remaind in not None:
 
                 result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
                 product = result.scalar()
@@ -343,14 +337,7 @@ class WholesaleReservation(Base):
                     
                 # agar pul kiritmasdan dorilarni kiritsa doctorga fact va bonus yozadi
                 reservation = WholesaleReservationPayedAmounts(
-                                        # total_sum=kwargs['total'], 
-                                        # remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'],
-                                        fot_sum = obj['quantity'] * product.salary_expenses,
-                                        promo_sum = obj['quantity'] * product.marketing_expenses,
-                                        pure_proceeds = obj['quantity'] * product.price,
-                                        nds_sum = nds_sum * obj['quantity'],
-                                        skidka_sum = skidka_sum * obj['quantity'],
                                         quantity=obj['quantity'], 
                                         description=kwargs['description'], 
                                         reservation_id=self.id, 
@@ -366,8 +353,9 @@ class WholesaleReservation(Base):
                             product_id=obj['product_id'],
                             db=db
                             )   
-                await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                if self.bonus == True:
+                    await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

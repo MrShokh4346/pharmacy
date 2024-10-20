@@ -83,19 +83,18 @@ class PayReservtionSchema(BaseModel):
 
 
 class PayHospitalReservtionSchema(BaseModel):
-    doctor_id: int
-    month_number: Annotated[int, Path(title="", gt=0, le=12)] 
+    doctor_id: Optional[int] = None
+    month_number: Annotated[int | None, Path(title="", gt=0, le=12)] = None
     bonus_discount: float
     amount: int 
     description: Optional[str] = None 
 
 
-
 class PayWholesaleReservtionDoctors(BaseModel):
     amount: int 
     quantity: int
-    month_number: Annotated[int, Path(title="", gt=0, le=12)]
-    doctor_id: int 
+    month_number: Annotated[int | None, Path(title="", gt=0, le=12)] = None
+    doctor_id: Optional[int] = None 
     product_id: int 
 
 

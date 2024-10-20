@@ -166,13 +166,15 @@ class HospitalReservation(Base):
             products = kwargs.pop('products')
             for product in products:
                 prd = await get_or_404(Products, product['product_id'], db)
+                price = product['price'] if product['price'] else prd.price
+                del product['price']
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                res_products.append(HospitalReservationProducts(**product, reservation_price=prd.price, reservation_discount_price=prd.discount_price))
+                res_products.append(HospitalReservationProducts(**product, reservation_price=price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
-                total_amount += product['quantity'] * prd.price
+                total_amount += product['quantity'] * price
             total_payable = (total_amount - total_amount * kwargs['discount'] / 100)
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,
@@ -245,7 +247,7 @@ class HospitalReservation(Base):
             reservation = HospitalReservationPayedAmounts(quantity=self.total_quantity, doctor_id=kwargs['doctor_id'], bonus_discount=kwargs['bonus_discount'], amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
             await reservation.save(db)
             if self.debt < 0:
-                raise HTTPException(status_code=400, detail=f"Something went wr")
+                raise HTTPException(status_code=400, detail=f"Something went wrong")
             for prd in self.products:
                 product_price = (prd.product.price * 1.12) * (100 - self.discount)/100
                 fact_price = prd.quantity * product_price

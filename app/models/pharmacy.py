@@ -251,14 +251,16 @@ class Reservation(Base):
             products = kwargs.pop('products')
             for product in products:
                 prd = await get_or_404(Products, product['product_id'], db)
+                price = product['price'] if product['price'] else prd.price
+                del product['price']
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
                 wrh = result.scalar()
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                reservation_price = (prd.price - prd.price * kwargs['discount'] / 100) * 1.12
+                reservation_price = (price - price * kwargs['discount'] / 100) * 1.12
                 res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=reservation_price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
-                total_amount += product['quantity'] * prd.price
+                total_amount += product['quantity'] * price
             total_payable = (total_amount - total_amount * kwargs['discount'] / 100) if kwargs['discountable'] == True else total_amount
             reservation = cls(**kwargs,
                                 total_quantity = total_quantity,

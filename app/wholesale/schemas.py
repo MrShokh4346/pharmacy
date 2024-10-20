@@ -88,12 +88,13 @@ class ReturnProductSchema(BaseModel):
 class WholesaleReservationProductSchema(BaseModel):
     product_id: int 
     quantity: Annotated[int, Path(title="", ge=0)]
-    price: Annotated[int, Path(title="", ge=0)] 
+    price: Annotated[int | None, Path(title="", ge=0)] = None
 
 
 class WholesaleReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
+    bonus: bool
     med_rep_id: int
     discount: int 
     products: List[WholesaleReservationProductSchema]
