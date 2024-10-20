@@ -115,7 +115,7 @@ class HospitalReservationPayedAmounts(Base):
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("Products", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
-    reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts")
+    reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts", lazy='selectin'   )
 
     async def save(self, db: AsyncSession):
         try:

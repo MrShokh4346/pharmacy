@@ -127,3 +127,31 @@ class AddReservationProductSchema(BaseModel):
     product_id: int 
     quantity: int 
     reservation_id: int 
+
+
+class WholesaleSchema(BaseModel):
+    name: str 
+
+
+class HospitalSchema(BaseModel):
+    company_name: str 
+    med_rep: MedRepSchema
+
+
+class PharmacySchema(BaseModel):
+    company_name: str 
+    med_rep: MedRepSchema
+
+
+class PostupleniyaReservationSchema(BaseModel):
+    pharmacy: Optional[PharmacySchema] = None
+    hospital: Optional[HospitalSchema] = None
+    wholesale: Optional[WholesaleSchema] = None
+    invoice_number: int 
+
+
+class PostupleniyaSchema(BaseModel):
+    amount: int 
+    description: str 
+    date: datetime
+    reservation: PostupleniyaReservationSchema

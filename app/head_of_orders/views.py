@@ -14,6 +14,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import selectinload
 from sqlalchemy import update, text 
 from common_depetencies import StartEndDates
+from .utils import *
 
 
 router = FastAPI()
@@ -253,6 +254,15 @@ async def get_reservation(month_number: int | None = None, start_date: date | No
             "checked":rs.checked
             })
     return data
+
+
+@router.get('/get-postupleniya', response_model=List[PostupleniyaSchema])
+async def get_postupleniya(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
+    data = await get_postupleniyas(start_date, end_date, db)
+    return data 
+
 
 
 @router.post('/check-reservation/{reservation_id}')

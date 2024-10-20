@@ -196,7 +196,7 @@ class ReservationPayedAmounts(Base):
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", backref="reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-    reservation = relationship("Reservation", cascade="all, delete", back_populates="payed_amounts")
+    reservation = relationship("Reservation", cascade="all, delete", back_populates="payed_amounts", lazy='selectin')
    
     async def save(self, db: AsyncSession):
         try:
