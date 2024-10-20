@@ -1,19 +1,19 @@
-# FROM python:3.11
+FROM python:3.11
 
-# RUN mkdir /fastapi_app
+RUN mkdir /fastapi_app
 
-# WORKDIR /fastapi_app
+WORKDIR /fastapi_app
 
-# COPY requirements.txt .
+COPY requirements.txt .
 
-# RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt
 
-# COPY app app
+COPY app app
 
-# COPY startup.sh .
+COPY startup.sh .
 
-# RUN chmod a+x *.sh
+RUN chmod a+x *.sh
 
-# #WORKDIR src
+#WORKDIR src
 
-# #CMD gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000
+#CMD gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000

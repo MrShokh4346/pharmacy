@@ -5,11 +5,7 @@ services:
       context: ./db_docker
     container_name: db_app
     restart: always
-    volumes:
-      - ./postgres_data:/var/lib/postgresql/data
-    # command:
-    # #   - -p 1221
-    #   - /db/db.sh
+
     expose:
       - 5432
     env_file:
@@ -42,10 +38,6 @@ services:
       - db
     networks:
       - app_network
-
-# volumes:
-#   postgres_data:
-#     external: true
 
 networks:
   app_network:
