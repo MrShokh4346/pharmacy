@@ -407,3 +407,33 @@ class RemainderSumFromReservation(Base):
         remainder = result.scalar()
         return remainder
 
+
+class ReturnTable(Base):
+    __tablename__ = 'return_table'
+
+    id = Column(Integer, primary_key=True)
+    date = Column(DateTime, default=datetime.now())
+    invoice_number = Column(Integer, unique=True)
+    return_summa = Column(Integer)
+
+    pharmacy_reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
+    pharmacy_reservation = relationship("Reservation", cascade="all, delete", backref="return", lazy='selectin')
+    wholesale_reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))                                             
+    wholesale_reservation = relationship("WholesaleReservation", cascade="all, delete", backref="return", lazy='selectin')
+    hospital_reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
+    hospital_reservation = relationship("HospitalReservation", cascade="all, delete", backref="return", lazy='selectin')
+
+    @classmethod
+    async def save(cls, db: AsyncSession, **kwargs):
+        
+
+class ReturnProducts(Base):
+    __tablename__ = "return_products"
+
+    id = Column(Integer, primary_key=True)
+    reservation_quantity = Column(Integer) 
+    return_quantity = Column(Integer)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    product = relationship("Products", backref="return_products", lazy='selectin')
+    return_table_id = Column(Integer, ForeignKey("return_table.id", ondelete="CASCADE"))
+    return_table = relationship("ReturnTable", cascade="all, delete", backref="products", lazy='selectin')

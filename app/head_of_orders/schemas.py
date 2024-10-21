@@ -154,3 +154,31 @@ class PostupleniyaSchema(BaseModel):
     description: str 
     date: datetime
     reservation: PostupleniyaReservationSchema
+
+
+class ReservationProductSchema(BaseModel):
+    product_id: int 
+    price: Optional[int] = None
+    quantity: Annotated[int, Path(title="", ge=0)]
+
+
+class ReservationSchema(BaseModel):
+    manufactured_company_id: int
+    invoice_number: Optional[int] = None
+    bonus: bool
+    description: Optional[str] = None 
+    products: List[ReservationProductSchema]
+
+
+class ReturnProductsSchema(BaseModel):
+    reservation_quantity: int 
+    return_quantity: int 
+    product_id: int 
+
+
+class ReturnTableSchema(BaseModel):
+    return_invoice_number: int 
+    return_summa: int 
+    products: List[ReturnProductsSchema]
+
+

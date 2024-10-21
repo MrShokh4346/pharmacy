@@ -526,3 +526,16 @@ async def delete_reservation_product(reservation_product_id: int, db: AsyncSessi
         raise HTTPException(status_code=400, detail="This reservation is already checked")
     await obj.delete(db)
     return {'msg': 'Success'}
+
+
+@router.get('/get-reservation-by-invoice_number/{invoice_number}', response_model=ReservationSchema)
+async def get_reservation_by_invoice_number(invoice_number: int, db: AsyncSession = Depends(get_db)):
+    reservation = await filter_by_invoice_number_with_products(db, invoice_number)
+    return reservation
+
+
+@router.post('/return-reservation/{invoice_number}')
+async def return_reservation(invoice_number: int, vozvrat: ReturnTableSchema, db: AsyncSession = Depends(get_db)):
+    reservation = await filter_by_invoice_number_with_products(db, invoice_number)
+    vozvrat_obj = await ReturnTable.save(invoice_number, vozvrat, reservation, db)
+    return vozvrat_obj
