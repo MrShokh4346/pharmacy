@@ -423,8 +423,8 @@ class ReturnTable(Base):
     hospital_reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
     hospital_reservation = relationship("HospitalReservation", cascade="all, delete", backref="return", lazy='selectin')
 
-    @classmethod
-    async def save(cls, db: AsyncSession, **kwargs):
+    # @classmethod
+    # async def save(cls, db: AsyncSession, **kwargs):
         
 
 class ReturnProducts(Base):
