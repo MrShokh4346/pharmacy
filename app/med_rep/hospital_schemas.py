@@ -59,7 +59,7 @@ class HospitalReservationProductSchema(BaseModel):
 class HospitalReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
-    bonus: bool
+    bonus: Optional[bool] = True
     discount: Optional[int] = 0
     products: List[HospitalReservationProductSchema]
 
@@ -87,6 +87,7 @@ class HospitalReservationOutSchema(BaseModel):
     total_payable: float
     total_payable_with_nds: float
     products: List[ReservationProductOutSchema]
+    bonus: Optional[bool] = None 
     checked: bool
     payed: bool
     invoice_number: Optional[int] = None 

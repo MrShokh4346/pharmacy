@@ -193,7 +193,7 @@ class ReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
     discountable: bool 
-    bonus: bool
+    bonus: Optional[bool] = True
     description: Optional[str] = None 
     products: List[ReservationProductSchema]
 
@@ -214,6 +214,7 @@ class ReservationOutWithProductsSchema(BaseModel):
     total_payable: float
     total_payable_with_nds: float
     products: List[ReservationProductOutSchema]
+    bonus: Optional[bool] = None 
     checked: bool
     invoice_number: Optional[int] = None 
     profit: Optional[int] = None 

@@ -423,9 +423,31 @@ class ReturnTable(Base):
     hospital_reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
     hospital_reservation = relationship("HospitalReservation", cascade="all, delete", backref="return", lazy='selectin')
 
-    # @classmethod
-    # async def save(cls, db: AsyncSession, **kwargs):
-        
+    @classmethod
+    async def save(cls, db: AsyncSession, **kwargs):
+        try:
+            # invoice_number, vozvrat, reservation, db
+            reservation = kwargs['reservation']
+            for product in kwargs['vozvrat'].products:
+                await reservation.vozvrat(product_id=product.product_id, quantity=product.return_quantity, db=db)
+            vozvrat = cls(    
+                invoice_number=kwargs['vozvrat'].return_invoice_number,
+                return_summa=kwargs['vozvrat'].return_summa,
+            )
+            if getattr(reservation, 'wholesale_id', False):
+                vozvrat.wholesale_reservation_id = reservation.id
+            elif getattr(reservation, 'pharmacy_id', False):
+                vozvrat.pharmacy_reservation_id = reservation.id
+            elif getattr(reservation, 'hospital_id', False):
+                vozvrat.hospital_reservation_id = reservation.id
+
+            db.add(vozvrat)
+            await db.commit()
+            return vozvrat
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
 
 class ReturnProducts(Base):
     __tablename__ = "return_products"

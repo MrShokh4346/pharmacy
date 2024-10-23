@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
 from models.pharmacy import Pharmacy, ReservationPayedAmounts, ReservationProducts
-from models.hospital import HospitalReservation, RemainderSumFromReservation
+from models.hospital import HospitalReservation, RemainderSumFromReservation, ReturnTable
 from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, WholesaleReservation, WholesaleReservationPayedAmounts, WholesaleReservationProducts
 from models.dependencies import *
 from typing import Any, List
@@ -537,5 +537,5 @@ async def get_reservation_by_invoice_number(invoice_number: int, db: AsyncSessio
 @router.post('/return-reservation/{invoice_number}')
 async def return_reservation(invoice_number: int, vozvrat: ReturnTableSchema, db: AsyncSession = Depends(get_db)):
     reservation = await filter_by_invoice_number_with_products(db, invoice_number)
-    vozvrat_obj = await ReturnTable.save(invoice_number, vozvrat, reservation, db)
+    vozvrat_obj = await ReturnTable.save(invoice_number=invoice_number, vozvrat=vozvrat, reservation=reservation, db=db)
     return vozvrat_obj

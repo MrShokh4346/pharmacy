@@ -235,7 +235,7 @@ class WholesaleReservation(Base):
                 res_products.append(WholesaleReservationProducts(
                                     quantity = product['quantity'],
                                     product_id = product['product_id'],
-                                    price=reservation_price, 
+                                    reservation_price=price, 
                                     not_payed_quantity=product['quantity'])
                                     )
                 total_quantity += product['quantity']
@@ -376,7 +376,7 @@ class WholesaleReservationProducts(Base):
     quantity = Column(Integer)
     not_payed_quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    price = Column(Float)
+    reservation_price = Column(Float)
     # reservation_discount_price = Column(Integer)
     product = relationship("Products", backref="wholesale_reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))

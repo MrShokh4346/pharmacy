@@ -94,7 +94,7 @@ class WholesaleReservationProductSchema(BaseModel):
 class WholesaleReservationSchema(BaseModel):
     manufactured_company_id: int
     invoice_number: Optional[int] = None
-    bonus: bool
+    bonus: Optional[bool] = True
     med_rep_id: int
     discount: int 
     products: List[WholesaleReservationProductSchema]

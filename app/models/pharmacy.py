@@ -258,7 +258,7 @@ class Reservation(Base):
                 if (not wrh) or wrh.amount < product['quantity']: 
                     raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
                 reservation_price = (price - price * kwargs['discount'] / 100) * 1.12
-                res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=reservation_price, reservation_discount_price=prd.discount_price))
+                res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=price, reservation_discount_price=prd.discount_price))
                 total_quantity += product['quantity']
                 total_amount += product['quantity'] * price
             total_payable = (total_amount - total_amount * kwargs['discount'] / 100) if kwargs['discountable'] == True else total_amount
@@ -404,6 +404,31 @@ class Reservation(Base):
             self.total_payable_with_nds -= (minus_price_with_discount + minus_price_with_discount * 0.12)
             self.debt -= (minus_price_with_discount + minus_price_with_discount * 0.12)
             await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=400, detail="Something went wrong!")
+
+    async def vozvrat(self, product_id: int, quantity: int, db: AsyncSession):
+        try:
+            result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==self.id, ReservationProducts.product_id==product_id))
+            r_product = result.scalars().first()
+            await CurrentBalanceInStock.minus(self.pharmacy_id, product_id, quantity, db)
+            r_product.quantity -= quantity
+            r_product.not_payed_quantity -= quantity
+            if r_product.not_payed_quantity < 0:
+                r_product.not_payed_quantity = 0
+            if r_product.quantity < 0:
+                raise HTTPException(status_code=400, detail="You are trying to return more than reserved")
+            minus_price = quantity * r_product.product.price
+            minus_price_with_discount = (minus_price - minus_price * self.discount / 100) if self.discountable == True else minus_price
+            self.total_quantity -= quantity
+            self.total_amount -= minus_price
+            self.total_payable -= minus_price_with_discount
+            # self.returned_price += (minus_price_with_discount + minus_price_with_discount * 0.12)
+            self.total_payable_with_nds -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            self.debt -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            if self.debt > 0:
+                self.profit += self.debt
+                self.debt = 0
         except IntegrityError as e:
             raise HTTPException(status_code=400, detail="Something went wrong!")
 

@@ -152,8 +152,6 @@ async def get_sum_reservations(
             subquery += f" r.manufactured_company_id = {man_company_id} AND"
         # if product_manager_id:
         #     subquery += f" u.product_manager_id = {product_manager_id} AND"
-        print(subquery)
-        print(table.__tablename__)
 
         query = f"""
                 SELECT 
