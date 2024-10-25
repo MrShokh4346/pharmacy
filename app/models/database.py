@@ -5,31 +5,18 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import lazyload
 import os
 from dotenv.main import load_dotenv
+from db.db import async_session
 # from sqlalchemy import create_engine
 
-load_dotenv()
-os.environ['EMAIL_PASSWORD']
+# load_dotenv()
+# os.environ['EMAIL_PASSWORD']
 
-DATABASE_URL = f"postgresql+asyncpg://{os.environ['DB_USER']}:{os.environ['DB_PASS']}@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
+# DATABASE_URL = f"postgresql+asyncpg://{os.environ['DB_USER']}:{os.environ['DB_PASS']}@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
 
-engine = create_async_engine(DATABASE_URL)
-async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+# engine = create_async_engine(DATABASE_URL)
+# async_session = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
-Base = declarative_base()
-
-# def create_sync_session():
-#     engine = create_engine(DATABASE_URL)
-#     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-#     return SessionLocal
-
-# def sync_db():
-#     SessionLocal = create_sync_session()
-#     db = SessionLocal()
-#     try:
-#         yield db
-#     finally:
-#         db.close()
-
+# Base = declarative_base()
 
 async def get_db():
     async with async_session() as session:

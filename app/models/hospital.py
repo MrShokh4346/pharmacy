@@ -5,13 +5,15 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
 from datetime import date, datetime,  timedelta 
 from sqlalchemy.exc import IntegrityError
-from .database import Base, get_db, get_or_404
 from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from .users import Products, UserProductPlan
 from .doctors import DoctorFact, DoctorPostupleniyaFact, Bonus
 import calendar
+from .database import get_db, get_or_404
+from db.db import Base
+
 
 
 class Hospital(Base):

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from .database import engine
+from db.db import engine
 import asyncio
 from .pharmacy import Reservation
 from .hospital import HospitalReservation

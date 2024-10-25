@@ -4,7 +4,6 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import Table
-from .database import Base, get_db, get_or_404, check_exists
 from sqlalchemy.orm import validates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -13,6 +12,8 @@ from sqlalchemy.schema import UniqueConstraint
 from .users import UserProductPlan, Products
 from sqlalchemy import text
 import calendar
+from .database import  get_db, get_or_404, check_exists
+from db.db import Base
 
 
 class Distance(Base):

@@ -9,9 +9,11 @@ from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from .database import Base, get_db, get_or_404
 from sqlalchemy import and_ , extract, func, or_, text, update
 import calendar
+from .database import get_db, get_or_404
+from db.db import Base
+
 
 
 class IncomingStockProducts(Base):

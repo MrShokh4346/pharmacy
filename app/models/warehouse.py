@@ -8,7 +8,8 @@ from .users import Products
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
-from .database import Base, get_db, get_or_404
+from .database import  get_db, get_or_404
+from db.db import Base
 
 
 class ReportFactoryWerehouse(Base):

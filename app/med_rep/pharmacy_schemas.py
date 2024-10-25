@@ -185,7 +185,7 @@ class FactoryWarehouseOutSchema(BaseModel):
 
 class ReservationProductSchema(BaseModel):
     product_id: int 
-    price: Optional[int] = None
+    price: Optional[float] = None
     quantity: Annotated[int, Path(title="", ge=0)]
 
 

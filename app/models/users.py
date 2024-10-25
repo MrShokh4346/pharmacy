@@ -5,10 +5,11 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from passlib.context import CryptContext
 from datetime import date, datetime,  timedelta 
 from sqlalchemy.exc import IntegrityError
-from .database import Base, get_db, get_or_404
 from sqlalchemy.future import select
 from sqlalchemy import update
 import calendar
+from .database import get_db, get_or_404
+from db.db import Base
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -106,24 +107,24 @@ class ExpenseCategory(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-class Expense(Base):
-    __tablename__ = 'expense'
+# class Expense(Base):
+#     __tablename__ = 'expense'
 
-    id = Column(Integer, primary_key=True)
-    amount = Column(Integer)
-    author = Column(String)
-    description = Column(String)
-    date = Column(DateTime, default=datetime.now())
-    category = relationship("ExpenseCategory", backref="expense", lazy='selectin')
-    category_id = Column(Integer, ForeignKey("expense_category.id"))
+#     id = Column(Integer, primary_key=True)
+#     amount = Column(Integer)
+#     author = Column(String)
+#     description = Column(String)
+#     date = Column(DateTime, default=datetime.now())
+#     category = relationship("ExpenseCategory", backref="expense", lazy='selectin')
+#     category_id = Column(Integer, ForeignKey("expense_category.id"))
     
-    async def save(self, db: AsyncSession):
-        try:
-            db.add(self)
-            await db.commit()
-            await db.refresh(self)
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+#     async def save(self, db: AsyncSession):
+#         try:
+#             db.add(self)
+#             await db.commit()
+#             await db.refresh(self)
+#         except IntegrityError as e:
+#             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class ProductExpenses(Base):
