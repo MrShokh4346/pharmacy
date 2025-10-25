@@ -109,20 +109,20 @@ class DoctorMonthlyPlan(Base):
 
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
     product = relationship("Products",  backref="doctormonthlyplan", lazy="selectin")
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
     price = Column(Integer)
     discount_price = Column(Integer)
     doctor = relationship("Doctor", cascade="all, delete",  back_populates="doctormonthlyplan", lazy="selectin")
-    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), index=True)
 
     async def save(self, db: AsyncSession):
         try:
             db.add(self)
             await db.commit()
             await db.refresh(self)
-        except:
+        except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def update(self, amount: int, db: AsyncSession):
@@ -192,13 +192,13 @@ class DoctorFact(Base):
     fact = Column(Integer)
     price = Column(Integer)
     discount_price = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
-    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    date = Column(DateTime, default=datetime.now(), index=True)
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), index=True)
     doctor = relationship("Doctor", cascade="all, delete", backref="fact")
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     pharmacy = relationship("Pharmacy", backref="doctorfact")
     product = relationship("Products",  backref="doctorfact")
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
@@ -254,13 +254,13 @@ class DoctorPostupleniyaFact(Base):
     fact_price = Column(Integer, default=0)
     price = Column(Integer)
     discount_price = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
-    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    date = Column(DateTime, default=datetime.now(), index=True)
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), index=True)
     doctor = relationship("Doctor", cascade="all, delete", back_populates="postupleniya_fact")
     # pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     # pharmacy = relationship("Pharmacy", backref="doctorfact")
     product = relationship("Products",  backref="postupleniya_fact")
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
@@ -306,10 +306,10 @@ class Bonus(Base):
     payed = Column(Integer, default=0)
     product_quantity = Column(Integer)
     pre_investment = Column(Integer, default=0)
-    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
+    doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), index=True)
     doctor = relationship("Doctor", cascade="all, delete", backref="bonus")
     product = relationship("Products",  backref="bonus", lazy='selectin')
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     async def paying_bonus(self, amount: int, description: str, db: AsyncSession):
         payed = BonusPayedAmounts(amount=amount, description=description, bonus_id=self.id)
@@ -409,27 +409,27 @@ class Doctor(Base):
     deleted = Column(Boolean, default=False)
     birth_date = Column(DateTime)
 
-    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)
     med_rep = relationship("Users",  backref="mr_doctor", foreign_keys=[med_rep_id], lazy='selectin')
-    region_manager_id = Column(Integer, ForeignKey("users.id"))
+    region_manager_id = Column(Integer, ForeignKey("users.id"), index=True)
     region_manager = relationship("Users",  backref="rm_doctor", foreign_keys=[region_manager_id])
-    ffm_id = Column(Integer, ForeignKey("users.id"))
+    ffm_id = Column(Integer, ForeignKey("users.id"), index=True)
     ffm = relationship("Users",  backref="ffm_doctor", foreign_keys=[ffm_id])
-    product_manager_id = Column(Integer, ForeignKey("users.id"))
+    product_manager_id = Column(Integer, ForeignKey("users.id"), index=True)
     product_manager = relationship("Users",  backref="pm_doctor", foreign_keys=[product_manager_id])
-    deputy_director_id = Column(Integer, ForeignKey("users.id"))   
+    deputy_director_id = Column(Integer, ForeignKey("users.id"), index=True)   
     deputy_director = relationship("Users",   foreign_keys=[deputy_director_id])
-    director_id = Column(Integer, ForeignKey("users.id"))    
+    director_id = Column(Integer, ForeignKey("users.id"), index=True)    
     director = relationship("Users",   foreign_keys=[director_id])
     region = relationship("Region",  backref="doctor", lazy='selectin')
-    region_id = Column(Integer, ForeignKey("region.id")) 
+    region_id = Column(Integer, ForeignKey("region.id"), index=True) 
     pharmacy = relationship("Pharmacy",  secondary="pharmacy_doctor", cascade="all, delete", back_populates="doctors")
     speciality = relationship("Speciality",  backref="doctor", lazy='selectin')
-    speciality_id = Column(Integer, ForeignKey("speciality.id")) 
+    speciality_id = Column(Integer, ForeignKey("speciality.id"), index=True) 
     category = relationship("DoctorCategory",  backref="doctor", lazy='selectin')
-    category_id = Column(Integer, ForeignKey("doctor_category.id"))
+    category_id = Column(Integer, ForeignKey("doctor_category.id"), index=True)
     medical_organization = relationship("MedicalOrganization",  backref="doctor", lazy='selectin')
-    medical_organization_id = Column(Integer, ForeignKey("medical_organization.id")) 
+    medical_organization_id = Column(Integer, ForeignKey("medical_organization.id"), index=True) 
     doctormonthlyplan = relationship("DoctorMonthlyPlan", cascade="all, delete",  back_populates="doctor")
     postupleniya_fact = relationship("DoctorPostupleniyaFact", cascade="all, delete", back_populates="doctor")
 

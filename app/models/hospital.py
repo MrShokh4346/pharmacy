@@ -28,8 +28,8 @@ class Hospital(Base):
     purchasing_manager = Column(String)
     contact = Column(String)
     region = relationship("Region", backref="hospital", lazy='selectin')
-    region_id = Column(Integer, ForeignKey("region.id")) 
-    med_rep_id = Column(Integer, ForeignKey("users.id"))
+    region_id = Column(Integer, ForeignKey("region.id"), index=True) 
+    med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)
     med_rep = relationship("Users",  backref="mr_hospital", lazy='selectin')
 
     async def save(self, db: AsyncSession):
@@ -63,12 +63,12 @@ class HospitalMonthlyPlan(Base):
 
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
     product = relationship("Products",  backref="hospitalmonthlyplan", lazy="selectin")
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
     price = Column(Integer)
     discount_price = Column(Integer)
-    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
+    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
     hospital = relationship("Hospital", backref="hospital_monthly_plan", cascade="all, delete", lazy='selectin')
  
     async def save(self, db: AsyncSession):
@@ -76,7 +76,7 @@ class HospitalMonthlyPlan(Base):
             db.add(self)
             await db.commit()
             await db.refresh(self)
-        except:
+        except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def update(self, amount: int, db: AsyncSession):
@@ -114,9 +114,9 @@ class HospitalReservationPayedAmounts(Base):
     quantity = Column(Integer)
     description = Column(String)
     date = Column(DateTime, default=datetime.now())
-    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
+    product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), index=True)
     product = relationship("Products", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
-    reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
+    reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"), index=True)
     reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts", lazy='selectin'   )
 
     async def save(self, db: AsyncSession):
@@ -135,7 +135,7 @@ class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
     date_implementation = Column(DateTime)
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
@@ -147,13 +147,13 @@ class HospitalReservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer, default=0)
-    med_rep_id = Column(Integer, ForeignKey("users.id"))        
+    med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)        
     med_rep = relationship("Users",  backref="hospital_reservation")
     prosrochenniy_debt = Column(Boolean, default=False)
-    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
+    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
     hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')
     products = relationship("HospitalReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
-    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
+    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"), index=True)
     manufactured_company = relationship("ManufacturedCompany", backref="hospital_reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
     payed = Column(Boolean, default=False)
@@ -217,7 +217,7 @@ class HospitalReservation(Base):
         self.payed = kwargs.get('payed')
         await db.commit()
 
-    async def update_date_implementation(self, date: date, db: AsyncSession):
+    async def update_date_implementation(self, date, db: AsyncSession):
         try:
             self.date_implementation = date
             await db.commit()
@@ -325,11 +325,11 @@ class HospitalFact(Base):
     fact = Column(Integer)
     price = Column(Integer)
     discount_price = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
-    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
+    date = Column(DateTime, default=datetime.now(), index=True)
+    hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
     hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
     product = relationship("Products",  backref="hospital_fact")
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):

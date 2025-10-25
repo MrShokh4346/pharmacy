@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
+
+from app.models.expenses import Expense
 from .schemas import *
 from fastapi import APIRouter
 from models.users import *
@@ -167,7 +169,7 @@ async def get_users_by_username(username: str,  db: AsyncSession = Depends(get_d
     result = await db.execute(query)
     return result.scalars().all()
 
-
+###################################################################################################################################################3
 @router.get("/get-medical-representatives")
 async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
@@ -209,7 +211,7 @@ async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSessi
     return data
 
 
-@router.get('/get-all_plan_sum')
+@router.get('/get-all-plan-sum')
 async def get_all_plan_sum(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']

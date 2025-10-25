@@ -2,6 +2,8 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
+
+from app.models.hospital import RemainderSumFromReservation
 from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan, Bonus, DoctorPostupleniyaFact
 from datetime import date , datetime, timedelta
 from .users import Products, UserProductPlan
@@ -216,7 +218,7 @@ class Reservation(Base):
     __tablename__ = "reservation"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
     date_implementation = Column(DateTime, default=datetime.now())
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=30)))
     discount = Column(Float)
@@ -232,14 +234,14 @@ class Reservation(Base):
     invoice_number = Column(Integer, invoice_number_seq, unique=True, server_default=invoice_number_seq.next_value())
     profit = Column(Integer, default=0)
     debt = Column(Integer)
-    med_rep_id = Column(Integer, ForeignKey("users.id"))    
+    med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)    
     med_rep = relationship("Users",  backref="reservation")
     prosrochenniy_debt = Column(Boolean, default=False)
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"), index=True)
     pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
     products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     payed_amounts = relationship("ReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
-    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
+    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"), index=True)
     manufactured_company = relationship("ManufacturedCompany", backref="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
 
@@ -293,7 +295,7 @@ class Reservation(Base):
             await CurrentBalanceInStock.add(self.pharmacy_id, product.product_id, product.quantity, db)
         await db.commit()
 
-    async def update_date_implementation(self, date: date, db: AsyncSession):
+    async def update_date_implementation(self, date, db: AsyncSession):
         try:
             self.date_implementation = date
             await db.commit()
@@ -333,7 +335,7 @@ class Reservation(Base):
                 self.profit += kwargs['total']
                 remaind = self.profit - self.total_payable_with_nds
                 if remaind > 0:
-                    RemainderSumFromReservation.set_remainder(amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
+                    await RemainderSumFromReservation.set_remainder(amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
 
             if self.profit < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
@@ -537,11 +539,11 @@ class PharmacyHotSale(Base):
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
 
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
     product = relationship("Products", backref="hot_sale_products", lazy='selectin')
-    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
+    pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"), index=True)
     pharmacy = relationship("Pharmacy", backref="hot_sale", cascade="all, delete", lazy='selectin')
 
     @classmethod

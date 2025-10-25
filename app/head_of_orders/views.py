@@ -54,7 +54,7 @@ async def get_reservation(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).options(selectinload(Reservation.products)).filter(Reservation.pharmacy_id==pharmacy_id))
     return result.scalars().all()
 
-
+################################################################################################################################################################################
 @router.get('/get-all-reservations')
 async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
@@ -150,7 +150,7 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
             })
     return data
 
-
+########################################################################################################
 @router.get('/get-reservations-debt')
 async def get_reservation(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
     if month_number:
@@ -455,7 +455,7 @@ async def get_wholesale_reservation_payed_remiainder(reservation_id: int, db: As
     result = await db.execute(select(WholesaleReservationProducts).filter(WholesaleReservationProducts.reservation_id==reservation_id))
     data = {
         "debt": reservation.debt,
-        "remiainder_sum": obj.remainder_sum if obj else 0 ,
+        "remiainder_sum": remainder.remainder_sum if remainder else 0 ,
         "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.price} for prd in result.scalars().all()]
     }
     return data 

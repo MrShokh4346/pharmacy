@@ -35,7 +35,7 @@ async def get_all_doctors(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality)).filter(Doctor.deleted==False))
     return result.scalars().all()
 
-
+#########################################################################################################################################################
 @router.get('/get-all-doctors-with-plan', response_model=List[DoctorListWithPlanSchema])
 async def get_all_doctors(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Doctor).options(selectinload(Doctor.speciality), selectinload(Doctor.doctormonthlyplan), selectinload(Doctor.postupleniya_fact)).filter(Doctor.deleted==False))
@@ -133,7 +133,7 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
         raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
     return {"msg": "Done"}
 
-
+##################################################################################################################################
 @router.get('/doctor-attached-products/{doctor_id}')
 async def get_doctor_attached_products(doctor_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
     doctor = await get_doctor_or_404(doctor_id, db)
@@ -221,7 +221,7 @@ async def paying_bonus(bonus_id: int, amount: int, description: str | None = Non
 @router.delete('/delete-bonus/{bonus_id}')
 async def delete_product_by_id_form_bonus(bonus_id:int, db: AsyncSession = Depends(get_db)):
     bonus = await get_or_404(Bonus, bonus_id, db)
-    query = f"delete from bonus WHERE id={self.id}"  
+    query = f"delete from bonus WHERE id={bonus.id}"  
     result = await db.execute(text(query))
     # await db.delete(bonus)
     # await db.commit()

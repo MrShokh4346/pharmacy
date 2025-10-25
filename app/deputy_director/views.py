@@ -168,7 +168,7 @@ async def get_user_products_plan(med_rep_id: int, month_number: int | None = Non
     result = await db.execute(query)
     return result.scalars().all() 
 
-
+#############################################################################################################################################################################################################################
 @router.get('/get-med-rep-product-plan-by-month-id/{med_rep_id}')
 async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
@@ -232,7 +232,7 @@ async def get_user_product_plan_by_plan_id(filter_date: StartEndDates, med_rep_i
     }
     return data
 
-
+#############################################################################################################################################################################################################################
 @router.get('/get-med-rep-product-plan-by-month')
 async def get_user_product_plan_by_plan_id(filter_date:StartEndDates, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
@@ -277,7 +277,7 @@ async def get_user_product_plan_by_plan_id(filter_date:StartEndDates, month_numb
     }
     return data
 
-
+#############################################################################################################################################################################################################################
 @router.get('/get-doctor-bonus-by-med-rep-id/{med_rep_id}')
 async def get_doctor_bonus_by_med_rep_id(filter_date:StartEndDates, med_rep_id: int, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None,  db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
@@ -306,7 +306,7 @@ async def get_doctor_bonus_by_med_rep_id(filter_date:StartEndDates, med_rep_id: 
         })
     return doctor_att
 
-
+#############################################################################################################################################################################################################################
 @router.get('/get-bonus-by-manufactory')
 async def get_bonus_by_manufactory(filter_date:StartEndDates, month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']
@@ -420,7 +420,7 @@ async def get_medcine(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
     return result.scalars().all()
 
-
+##############################################################################################################################
 @router.get('/get-total-plan-fact')
 async def get_total_plan_fact(
                             med_rep_id: int | None = None, 
@@ -546,8 +546,8 @@ async def get_reservations_sales_report(
 ):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']
-    data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
-    return data
+    # data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
+    # return data
 
 
 @router.get('/get-postupleniya')

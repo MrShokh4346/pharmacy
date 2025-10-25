@@ -192,7 +192,7 @@ class WholesaleReservation(Base):
     __tablename__ = "wholesale_reservation"
 
     id = Column(Integer, primary_key=True)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
     date_implementation = Column(DateTime)
     expire_date = Column(DateTime, default=(datetime.now() + timedelta(days=60)))
     discount = Column(Float, default=0)
@@ -207,12 +207,12 @@ class WholesaleReservation(Base):
     debt = Column(Integer)
     reailized_debt = Column(Integer, default=0)
     prosrochenniy_debt = Column(Boolean, default=False)
-    med_rep_id = Column(Integer, ForeignKey("users.id"))    
+    med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)    
     med_rep = relationship("Users",  backref="wholesale_reservation")
-    wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
+    wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"), index=True)
     wholesale = relationship("Wholesale", backref="wholesale_reservation", cascade="all, delete", lazy='selectin')
     products = relationship("WholesaleReservationProducts", cascade="all, delete", back_populates="wholesale_reservation", lazy='selectin')
-    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
+    manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"), index=True)
     manufactured_company = relationship("ManufacturedCompany", backref="wholesale_reservation", lazy='selectin')
     wholesale_payed_amounts = relationship("WholesaleReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
@@ -271,7 +271,7 @@ class WholesaleReservation(Base):
             await CurrentWholesaleWarehouse.add(product_id=product.product_id, wholesale_id=self.wholesale_id, amount=product.quantity, price=product.price, db=db)
         await db.commit()
 
-    async def update_date_implementation(self, date: date, db: AsyncSession):
+    async def update_date_implementation(self, date, db: AsyncSession):
         try:
             self.date_implementation = date
             await db.commit()

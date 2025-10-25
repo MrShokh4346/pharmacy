@@ -375,14 +375,14 @@ class UserProductPlan(Base):
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
     current_amount = Column(Integer)
-    date = Column(DateTime, default=datetime.now())
+    date = Column(DateTime, default=datetime.now(), index=True)
     plan_month = Column(DateTime)
     price = Column(Integer)
     discount_price = Column(Integer)
     product = relationship("Products", backref="product_plan", lazy='selectin')
-    product_id = Column(Integer, ForeignKey("products.id"))
+    product_id = Column(Integer, ForeignKey("products.id"), index=True)
     med_rep = relationship("Users", cascade="all, delete", backref="product_plan")
-    med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
     async def save(self, db: AsyncSession):
         try:
@@ -489,16 +489,16 @@ class Users(Base):
     expire_date = Column(DateTime)
 
     region = relationship("Region", backref="user")
-    region_id = Column(Integer, ForeignKey("region.id"))  #####
-    region_manager_id = Column(Integer, ForeignKey("users.id"))      #####
+    region_id = Column(Integer, ForeignKey("region.id"), index=True)  #####
+    region_manager_id = Column(Integer, ForeignKey("users.id"), index=True)      #####
     region_manager = relationship("Users", remote_side=[id], foreign_keys=[region_manager_id])
-    ffm_id = Column(Integer, ForeignKey("users.id"))               #####  
+    ffm_id = Column(Integer, ForeignKey("users.id"), index=True)               #####  
     ffm = relationship("Users", remote_side=[id], foreign_keys=[ffm_id])
-    product_manager_id = Column(Integer, ForeignKey("users.id"))    #####
+    product_manager_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
     product_manager = relationship("Users", remote_side=[id], foreign_keys=[product_manager_id])
-    deputy_director_id = Column(Integer, ForeignKey("users.id"))    #####
+    deputy_director_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
     deputy_director = relationship("Users", remote_side=[id], foreign_keys=[deputy_director_id])
-    director_id = Column(Integer, ForeignKey("users.id"))    #####
+    director_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
     director = relationship("Users", remote_side=[id], foreign_keys=[director_id])
    
     @property

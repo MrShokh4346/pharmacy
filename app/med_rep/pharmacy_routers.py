@@ -264,8 +264,8 @@ async def get_pharmacy_hot_sales(pharmacy_id: int, month: int | None = None, db:
     year = datetime.now().year
     month = datetime.now().month if month is None else month 
     num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month_number, 1)  
-    end_date = datetime(year, month, num_days, 23, 59)
+    # start_date = datetime(year, month_number, 1)  
+    # end_date = datetime(year, month, num_days, 23, 59)
     result = await db.execute(select(PharmacyHotSale).filter(PharmacyHotSale.pharmacy_id==pharmacy_id))
     return result.scalars().all()
 
