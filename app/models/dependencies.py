@@ -31,31 +31,31 @@ ALGORITHM = os.environ['ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+# from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 
-conf = ConnectionConfig(
-    MAIL_USERNAME = "heartly.company",
-    MAIL_PASSWORD = os.environ['EMAIL_PASSWORD'],
-    MAIL_FROM = os.environ['SMTP_USER'],
-    MAIL_PORT = 587,
-    MAIL_SERVER = "smtp.mail.ru",
-    MAIL_FROM_NAME="Heartly Company",
-    MAIL_STARTTLS = True,
-    MAIL_SSL_TLS = False,
-    USE_CREDENTIALS = True,
-    VALIDATE_CERTS = True
-)
+# conf = ConnectionConfig(
+#     MAIL_USERNAME = "heartly.company",
+#     MAIL_PASSWORD = os.environ['EMAIL_PASSWORD'],
+#     MAIL_FROM = os.environ['SMTP_USER'],
+#     MAIL_PORT = 587,
+#     MAIL_SERVER = "smtp.mail.ru",
+#     MAIL_FROM_NAME="Heartly Company",
+#     MAIL_STARTTLS = True,
+#     MAIL_SSL_TLS = False,
+#     USE_CREDENTIALS = True,
+#     VALIDATE_CERTS = True
+# )
 
 
-async def simple_send(email: str, body: str):
-    message = MessageSchema(
-        subject="Confirmation code to get token",
-        recipients=[email],
-        body=body,
-        subtype=MessageType.html)
-    fm = FastMail(conf)
-    await fm.send_message(message)
-    return {"msg":"Code sent to your email"}
+# async def simple_send(email: str, body: str):
+#     message = MessageSchema(
+#         subject="Confirmation code to get token",
+#         recipients=[email],
+#         body=body,
+#         subtype=MessageType.html)
+#     # fm = FastMail(conf)
+#     await fm.send_message(message)
+#     return {"msg":"Code sent to your email"}
 
 auth_header = HTTPBearer()
 

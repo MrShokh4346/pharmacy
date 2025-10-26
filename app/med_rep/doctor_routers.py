@@ -19,6 +19,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import cast, Date
 import calendar
 from .utils import *
+from common_depetencies import StartEndDates
 
 
 router = APIRouter()
@@ -135,13 +136,10 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
 
 ##################################################################################################################################
 @router.get('/doctor-attached-products/{doctor_id}')
-async def get_doctor_attached_products(doctor_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
+async def get_doctor_attached_products(doctor_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
     doctor = await get_doctor_or_404(doctor_id, db)
-    year = datetime.now().year
-    month = datetime.now().month if month is None else month 
-    num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1)  
-    end_date = datetime(year, month, num_days, 23, 59)
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(DoctorMonthlyPlan).options(selectinload(DoctorMonthlyPlan.product)).filter(DoctorMonthlyPlan.doctor_id==doctor_id, DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
     data = []
     for obj in result.scalars().all():
@@ -229,12 +227,9 @@ async def delete_product_by_id_form_bonus(bonus_id:int, db: AsyncSession = Depen
 
 
 @router.get('/get-bonus/{doctor_id}', response_model=List[BonusOutSchema])
-async def get_bonus_by_doctor_id(doctor_id: int, month: int, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    month = datetime.now().month if month is None else month 
-    num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1)  
-    end_date = datetime(year, month, num_days, 23, 59)
+async def get_bonus_by_doctor_id(doctor_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     doctor = await get_doctor_or_404(doctor_id, db)
     result = await db.execute(select(Bonus).options(selectinload(Bonus.product)).filter(Bonus.doctor_id == doctor_id, Bonus.date >= start_date, Bonus.date <= end_date))
     return result.scalars().all()
@@ -261,9 +256,11 @@ async def filter_doctor_visit_plan_by_date(user_id: int, date: date, db: AsyncSe
 
 
 @router.get('/filter-doctor-visit-plan-by-date-interval', response_model=List[DoctorVisitPlanListSchema])
-async def filter_doctor_visit_plan_by_date(user_id: int, from_date: date, to_date: date, db: AsyncSession = Depends(get_db)):
+async def filter_doctor_visit_plan_by_date(user_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     user = await get_user(user_id, db)
-    result = await db.execute(select(DoctorPlan).options(selectinload(DoctorPlan.doctor)).filter(DoctorPlan.med_rep_id == user.id, cast(DoctorPlan.date, Date) >= from_date, cast(DoctorPlan.date, Date) <= to_date))
+    result = await db.execute(select(DoctorPlan).options(selectinload(DoctorPlan.doctor)).filter(DoctorPlan.med_rep_id == user.id, cast(DoctorPlan.date, Date) >= start_date, cast(DoctorPlan.date, Date) <= end_date))
     return result.scalars().all()
 
 

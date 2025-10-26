@@ -3,10 +3,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 
-from app.models.hospital import RemainderSumFromReservation
+# from app.models.hospital import RemainderSumFromReservation
 from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan, Bonus, DoctorPostupleniyaFact
 from datetime import date , datetime, timedelta
-from .users import Products, UserProductPlan
+from . import Products, UserProductPlan
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -334,6 +334,8 @@ class Reservation(Base):
                 self.debt -= kwargs['total']
                 self.profit += kwargs['total']
                 remaind = self.profit - self.total_payable_with_nds
+                from app.models.hospital import RemainderSumFromReservation
+
                 if remaind > 0:
                     await RemainderSumFromReservation.set_remainder(amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
 

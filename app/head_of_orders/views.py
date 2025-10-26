@@ -152,12 +152,9 @@ async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends
 
 ########################################################################################################
 @router.get('/get-reservations-debt')
-async def get_reservation(month_number: int | None = None, start_date: date | None = None, end_date: date | None = None, db: AsyncSession = Depends(get_db)):
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
+async def get_reservation(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     data = []
     query = select(Reservation).options(selectinload(Reservation.products), selectinload(Reservation.manufactured_company)).filter(Reservation.debt >=10000, Reservation.checked ==True)
     if (start_date is not None) and (end_date is not None): 

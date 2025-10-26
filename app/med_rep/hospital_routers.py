@@ -1,15 +1,12 @@
 from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
 from models.hospital import *
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
 from models.database import get_db
 from models.dependencies import *
-from fastapi.security import HTTPAuthorizationCredentials
 from typing import List
 from .hospital_schemas import *
-from deputy_director.schemas import NotificationOutSchema
+from common_depetencies import StartEndDates
 
 
 router = APIRouter()
@@ -85,13 +82,10 @@ async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession
 
 
 @router.get('/hospital-attached-products/{hospital_id}', response_model=List[HospitalAttachedProducts])
-async def get_hospital_attached_products(hospital_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
+async def get_hospital_attached_products(hospital_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
     doctor = await get_or_404(Hospital, hospital_id, db)
-    year = datetime.now().year
-    month = datetime.now().month if month is None else month 
-    num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1)  
-    end_date = datetime(year, month, num_days, 23, 59)
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(HospitalMonthlyPlan).options(selectinload(HospitalMonthlyPlan.product)).filter(HospitalMonthlyPlan.hospital_id==hospital_id, HospitalMonthlyPlan.date>=start_date, HospitalMonthlyPlan.date<=end_date))
     data = []
     for plan in result.scalars().all():
@@ -169,12 +163,9 @@ async def paying_bonus(bonus_id: int, amount: int, db: AsyncSession = Depends(ge
 
 
 @router.get('/get-hospital-bonus/{hospital_id}', response_model=List[BonusOutSchema])
-async def get_bonus_by_doctor_id(hospital_id: int, month: int, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    month = datetime.now().month if month is None else month 
-    num_days = calendar.monthrange(year, month)[1]
-    start_date = datetime(year, month, 1)  
-    end_date = datetime(year, month, num_days, 23, 59)
+async def get_bonus_by_doctor_id(hospital_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(HospitalBonus).options(selectinload(HospitalBonus.product)).filter(HospitalBonus.hospital_id == hospital_id, HospitalBonus.date >= start_date, HospitalBonus.date <= end_date))
     return result.scalars().all()
 

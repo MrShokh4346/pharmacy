@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone, date
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
+
+from app.common_depetencies import StartEndDates
 from .wholesale_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,11 +61,9 @@ async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(
 
 
 @router.get('/wholesale-report-by-wholesale-id/{wholesale_id}', response_model=List[WholesaleReportSchema])
-async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    num_days = calendar.monthrange(year, month_number)[1]
-    start_date = datetime(year, month_number, 1)
-    end_date = datetime(year, month_number, num_days, 23, 59)
+async def wholesale_report(wholesale_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id == wholesale_id, IncomingBalanceInStock.date >= start_date, IncomingBalanceInStock.date <= end_date))
     objects = result.scalars().all()
     data = []
@@ -83,10 +83,8 @@ async def wholesale_report(wholesale_id: int, month_number: int, db: AsyncSessio
 
 
 @router.get('/wholesale-report-by-wholesale-reservation-id/{reservation_id}', response_model=List[WholesaleReservationPayedAmountsSchema])
-async def wholesale_report(reservation_id: int, month_number: int, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    num_days = calendar.monthrange(year, month_number)[1]
-    start_date = datetime(year, month_number, 1)
-    end_date = datetime(year, month_number, num_days, 23, 59)
+async def wholesale_report(reservation_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(WholesaleReservationPayedAmounts).filter(WholesaleReservationPayedAmounts.reservation_id == reservation_id, WholesaleReservationPayedAmounts.date >= start_date, WholesaleReservationPayedAmounts.date <= end_date))
     return result.scalars().all()

@@ -1,9 +1,12 @@
 from typing import Annotated
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from datetime import date , datetime, time 
 import calendar
 
 async def month_number_or_dates(start_date: date | None = None, end_date: date | None = None):
+    if not (start_date is not None) and (end_date is not None):
+        raise HTTPException(status_code=404, detail="Both or neither date should be provideda")
+
     if start_date is None or end_date is None:
         month_number = datetime.now().month
         year = datetime.now().year

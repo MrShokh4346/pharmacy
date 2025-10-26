@@ -1,18 +1,15 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
-from datetime import datetime, date 
+from datetime import datetime 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy import Table
-from sqlalchemy.orm import validates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from sqlalchemy.orm import lazyload
-from sqlalchemy.schema import UniqueConstraint
-from .users import UserProductPlan, Products
+from . import UserProductPlan, Products
 from sqlalchemy import text
 import calendar
-from .database import  get_db, get_or_404, check_exists
+from .database import  get_or_404
 from db.db import Base
 
 

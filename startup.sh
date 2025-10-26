@@ -6,4 +6,8 @@
 
 # cd ../
 
-gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000
+# gunicorn app.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind=0.0.0.0:8000
+
+docker start pharma_database
+
+uvicorn app.main:app --reload

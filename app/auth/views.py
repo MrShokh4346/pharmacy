@@ -3,14 +3,14 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
-from models.dependencies import create_access_token, simple_send
+from models.dependencies import create_access_token#, simple_send
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import *
 from models.pharmacy import Reservation
 from models.database import get_db
 from sqlalchemy.future import select
 import string
-from common_depetencies import StartEndDates, StartEndDates2
+from common_depetencies import StartEndDates2
 import random
 from typing import Any, List
 
@@ -68,7 +68,7 @@ async def send_mail(email: LoginEmailSchema, db: AsyncSession = Depends(get_db))
         user.code = code
         user.expire_date = datetime.now() + timedelta(minutes = 2)
         await db.commit()
-        return await simple_send(email.email, code)
+        # return await simple_send(email.email, code)
     else:
         return {"msg":"No user with this email"}
 

@@ -54,10 +54,10 @@ async def get_wholesale_products(wholesale_id: int, db: AsyncSession = Depends(g
     return result.scalars().all()
 
 
-@router.get('/get-wholesale-warehouse-incomes/{wholesale_id}', response_model=List[WholesaleWarehouseIncomeOutSchema])
-async def get_wholesale_warehouse_incomes(wholesale_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(ReportWholesaleWarehouse).filter(ReportWholesaleWarehouse.wholesale_id==wholesale_id))  
-    return result.scalars().all()
+# @router.get('/get-wholesale-warehouse-incomes/{wholesale_id}', response_model=List[WholesaleWarehouseIncomeOutSchema])
+# async def get_wholesale_warehouse_incomes(wholesale_id: int, db: AsyncSession = Depends(get_db)):
+#     result = await db.execute(select(ReportWholesaleWarehouse).filter(ReportWholesaleWarehouse.wholesale_id==wholesale_id))  
+#     return result.scalars().all()
 
 
 @router.post('/wholesale-output', response_model=WholesaleOutputOutSchema)

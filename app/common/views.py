@@ -2,12 +2,10 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 
-from app.models.expenses import Expense
+# from app.models.expenses import Expense
 from .schemas import *
-from fastapi import APIRouter
-from models.users import *
-from models.doctors import DoctorCategory, DoctorPostupleniyaFact
-from models.pharmacy import PharmacyHotSale, Pharmacy
+from models import *
+from models.doctors import DoctorCategory
 from models.dependencies import *
 from models.database import get_db
 from typing import Annotated, List
@@ -326,6 +324,7 @@ async def get_expenxe_categories(db: AsyncSession = Depends(get_db)):
 
 @router.post('/post-expense', response_model=ExpenceOutSchema)
 async def post_expence(data: ExpenceSchema, db: AsyncSession = Depends(get_db)):
+    from app.models.expenses import Expense
     expence = Expense(**data.dict())
     await expence.save(db)
     return expence
@@ -333,6 +332,7 @@ async def post_expence(data: ExpenceSchema, db: AsyncSession = Depends(get_db)):
 
 @router.get('/get-expenxe', response_model=List[ExpenceOutSchema])
 async def get_expenxes(db: AsyncSession = Depends(get_db)):
+    from app.models.expenses import Expense
     result = await db.execute(select(Expense))
     return result.scalars().all()
 

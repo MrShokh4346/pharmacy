@@ -157,14 +157,11 @@ async def delete_user_product_plan(plan_id: int, db: AsyncSession = Depends(get_
 
 
 @router.get('/get-user-products-plan/{med_rep_id}', response_model=List[UserProductPlanOutSchema])
-async def get_user_products_plan(med_rep_id: int, month_number: int | None = None, db: AsyncSession = Depends(get_db)):
+async def get_user_products_plan(med_rep_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     query = select(UserProductPlan).filter(UserProductPlan.med_rep_id==med_rep_id)
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
-        query = query.filter(UserProductPlan.date>=start_date, UserProductPlan.date<=end_date)
+    query = query.filter(UserProductPlan.date>=start_date, UserProductPlan.date<=end_date)
     result = await db.execute(query)
     return result.scalars().all() 
 
@@ -423,24 +420,14 @@ async def get_medcine(db: AsyncSession = Depends(get_db)):
 ##############################################################################################################################
 @router.get('/get-total-plan-fact')
 async def get_total_plan_fact(
+                            filter_date: StartEndDates,
                             med_rep_id: int | None = None, 
                             product_id: int | None = None, 
-                            start_date: date | None = None,
-                            end_date: date | None = None,
-                            month_number : int | None = None,
                             manufactured_company_id : int | None = None,
                             region_id : int | None = None,
                             db: AsyncSession = Depends(get_db)):
-    if month_number:
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, month_number)[1]
-        start_date = datetime(year, month_number, 1)
-        end_date = datetime(year, month_number, num_days, 23, 59)
-    if start_date is None or end_date is None:
-        raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="month_number or start_date / end_date should be exists"
-                )
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     query = select(Users).filter(Users.status=='medical_representative')
     if med_rep_id:
         query = query.filter(Users.id == med_rep_id)
@@ -490,7 +477,9 @@ async def get_total_plan_fact(
 
 
 @router.get('/get-profit')
-async def get_profit(start_date: date, end_date: date, db: AsyncSession = Depends(get_db)): 
+async def get_profit(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)): 
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     query = text(f"SELECT sum(pharmacy_fact.quantity) AS fact, sum(pharmacy_fact.quantity * products.salary_expenses) AS salary_expense, sum(pharmacy_fact.quantity * products.marketing_expenses) AS marketing_expense, products.name, region.name FROM pharmacy_fact \
     INNER JOIN products on products.id = pharmacy_fact.product_id INNER JOIN pharmacy on pharmacy.id = pharmacy_fact.pharmacy_id INNER JOIN region on region.id = pharmacy.region_id WHERE pharmacy_fact.date>=TO_DATE(:start_date, 'YYYY-MM-DD') AND pharmacy_fact.date<=TO_DATE(:end_date, 'YYYY-MM-DD') \
      GROUP BY products.id, region.id")
@@ -521,7 +510,6 @@ async def get_users_sales_report(filter_date: StartEndDates, product_manager_id:
 @router.get('/get-reservations-sales-report')
 async def get_reservations_sales_report(
             filter_date: StartEndDates, 
-            # product_manager_id: int | None = None,
             med_rep_id=None,
             pharmacy_id=None,
             hospital_id=None,
@@ -546,8 +534,8 @@ async def get_reservations_sales_report(
 ):
     start_date = filter_date['start_date']
     end_date = filter_date['end_date']
-    # data = await get_sum_reservations(start_date, end_date, db, med_rep_id, product_manager_id, pharmacy_id, hospital_id, wholesale_id, region_id, man_company_id)
-    # return data
+    data = await get_sum_reservations(start_date, end_date, db)
+    return data
 
 
 @router.get('/get-postupleniya')

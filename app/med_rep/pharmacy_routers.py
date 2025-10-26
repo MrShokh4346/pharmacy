@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone, date
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
+
+from app.common_depetencies import StartEndDates
 from .doctor_schemas import DoctorListSchema, DoctorAttachedProductSchema
 from .pharmacy_schemas import *
 from models.doctors import Doctor
@@ -115,9 +117,11 @@ async def get_pharmacy_visit_plan(user_id: int, date: date, db: AsyncSession = D
 
 
 @router.get('/filter-pharmacy-visit-plan-by-date-interval', response_model=List[PharmacyVisitPlanListSchema])
-async def get_pharmacy_visit_plan(user_id: int, from_date: date, to_date: date, db: AsyncSession = Depends(get_db)):
+async def get_pharmacy_visit_plan(user_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     user = await get_user(user_id, db)
-    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).filter(PharmacyPlan.med_rep_id == user.id, cast(PharmacyPlan.date, Date) >= from_date, cast(PharmacyPlan.date, Date) <= to_date))
+    result = await db.execute(select(PharmacyPlan).options(selectinload(PharmacyPlan.pharmacy)).filter(PharmacyPlan.med_rep_id == user.id, cast(PharmacyPlan.date, Date) >= start_date, cast(PharmacyPlan.date, Date) <= end_date))
     return result.scalars().all()
 
 
@@ -150,11 +154,9 @@ async def pharmacy_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSe
 
 
 @router.get('/pharmacy-visit-report', response_model=List[PharmacyFactSchema])
-async def pharmacy_visit_report(month_number: int, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    num_days = calendar.monthrange(year, month_number)[1]
-    start_date = datetime(year, month_number, 1)
-    end_date = datetime(year, month_number, num_days, 23, 59)
+async def pharmacy_visit_report(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     fact = await db.execute(select(PharmacyFact).filter(PharmacyFact.date >= start_date, PharmacyFact.date <= end_date))
     return fact.scalars().all()
 
@@ -260,12 +262,9 @@ async def reply_notification(notification_id: int, reply: ReplyNotification, db:
 
 
 @router.get('/get-pharmacy-hot-sales/{pharmacy_id}', response_model=List[PharmacyHotSaleSchema])
-async def get_pharmacy_hot_sales(pharmacy_id: int, month: int | None = None, db: AsyncSession = Depends(get_db)):
-    year = datetime.now().year
-    month = datetime.now().month if month is None else month 
-    num_days = calendar.monthrange(year, month)[1]
-    # start_date = datetime(year, month_number, 1)  
-    # end_date = datetime(year, month, num_days, 23, 59)
+async def get_pharmacy_hot_sales(pharmacy_id: int, filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
+    start_date = filter_date['start_date']
+    end_date = filter_date['end_date']
     result = await db.execute(select(PharmacyHotSale).filter(PharmacyHotSale.pharmacy_id==pharmacy_id))
     return result.scalars().all()
 

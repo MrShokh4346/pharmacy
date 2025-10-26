@@ -2,9 +2,9 @@ from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
-from .doctors import Doctor, pharmacy_doctor, DoctorPostupleniyaFact, Bonus
+from .doctors import DoctorPostupleniyaFact, Bonus
 from datetime import date, datetime, timedelta 
-from .users import Products
+from . import Products
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
