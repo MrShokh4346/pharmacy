@@ -14,8 +14,13 @@ from med_rep.router import router as mr_router
 from head_of_orders.views import router as ho_router
 from wholesale.views import router as w_router
 import asyncio
+import os
+from dotenv.main import load_dotenv
 
-app = FastAPI()
+load_dotenv()
+
+FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+app = FastAPI(root_path=FASTAPI_ROOT_PATH)
 
 origins = [
     "*"
