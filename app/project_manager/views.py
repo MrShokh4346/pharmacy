@@ -9,10 +9,14 @@ from models.dependencies import *
 from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
+# from dotenv.main import load_dotenv
 
+# load_dotenv()
 
-
+# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
+
 
 
 @router.post('/register-for-pm', response_model=UserOutSchema, description='using RegisterForPMSchema')

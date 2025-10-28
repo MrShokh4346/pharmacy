@@ -10,10 +10,13 @@ from models.pharmacy import CurrentBalanceInStock
 from models.dependencies import *
 from typing import Any, List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+# from dotenv.main import load_dotenv
 
+# load_dotenv()
 
+# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
-
 
 @router.post('/add-wholesale', response_model=WholesaleOutSchema)
 async def wholesale(wholesale: WholesaleSchema, db: AsyncSession = Depends(get_db)):

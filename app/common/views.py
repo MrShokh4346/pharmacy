@@ -18,10 +18,13 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from .utils import *
 from common_depetencies import StartEndDates
+# from dotenv.main import load_dotenv
 
+# load_dotenv()
 
+# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
-
 
 @router.post('/add-product-category', response_model=List[ProductCategorySchema], description='using ProductCategorySchema')
 async def add_doctor_category(name: str, db: AsyncSession = Depends(get_db)):
@@ -208,7 +211,7 @@ async def get_medical_representatives(filter_date: StartEndDates, db: AsyncSessi
         data.append(med_rep)
     return data
 
-
+            # get-all_plan_sum
 @router.get('/get-all-plan-sum')
 async def get_all_plan_sum(filter_date: StartEndDates, db: AsyncSession = Depends(get_db)):
     start_date = filter_date['start_date']

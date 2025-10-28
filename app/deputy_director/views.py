@@ -20,8 +20,12 @@ from sqlalchemy import func, text
 import calendar
 from .utils import *
 from common_depetencies import StartEndDates
+# from dotenv.main import load_dotenv
 
+# load_dotenv()
 
+# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
 
 

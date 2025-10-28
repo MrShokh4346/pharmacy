@@ -15,10 +15,13 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy import update, text 
 from common_depetencies import StartEndDates
 from .utils import *
+# from dotenv.main import load_dotenv
 
+# load_dotenv()
 
+# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
-
 
 @router.post('/add-factory-warehouse')
 async def add_to_factory_warehouse(obj: FactoryWarehouseInSchema, db: AsyncSession = Depends(get_db)):

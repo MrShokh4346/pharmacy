@@ -9,10 +9,13 @@ from models.database import get_db
 from models.dependencies import *
 from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+# from dotenv.main import load_dotenv
 
+# load_dotenv()
 
+# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
+# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
-
 
 @router.post('/register-for-ffm', response_model=UserOutSchema, description='using RegisterForFFMSchema')
 async def register_user_for_ffm(user: RegisterForFFMSchema, manager: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: Session = Depends(get_db)) -> Any:
