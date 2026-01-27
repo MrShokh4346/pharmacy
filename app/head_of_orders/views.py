@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from app.services.reservationService import ReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
@@ -403,7 +404,8 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=400, detail=f"Reservation not found")
-    await reservation.pay_reservation(**obj.dict(), db=db)
+    # await reservation.pay_reservation(**obj.dict(), db=db)
+    await ReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
     return reservation
 
 
@@ -413,7 +415,8 @@ async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayHospita
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=400, detail=f"Reservation not found")
-    await reservation.pay_reservation(**obj.dict(), db=db)
+    # await reservation.pay_reservation(**obj.dict(), db=db)
+    await ReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
     return reservation
 
 
@@ -423,7 +426,8 @@ async def pay_wholesale_pharmacy_reservation(reservation_id: int, obj: PayWholes
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=400, detail=f"WholesaleReservation not found")
-    await reservation.pay_reservation(**obj.dict(), db=db)
+    # await reservation.pay_reservation(**obj.dict(), db=db)
+    await ReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
     return reservation
 
 
