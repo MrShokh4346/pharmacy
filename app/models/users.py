@@ -247,7 +247,7 @@ class DoctorVisitInfo(Base):
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", cascade="all, delete", backref="visit_info")
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("app.models.users.Product", backref="visit_info")
+    product = relationship("Product", backref="visit_info")
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -391,7 +391,7 @@ class UserProductPlan(Base):
     plan_month = Column(DateTime)
     price = Column(Integer)
     discount_price = Column(Integer)
-    product = relationship("app.models.users.Product", backref="product_plan", lazy='selectin')
+    product = relationship("Product", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     med_rep = relationship("Users", cascade="all, delete", backref="product_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
