@@ -112,7 +112,7 @@ class DoctorMonthlyPlan(Base):
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
     date = Column(DateTime, default=datetime.now(), index=True)
-    product = relationship("Product",  backref="doctormonthlyplan", lazy="selectin")
+    product = relationship("app.models.users.Product",  backref="doctormonthlyplan", lazy="selectin")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     price = Column(Integer)
     discount_price = Column(Integer)
@@ -200,7 +200,7 @@ class DoctorFact(Base):
     doctor = relationship("Doctor", cascade="all, delete", backref="fact")
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     pharmacy = relationship("Pharmacy", backref="doctorfact")
-    product = relationship("Product",  backref="doctorfact")
+    product = relationship("app.models.users.Product",  backref="doctorfact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
@@ -264,7 +264,7 @@ class DoctorPostupleniyaFact(Base):
     doctor = relationship("Doctor", cascade="all, delete", back_populates="postupleniya_fact")
     # pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     # pharmacy = relationship("Pharmacy", backref="doctorfact")
-    product = relationship("Product",  backref="postupleniya_fact")
+    product = relationship("app.models.users.Product",  backref="postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
@@ -314,7 +314,7 @@ class Bonus(Base):
     pre_investment = Column(Integer, default=0)
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), index=True)
     doctor = relationship("Doctor", cascade="all, delete", backref="bonus")
-    product = relationship("Product",  backref="bonus", lazy='selectin')
+    product = relationship("app.models.users.Product",  backref="bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     async def paying_bonus(self, amount: int, description: str, db: AsyncSession):
