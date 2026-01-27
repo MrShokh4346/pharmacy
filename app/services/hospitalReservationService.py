@@ -1,6 +1,5 @@
 from datetime import datetime
 from app.models.database import get_or_404
-from app.models.doctors import Bonus, DoctorPostupleniyaFact
 from app.models.hospital import HospitalReservation, HospitalReservationPayedAmounts, HospitalReservationProducts
 from app.models.warehouse import CurrentFactoryWarehouse
 from app.services.bonusService import BonusService

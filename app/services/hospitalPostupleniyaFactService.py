@@ -1,7 +1,6 @@
 import calendar
 from datetime import datetime
 from app.models.database import get_or_404
-from app.models.hospital import HospitalBonus
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.users import Product
 from sqlalchemy.future import select

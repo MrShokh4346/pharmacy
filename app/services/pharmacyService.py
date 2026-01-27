@@ -2,7 +2,6 @@ from app.models.pharmacy import Pharmacy
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
 from app.models.doctors import  Doctor, pharmacy_doctor
 
 

@@ -2,7 +2,7 @@ from app.models.users import Product, ProductExpenses, UserProductPlan
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select, update
+from sqlalchemy.future import update
 
 
 class ProductService:

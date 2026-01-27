@@ -1,7 +1,7 @@
 import calendar
 from datetime import datetime
 from app.models.database import get_or_404
-from app.models.doctors import Bonus, DoctorMonthlyPlan, DoctorPostupleniyaFact
+from app.models.doctors import DoctorMonthlyPlan
 from app.models.pharmacy import Reservation, ReservationPayedAmounts, ReservationProducts
 from app.models.warehouse import CurrentFactoryWarehouse
 from app.services.bonusService import BonusService

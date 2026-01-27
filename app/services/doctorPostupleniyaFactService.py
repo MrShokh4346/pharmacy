@@ -2,7 +2,6 @@ import calendar
 from datetime import datetime
 from app.models.database import get_or_404
 from app.models.doctors import DoctorPostupleniyaFact
-from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -26,7 +25,6 @@ class DoctorPostupleniyaFactService:
         else:
             doctor_postupleniya.fact += kwargs['compleated']
             doctor_postupleniya.fact_price += kwargs['fact_price']
-        # await Bonus.set_bonus(**kwargs, db=db)
 
 
     @staticmethod

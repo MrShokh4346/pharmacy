@@ -2,11 +2,8 @@ import calendar
 from datetime import datetime
 from app.models.database import get_or_404
 from app.models.doctors import DoctorMonthlyPlan
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import text
-from sqlalchemy.exc import IntegrityError
 from app.models.users import Product
 
 

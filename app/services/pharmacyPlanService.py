@@ -1,8 +1,7 @@
-from app.models.users import PharmacyPlan, PharmacyPlanAttachedProduct, Product, ProductExpenses, UserProductPlan
+from app.models.users import PharmacyPlan, PharmacyPlanAttachedProduct
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select, update
 
 
 class PharmacyPlanService:

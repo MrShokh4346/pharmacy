@@ -1,12 +1,7 @@
 import calendar
 from datetime import datetime
 from app.models.database import get_or_404
-from app.models.doctors import Bonus, BonusPayedAmounts, DoctorPostupleniyaFact
-from app.models.hospital import HospitalReservation, HospitalReservationPayedAmounts, HospitalReservationProducts
-from app.models.warehouse import CurrentFactoryWarehouse
-from app.services.doctorFactService import DoctorFactService
-from app.services.doctorPostupleniyaFactService import DoctorPostupleniyaFactService
-from sqlalchemy.exc import IntegrityError
+from app.models.doctors import Bonus, BonusPayedAmounts
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
