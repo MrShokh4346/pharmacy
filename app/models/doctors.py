@@ -127,65 +127,6 @@ class DoctorMonthlyPlan(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    async def update(self, amount: int, db: AsyncSession):
-        try:
-            year = datetime.now().year
-            month = self.date.month  
-            num_days = calendar.monthrange(year, month)[1]
-            start_date = datetime(year, month, 1)  
-            end_date = datetime(year, month, num_days, 23, 59)
-            difference = self.monthly_plan - amount
-            self.monthly_plan = amount
-            result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==self.doctor.med_rep_id, UserProductPlan.product_id==self.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date))
-            user_plan = result.scalars().first()
-            user_plan.current_amount += difference
-            if user_plan.current_amount < 0:
-                raise HTTPException(status_code=404, detail="Med rep plan should be grater than 0 for tis product")
-            if self.monthly_plan == 0:
-                result = await db.execute(select(DoctorPostupleniyaFact).filter(DoctorPostupleniyaFact.doctor_id==self.doctor_id, DoctorPostupleniyaFact.product_id==self.product_id))
-                postupleniya = result.scalars().first()
-                if postupleniya:
-                    raise HTTPException(status_code=400, detail="There is postuplenuya fact whith this product in this doctor")
-                query = f"delete from doctor_monthly_plan WHERE id={self.id}"
-                result = await db.execute(text(query))
-            await db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    @classmethod
-    async def move_plan(cls, db: AsyncSession, **kwargs):
-        try:
-            plan = kwargs['plan']
-            if kwargs['remainder_amount'] > plan.monthly_plan:
-                raise HTTPException(status_code=404, detail='Something went wrong')
-            elif kwargs['remainder_amount'] == plan.monthly_plan:
-                query = f"delete from doctor_monthly_plan WHERE id = {plan.id}"
-            else:
-                query = f"update doctor_monthly_plan set monthly_plan={kwargs['remainder_amount']} WHERE id = {plan.id}"
-            total_quantity = 0
-            for doctor in kwargs['doctors']:
-                total_quantity += doctor['quantity']
-                result = await db.execute(select(cls).filter(cls.doctor_id==doctor['doctor_id'], cls.product_id==doctor['quantity']))
-                current_doctor = result.scalar()
-                if current_doctor:
-                    current_doctor.monthly_plan += doctor['quantity']
-                else:
-                    current_doctor = cls(
-                        monthly_plan = doctor['quantity'],
-                        product_id = plan.product_id,
-                        price = plan.price,
-                        discount_price = plan.discount_price,
-                        doctor_id = doctor['doctor_id'],
-                        date = plan.date
-                    )
-                    db.add(current_doctor)
-            if total_quantity != plan.monthly_plan - kwargs['remainder_amount']:
-                raise HTTPException(status_code=404, detail='Something went wrong')
-            result = await db.execute(text(query))
-            await db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
 class DoctorFact(Base):
     __tablename__ = "doctor_fact"
@@ -202,43 +143,6 @@ class DoctorFact(Base):
     pharmacy = relationship("Pharmacy", backref="doctorfact")
     product = relationship("Product",  backref="doctorfact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
-
-    @classmethod
-    async def set_fact(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-
-        year = datetime.now().year
-        month = kwargs['visit_date'].month 
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_fact = result.scalars().first()
-        if month_fact is None:
-            month_fact = cls(date=kwargs['visit_date'], doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
-            db.add(month_fact)
-        else:
-            month_fact.fact += kwargs['compleated']
-        # await Bonus.set_bonus(**kwargs, db=db)
-
-    @classmethod
-    async def set_fact_to_hospital(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        month = kwargs['month_number'] 
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'],  cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_fact = result.scalars().first()
-        if month_fact is None:
-            month_fact = cls(date=start_date, doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
-            db.add(month_fact)
-        else:
-            month_fact.fact += kwargs['compleated']
-        # await Bonus.set_bonus(**kwargs, db=db)
 
 
 class BonusPayedAmounts(Base):
@@ -270,41 +174,6 @@ class DoctorPostupleniyaFact(Base):
     product = relationship("Product",  backref="postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
-    @classmethod
-    async def set_fact(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        # month = datetime.now().month  
-        num_days = calendar.monthrange(year, kwargs['month_number'])[1]
-        start_date = datetime(year, kwargs['month_number'], 1)  
-        end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        doctor_postupleniya = result.scalars().first()
-        if doctor_postupleniya is None:
-            doctor_postupleniya = cls(date=start_date, fact_price=kwargs['fact_price'], doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=kwargs['price'])
-            db.add(doctor_postupleniya)
-        else:
-            doctor_postupleniya.fact += kwargs['compleated']
-            doctor_postupleniya.fact_price += kwargs['fact_price']
-        # await Bonus.set_bonus(**kwargs, db=db)
-
-    @classmethod
-    async def delete_postupleniya(cls, db: AsyncSession, **kwargs):
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, kwargs['month_number'])[1]
-        start_date = datetime(year, kwargs['month_number'], 1)  
-        end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        doctor_postupleniya = result.scalars().first()
-        if doctor_postupleniya is None:
-            raise HTTPException(status_code=404, detail=f"Doctor postupleniya not found (doctor_id={kwargs['doctor_id']}), (product_id={kwargs['product_id']})")
-        elif doctor_postupleniya.fact < kwargs['quantity']:
-            raise HTTPException(status_code=404, detail=f"There is not enough amount fact in doctor postupleniya (doctor_id={kwargs['doctor_id']}), (product_id={kwargs['product_id']}), (doctor_postupleniya={doctor_postupleniya.fact}), (postupleniya={kwargs['quantity']})")
-        else:
-            doctor_postupleniya.fact -= kwargs['quantity']
-            doctor_postupleniya.fact_price -= kwargs['amount']
-
 
 class Bonus(Base):
     __tablename__ = "bonus"
@@ -320,85 +189,6 @@ class Bonus(Base):
     doctor = relationship("Doctor", cascade="all, delete", backref="bonus")
     product = relationship("Product",  backref="bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
-
-    async def paying_bonus(self, amount: int, description: str, db: AsyncSession):
-        payed = BonusPayedAmounts(amount=amount, description=description, bonus_id=self.id)
-        db.add(payed)
-        self.payed += amount
-        difference = self.payed - self.amount
-        if difference > 0:
-            self.pre_investment = difference
-        await db.commit()
-
-    @classmethod
-    async def set_bonus(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        if kwargs.get('month_number') is None:
-            month = datetime.now().month  
-        else:
-            month = kwargs.get('month_number')  
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        amount = product.marketing_expenses * kwargs['compleated']
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_bonus = result.scalars().first()
-        if month_bonus is None:
-            month_bonus = cls(date=start_date, doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=amount)
-            db.add(month_bonus)
-        else:
-            month_bonus.amount += amount
-            month_bonus.product_quantity += kwargs['compleated']
-            if month_bonus.pre_investment >= amount:
-                month_bonus.pre_investment -= amount
-            else:
-                month_bonus.pre_investment = 0 
-
-    @classmethod
-    async def set_bonus_to_hospital(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        if kwargs.get('month_number') is None:
-            month = datetime.now().month  
-        else:
-            month = kwargs.get('month_number')  
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_bonus = result.scalars().first()
-        if month_bonus is None:
-            month_bonus = cls(date=start_date, doctor_id=kwargs['doctor_id'], product_id=kwargs['product_id'], product_quantity=kwargs['compleated'], amount=kwargs['bonus_sum'])
-            db.add(month_bonus)
-        else:
-            month_bonus.amount += kwargs['bonus_sum']
-            month_bonus.product_quantity += kwargs['compleated']
-            if month_bonus.pre_investment >= kwargs['bonus_sum']:
-                month_bonus.pre_investment -= kwargs['bonus_sum']
-            else:
-                month_bonus.pre_investment = 0 
-
-    @classmethod
-    async def delete_bonus(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, kwargs['month_number'])[1]
-        start_date = datetime(year, kwargs['month_number'], 1)  
-        end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        amount = product.marketing_expenses * kwargs['quantity']
-        result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        bonus = result.scalars().first()
-        if bonus is None:
-            raise HTTPException(status_code=404, detail=f"Bonus not found (doctor_id={kwargs['doctor_id']}), (product_id={kwargs['product_id']})")
-        elif bonus.product_quantity < kwargs['quantity']:
-            raise HTTPException(status_code=404, detail=f"There is not enough amount bonus in doctor postupleniya (doctor_id={kwargs['doctor_id']}), (product_id={kwargs['product_id']}), (bonus={bonus.product_quantity}), (postupleniya={kwargs['quantity']})")
-        else:
-            bonus.amount -= amount
-            bonus.product_quantity -= kwargs['quantity']
 
 
 pharmacy_doctor = Table(

@@ -1,3 +1,5 @@
+from app.services.bonusService import BonusService
+from app.services.doctorPostupleniyaFactService import DoctorPostupleniyaFactService
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Sequence, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -361,8 +363,8 @@ class WholesaleReservation(Base):
                             db=db
                             )   
                 if self.bonus == True:
-                    await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await DoctorPostupleniyaFactService.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await BonusService.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))

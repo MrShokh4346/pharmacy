@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone, date
+from app.services.bonusService import BonusService
+from app.services.doctorMonthlyPlanService import DoctorMonthlyPlanService
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .doctor_schemas import *
@@ -126,7 +128,7 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
         if user_product.current_amount < obj.monthly_plan:
             raise HTTPException(status_code=404, detail='You are trying to add more doctor plan than user plan for this product')
         user_product.current_amount -= obj.monthly_plan
-        await Bonus.set_bonus(doctor_id=obj.doctor_id, product_id=obj.product_id, compleated=0, db=db)
+        await BonusService.set_bonus(doctor_id=obj.doctor_id, product_id=obj.product_id, compleated=0, db=db)
     db.add_all(doctor_products)
     try:
         await db.commit()
@@ -174,13 +176,14 @@ async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession
     plan = await get_or_404(DoctorMonthlyPlan, plan_id, db)
     await check_if_plan_is_editable(plan, db)
     await plan.update(amount, db)
+    await DoctorMonthlyPlanService.update(plan=plan, amount=amount, db=db)
     return plan 
 
 
 @router.post('/move-doctor-plan/{plan_id}')
 async def move_doctor_plan(plan_id: int, remainder_amount: int, doctors: DoctorPlanMoveShema, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(DoctorMonthlyPlan, plan_id, db)
-    await DoctorMonthlyPlan.move_plan(**doctors.dict(), remainder_amount=remainder_amount, plan=plan, db=db)
+    await DoctorMonthlyPlanService.move_plan(**doctors.dict(), remainder_amount=remainder_amount, plan=plan, db=db)
     return {'msg': 'Success'} 
 
 

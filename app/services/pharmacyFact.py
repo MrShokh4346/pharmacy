@@ -1,13 +1,13 @@
 import calendar
 from datetime import datetime
 from app.models.database import get_or_404
-from app.models.hospital import RemainderSumFromReservation
 from app.models.pharmacy import CheckingStockProducts, Pharmacy, PharmacyFact, PharmacyHotSale
+from app.services.doctorFactService import DoctorFactService
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from app.models.doctors import  pharmacy_doctor, DoctorFact, DoctorMonthlyPlan
+from app.models.doctors import  pharmacy_doctor, DoctorMonthlyPlan
 from app.models.users import UserProductPlan
 
 
@@ -37,7 +37,7 @@ class PharmacyFactService:
                     prod.fact =  product['compleated']
                     p_fact = PharmacyFact(date=kwargs['visit_date'], pharmacy_id = kwargs['pharmacy_id'], doctor_id = doctor['doctor_id'], product_id = product['product_id'], quantity = product['compleated'], monthly_plan=prod.monthly_plan) 
                     db.add(p_fact)
-                    await DoctorFact.set_fact(visit_date=kwargs['visit_date'], pharmacy_id=kwargs['pharmacy_id'], doctor_id=doctor['doctor_id'], product_id=product['product_id'], compleated=product['compleated'], db=db)                    
+                    await DoctorFactService.set_fact(visit_date=kwargs['visit_date'], pharmacy_id=kwargs['pharmacy_id'], doctor_id=doctor['doctor_id'], product_id=product['product_id'], compleated=product['compleated'], db=db)                    
                     if product_dict.get(product['product_id']):
                         product_dict[product['product_id']] += product['compleated'] 
                     else:

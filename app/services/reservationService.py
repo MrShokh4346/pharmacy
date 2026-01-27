@@ -4,7 +4,9 @@ from app.models.database import get_or_404
 from app.models.doctors import Bonus, DoctorMonthlyPlan, DoctorPostupleniyaFact
 from app.models.pharmacy import Reservation, ReservationPayedAmounts, ReservationProducts
 from app.models.warehouse import CurrentFactoryWarehouse
+from app.services.bonusService import BonusService
 from app.services.currentBalanceInStock import CurrentBalanceInStockService
+from app.services.doctorPostupleniyaFactService import DoctorPostupleniyaFactService
 from app.services.remainderSumFromReservationService import RemainderSumFromReservationService
 from sqlalchemy import text, update
 from sqlalchemy.future import select
@@ -110,8 +112,8 @@ class ReservationService:
                                             db=db
                                             )
                 if reservation.bonus == True:
-                    await DoctorPostupleniyaFact.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
-                    await Bonus.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await DoctorPostupleniyaFactService.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
+                    await BonusService.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
@@ -188,9 +190,9 @@ class ReservationService:
     @staticmethod
     async def delete_postupleniya(self, db: AsyncSession):
         for res_product in self.payed_amounts:
-            await DoctorPostupleniyaFact.delete_postupleniya(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, amount=res_product.amount, db=db)
+            await DoctorPostupleniyaFactService.delete_postupleniya(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, amount=res_product.amount, db=db)
             if res_product.bonus == True:
-                await Bonus.delete_bonus(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, db=db)
+                await BonusService.delete_bonus(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, db=db)
             await ReservationProducts.set_default_payed_quantity(reservation_id=self.id, product_id=res_product.product_id, db=db)
         await db.execute(update(Reservation).where(Reservation.id == self.id).values(profit=0, debt=self.total_payable_with_nds))
         query = f"delete from reservation_payed_amounts WHERE reservation_id={self.id}"
