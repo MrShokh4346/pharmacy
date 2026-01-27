@@ -9,7 +9,7 @@ from dotenv.main import load_dotenv
 load_dotenv()
 
 # Ensure all required environment variables are set
-required_env_vars = ['DB_USER', 'DB_PASS', 'DB_HOST', 'DB_PORT', 'DB_NAME']
+required_env_vars = ['POSTGRES_USER', 'POSTGRES_PASSWORD', 'DB_HOST', 'DB_PORT', 'POSTGRES_DATABASE']
 for var in required_env_vars:
     if not os.getenv(var):
         raise ValueError(f"Environment variable {var} is not set")
