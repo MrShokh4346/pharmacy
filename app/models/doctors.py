@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import Table
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from .users import UserProductPlan, Product
+# from .users import UserProductPlan, Product
 from sqlalchemy import text
 import calendar
 from .database import  get_or_404
@@ -205,6 +205,8 @@ class DoctorFact(Base):
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
+        from .users import Product
+
         year = datetime.now().year
         month = kwargs['visit_date'].month 
         num_days = calendar.monthrange(year, month)[1]
@@ -222,6 +224,7 @@ class DoctorFact(Base):
 
     @classmethod
     async def set_fact_to_hospital(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         month = kwargs['month_number'] 
         num_days = calendar.monthrange(year, month)[1]
@@ -269,6 +272,7 @@ class DoctorPostupleniyaFact(Base):
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         # month = datetime.now().month  
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
@@ -328,6 +332,7 @@ class Bonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         if kwargs.get('month_number') is None:
             month = datetime.now().month  
@@ -353,6 +358,7 @@ class Bonus(Base):
 
     @classmethod
     async def set_bonus_to_hospital(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         if kwargs.get('month_number') is None:
             month = datetime.now().month  
@@ -377,6 +383,7 @@ class Bonus(Base):
 
     @classmethod
     async def delete_bonus(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
         start_date = datetime(year, kwargs['month_number'], 1)  
