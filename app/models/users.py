@@ -139,7 +139,7 @@ class ProductExpenses(Base):
     marketing_expense = Column(Integer, default=0)
     salary_expenses = Column(Integer, default=0)
     date = Column(DateTime, default=datetime.now())
-    product = relationship("app.models.users.Product", backref="product_expenmses", lazy='selectin')
+    product = relationship("Product", backref="product_expenmses", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
 
