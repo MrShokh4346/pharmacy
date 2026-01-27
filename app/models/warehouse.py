@@ -14,6 +14,7 @@ from db.db import Base
 
 class ReportFactoryWerehouse(Base):
     __tablename__ = "report_factory_warehouse"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
@@ -37,6 +38,7 @@ class ReportFactoryWerehouse(Base):
 
 class CurrentFactoryWarehouse(Base):
     __tablename__ = "current_factory_warehouse"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -59,6 +61,7 @@ class CurrentFactoryWarehouse(Base):
 
 class Wholesale(Base):
     __tablename__ = "wholesale"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -127,6 +130,7 @@ class Wholesale(Base):
 
 class CurrentWholesaleWarehouse(Base):
     __tablename__ = "current_wholesale_warehouse"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -151,6 +155,7 @@ class CurrentWholesaleWarehouse(Base):
 
 class WholesaleReservationPayedAmounts(Base):
     __tablename__ = "wholesale_reservation_payed_amounts"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer, default=0)
@@ -190,6 +195,7 @@ invoice_number_seq = Sequence('invoice_number_seq')
 
 class WholesaleReservation(Base):
     __tablename__ = "wholesale_reservation"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now(), index=True)
@@ -372,6 +378,7 @@ class WholesaleReservation(Base):
 
 class WholesaleReservationProducts(Base):
     __tablename__ = "wholesale_reservation_products"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
@@ -394,6 +401,7 @@ class WholesaleReservationProducts(Base):
 
 class WholesaleOutput(Base):
     __tablename__ = "wholesale_output"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
 
