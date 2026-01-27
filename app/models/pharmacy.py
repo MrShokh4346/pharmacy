@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 # from app.models.hospital import RemainderSumFromReservation
 from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan, Bonus, DoctorPostupleniyaFact
 from datetime import date , datetime, timedelta
-from . import Product, UserProductPlan
+from .users import Product, UserProductPlan
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select

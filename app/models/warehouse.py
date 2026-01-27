@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from .doctors import DoctorPostupleniyaFact, Bonus
 from datetime import date, datetime, timedelta 
-from . import Product
+from .users import Product
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select

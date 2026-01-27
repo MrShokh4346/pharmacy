@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentFactoryWarehouse
-from . import Product, UserProductPlan
+from .users import Product, UserProductPlan
 from .doctors import DoctorFact, DoctorPostupleniyaFact, Bonus
 import calendar
 from .database import get_db, get_or_404
