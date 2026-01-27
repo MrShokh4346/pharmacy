@@ -399,6 +399,7 @@ pharmacy_doctor = Table(
     Base.metadata,
     Column("doctor_id", ForeignKey("doctor.id", ondelete="CASCADE"), primary_key=True),
     Column("pharmacy_id", ForeignKey("pharmacy.id", ondelete="CASCADE"), primary_key=True),
+    extend_existing=True
 )
 
 
