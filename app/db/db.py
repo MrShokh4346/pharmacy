@@ -14,7 +14,7 @@ for var in required_env_vars:
     if not os.getenv(var):
         raise ValueError(f"Environment variable {var} is not set")
 # DATABASE_URL = os.getenv("DATABASE_URL")
-DATABASE_URL = f"postgresql+asyncpg://{os.getenv('DB_USER')}:{os.getenv('DB_PASS')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+DATABASE_URL = f"postgresql+asyncpg://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('POSTGRES_DATABASE')}"
 
 # Create async engine with connection pooling settings
 engine = create_async_engine(
