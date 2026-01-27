@@ -1,16 +1,59 @@
 import calendar
 from datetime import datetime
+from app.models.database import get_or_404
 from app.models.doctors import Bonus, DoctorMonthlyPlan, DoctorPostupleniyaFact
 from app.models.pharmacy import Reservation, ReservationPayedAmounts, ReservationProducts
+from app.models.warehouse import CurrentFactoryWarehouse
+from app.services.currentBalanceInStock import CurrentBalanceInStockService
 from app.services.remainderSumFromReservationService import RemainderSumFromReservationService
-from sqlalchemy import text
+from sqlalchemy import text, update
 from sqlalchemy.future import select
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.models.users import Product
+
 
 
 class ReservationService:
+
+    @staticmethod
+    async def save(db: AsyncSession, **kwargs):
+        try:
+            total_quantity = 0
+            total_amount = 0
+            total_payable = 0
+            res_products = []
+            products = kwargs.pop('products')
+            for product in products:
+                prd = await get_or_404(Product, product['product_id'], db)
+                price = product['price'] if product['price'] else prd.price
+                del product['price']
+                result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
+                wrh = result.scalar()
+                if (not wrh) or wrh.amount < product['quantity']: 
+                    raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
+                reservation_price = (price - price * kwargs['discount'] / 100) * 1.12
+                res_products.append(ReservationProducts(**product, not_payed_quantity=product['quantity'], reservation_price=price, reservation_discount_price=prd.discount_price))
+                total_quantity += product['quantity']
+                total_amount += product['quantity'] * price
+            total_payable = (total_amount - total_amount * kwargs['discount'] / 100) if kwargs['discountable'] == True else total_amount
+            reservation = Reservation(**kwargs,
+                                total_quantity = total_quantity,
+                                total_amount = total_amount,
+                                total_payable = total_payable,
+                                total_payable_with_nds = (total_payable + total_payable * 0.12),
+                                debt = (total_payable + total_payable * 0.12)
+                                )
+            db.add(reservation)
+            for p in res_products:
+                reservation.products.append(p)
+            await db.commit()
+            return reservation
+        except IntegrityError as e:
+            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
     @staticmethod
     async def pay_reservation(reservation: Reservation, db: AsyncSession, **kwargs):
         try:
@@ -72,3 +115,85 @@ class ReservationService:
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
+
+
+    @staticmethod
+    async def check_reservation(reservation: Reservation, db: AsyncSession, **kwargs):
+        if reservation.checked == True:
+            raise HTTPException(status_code=400, detail=f"This reservation already chacked")
+        reservation.checked = kwargs.get('checked')
+        reservation.date_implementation = datetime.now()
+        for product in reservation.products:
+            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==reservation.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
+            wrh = result.scalar()
+            if (not wrh) or wrh.amount < product.quantity: 
+                raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in factrory warehouse")
+            wrh.amount -= product.quantity
+            await CurrentBalanceInStockService.add(reservation.pharmacy_id, product.product_id, product.quantity, db)
+        await db.commit()
+
+
+    @staticmethod
+    async def return_product(reservation: Reservation, product_id: int, quantity: int, db: AsyncSession):
+        try:
+            result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation.id, ReservationProducts.product_id==product_id))
+            r_product = result.scalars().first()
+            if r_product.not_payed_quantity < quantity:
+                raise HTTPException(status_code=400, detail="You are trying to return more than not payed")
+            await CurrentBalanceInStockService.minus(reservation.pharmacy_id, product_id, quantity, db)
+            r_product.quantity -= quantity
+            r_product.not_payed_quantity -= quantity
+            if r_product.quantity < 0:
+                raise HTTPException(status_code=400, detail="You are trying to return more than reserved")
+            minus_price = quantity * r_product.product.price
+            minus_price_with_discount = (minus_price - minus_price * reservation.discount / 100) if reservation.discountable == True else minus_price
+            reservation.total_quantity -= quantity
+            reservation.total_amount -= minus_price
+            reservation.total_payable -= minus_price_with_discount
+            reservation.returned_price += (minus_price_with_discount + minus_price_with_discount * 0.12)
+            reservation.total_payable_with_nds -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            reservation.debt -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            await db.commit()
+        except IntegrityError as e:
+            raise HTTPException(status_code=400, detail="Something went wrong!")
+
+
+    @staticmethod
+    async def vozvrat(reservation: Reservation, product_id: int, quantity: int, db: AsyncSession):
+        try:
+            result = await db.execute(select(ReservationProducts).filter(ReservationProducts.reservation_id==reservation.id, ReservationProducts.product_id==product_id))
+            r_product = result.scalars().first()
+            await CurrentBalanceInStockService.minus(reservation.pharmacy_id, product_id, quantity, db)
+            r_product.quantity -= quantity
+            r_product.not_payed_quantity -= quantity
+            if r_product.not_payed_quantity < 0:
+                r_product.not_payed_quantity = 0
+            if r_product.quantity < 0:
+                raise HTTPException(status_code=400, detail="You are trying to return more than reserved")
+            minus_price = quantity * r_product.product.price
+            minus_price_with_discount = (minus_price - minus_price * reservation.discount / 100) if reservation.discountable == True else minus_price
+            reservation.total_quantity -= quantity
+            reservation.total_amount -= minus_price
+            reservation.total_payable -= minus_price_with_discount
+            # reservation.returned_price += (minus_price_with_discount + minus_price_with_discount * 0.12)
+            reservation.total_payable_with_nds -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            reservation.debt -= (minus_price_with_discount + minus_price_with_discount * 0.12)
+            if reservation.debt > 0:
+                reservation.profit += reservation.debt
+                reservation.debt = 0
+        except IntegrityError as e:
+            raise HTTPException(status_code=400, detail="Something went wrong!")
+
+
+    @staticmethod
+    async def delete_postupleniya(self, db: AsyncSession):
+        for res_product in self.payed_amounts:
+            await DoctorPostupleniyaFact.delete_postupleniya(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, amount=res_product.amount, db=db)
+            if res_product.bonus == True:
+                await Bonus.delete_bonus(doctor_id=res_product.doctor_id, product_id=res_product.product_id, month_number=res_product.month_number, quantity=res_product.quantity, db=db)
+            await ReservationProducts.set_default_payed_quantity(reservation_id=self.id, product_id=res_product.product_id, db=db)
+        await db.execute(update(Reservation).where(Reservation.id == self.id).values(profit=0, debt=self.total_payable_with_nds))
+        query = f"delete from reservation_payed_amounts WHERE reservation_id={self.id}"
+        result = await db.execute(text(query))
+        await db.commit()
+

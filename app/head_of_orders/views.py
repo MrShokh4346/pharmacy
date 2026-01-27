@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from app.services.reservationProducts import ReservationProductsService
 from app.services.reservationService import ReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
@@ -272,7 +273,8 @@ async def check_reservation_products(reservation_id: int, obj: CheckSchema, db: 
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
-    await reservation.check_reservation(**obj.dict(), db=db)
+    # await reservation.check_reservation(**obj.dict(), db=db)
+    await ReservationService.check_reservation(reservation=reservation, db=db, **obj.dict())
     return {"msg":"Done"}
 
 
@@ -282,7 +284,8 @@ async def check_hospital_reservation_products(reservation_id: int, obj: CheckSch
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
-    await reservation.check_reservation(**obj.dict(), db=db)
+    # await reservation.check_reservation(**obj.dict(), db=db)
+    await ReservationService.check_reservation(reservation=reservation, db=db, **obj.dict())
     return {"msg":"Done"}
 
 
@@ -292,7 +295,8 @@ async def check_wholesale_reservation_products(reservation_id: int, obj: CheckSc
     reservation = result.scalars().first()
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
-    await reservation.check_reservation(**obj.dict(), db=db)
+    # await reservation.check_reservation(**obj.dict(), db=db)
+    await ReservationService.check_reservation(reservation=reservation, db=db, **obj.dict())
     return {"msg":"Done"}
 
 
@@ -501,7 +505,8 @@ async def return_product_from_reservation(reservation_id: int, product_id: int, 
     reservation = result.scalars().first()
     if not reservation:
         raise HTTPException(status_code=400, detail=f"Reservation not found")
-    await reservation.return_product(product_id, quantity, db)
+    # await reservation.return_product(product_id, quantity, db)
+    await ReservationService.return_product(reservation=reservation, db=db, product_id=product_id, quantity=quantity)
     return reservation
 
 
@@ -510,7 +515,7 @@ async def add_reservation_product(obj: AddReservationProductSchema, db: AsyncSes
     reservation = await get_or_404(Reservation, obj.reservation_id, db)
     if reservation.checked == True:
         raise HTTPException(status_code=400, detail="This reservation is already checked")
-    await ReservationProducts.add(**obj.dict(), discount=reservation.discount, db=db)
+    await ReservationProductsService.add(**obj.dict(), discount=reservation.discount, db=db)
     return {'msg': 'Success'}
 
 

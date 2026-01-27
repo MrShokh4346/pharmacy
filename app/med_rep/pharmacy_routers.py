@@ -1,4 +1,9 @@
 from datetime import datetime, timedelta, timezone, date
+from app.services.checkingBalanceInStock import CheckingBalanceInStockService
+from app.services.incomingBalanceInStock import IncomingBalanceInStockService
+from app.services.pharmacyFact import PharmacyFactService
+from app.services.pharmacyService import PharmacyService
+from app.services.reservationService import ReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 
@@ -85,13 +90,13 @@ async def update_pharmacy(pharmacy_id: int, data: PharmacyUpdateSchema, db: Asyn
 
 @router.post('/add-balance-in-stock')
 async def add_balance_in_stock(balance: BalanceInStockSchema, db: AsyncSession = Depends(get_db)):
-    await IncomingBalanceInStock.save(**balance.dict(), db=db)
+    await IncomingBalanceInStockService.save(**balance.dict(), db=db)
     return {"msg":"Done"}
 
 
 @router.post('/checking-balance-in-stock')
 async def checking_balance_in_stock(balance: CheckBalanceInStockSchema, db: AsyncSession = Depends(get_db)):
-    await CheckingBalanceInStock.save(**balance.dict(), db=db)
+    await CheckingBalanceInStockService.save(**balance.dict(), db=db)
     return {"msg":"Done"}
 
 
@@ -148,7 +153,7 @@ async def pharmacy_visit_info(visit_id: int, visit: VisitInfoSchema, db: AsyncSe
     plan = await get_or_404(PharmacyPlan, visit_id, db)
     await plan.update(description=visit.description, status=True, db=db)
     if visit.doctors is not None:
-        fact = await PharmacyFact.save(**visit.dict(), visit_date=plan.date, pharmacy_id=plan.pharmacy_id, db=db)
+        fact = await PharmacyFactService.save(**visit.dict(), visit_date=plan.date, pharmacy_id=plan.pharmacy_id, db=db)
     return {"msg":"Done"}
 
 
@@ -169,7 +174,8 @@ async def pharmacy_visit_report_by_pharmacy_id(pharmacy_id: int, db: AsyncSessio
 @router.post('/attach-doctor-to-pharmacy')
 async def attach_doctor_to_pharmacy(att: AttachDoctorToPharmacySchema, db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, att.dict().get('pharmacy_id'), db)
-    await pharmacy.attach_doctor(**att.dict(), db=db)
+    # await pharmacy.attach_doctor(**att.dict(), db=db)
+    await PharmacyService.attach_doctor(pharmacy=pharmacy, db=db, **att.dict())
     return {"msg":"Done"}
 
 
@@ -218,7 +224,7 @@ async def get_debt(pharmacy_id: int, db: AsyncSession = Depends(get_db)):
 @router.post('/reservation/{pharmacy_id}', response_model=ReservationOutSchema)
 async def reservation(pharmacy_id: int, res: ReservationSchema, db: AsyncSession = Depends(get_db)):
     pharmacy = await get_or_404(Pharmacy, pharmacy_id, db)
-    reservation = await Reservation.save(**res.dict(), db=db, pharmacy_id=pharmacy_id, discount=pharmacy.discount)
+    reservation = await ReservationService.save(**res.dict(), db=db, pharmacy_id=pharmacy_id, discount=pharmacy.discount)
     return reservation
 
 
