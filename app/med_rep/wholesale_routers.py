@@ -35,7 +35,7 @@ async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: A
             .join(CurrentWholesaleWarehouse.wholesale)
             .where(
                 and_(
-                    Products.name.like(f'%{search}%'),
+                    Product.name.like(f'%{search}%'),
                     Wholesale.region_id == region_id
                 )
             )
@@ -50,7 +50,7 @@ async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: A
 
 @router.get('/search-from-facroty-warehouse', response_model=List[FactoryWarehouseOutSchema])
 async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.product.has(Products.name.like(f"%{search}%"))))
+    result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.product.has(Product.name.like(f"%{search}%"))))
     return result.scalars().all()
 
 

@@ -256,38 +256,38 @@ async def get_manufactured_company(db: AsyncSession = Depends(get_db)):
 
 @router.post('/add-product', response_model=List[ProductOutSchema])
 async def add_medcine(product: ProductInSchema, db: AsyncSession = Depends(get_db)):
-    product = Products(**product.dict())
+    product = Product(**product.dict())
     await product.save(db)
-    result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
+    result = await db.execute(select(Product).options(selectinload(Product.man_company), selectinload(Product.category)))
     return result.scalars().all()
 
 
 @router.put('/update-product/{product_id}', response_model=ProductOutSchema)
 async def update_doctor_category(product_id: int, obj: ProductUpdateSchema, db: AsyncSession = Depends(get_db)):
-    product = await get_or_404(Products, product_id, db)
+    product = await get_or_404(Product, product_id, db)
     await product.update(**obj.dict(), db=db)
     return product
     
 
 @router.get('/get-product', response_model=List[ProductOutSchema])
 async def get_medcine(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
+    result = await db.execute(select(Product).options(selectinload(Product.man_company), selectinload(Product.category)))
     return result.scalars().all()
 
 
 @router.get('/search-product', response_model=List[ProductOutSchema])
 async def search_medcine(search: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)).filter(Products.name.like(f"%{search}%")))
+    result = await db.execute(select(Product).options(selectinload(Product.man_company), selectinload(Product.category)).filter(Product.name.like(f"%{search}%")))
     return result.scalars().all()
 
 
 @router.get('/filter-product', response_model=List[ProductOutSchema])
 async def filter_products(category_id: int | None = None, man_company_id: int | None = None, db: AsyncSession = Depends(get_db)):
-    query = select(Products).options(selectinload(Products.man_company), selectinload(Products.category))
+    query = select(Product).options(selectinload(Product.man_company), selectinload(Product.category))
     if category_id:
-        query = query.filter(Products.category_id==category_id)
+        query = query.filter(Product.category_id==category_id)
     if man_company_id:
-        query = query.filter(Products.man_company_id==man_company_id)
+        query = query.filter(Product.man_company_id==man_company_id)
     result = await db.execute(query)
     return result.scalars().all()
 

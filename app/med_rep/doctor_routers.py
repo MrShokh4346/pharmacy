@@ -117,7 +117,7 @@ async def attach_products_to_doctor(user_id: int, objects: AttachProductsListSch
         doctor = result1.scalar()
         if doctor is not None:
             raise HTTPException(status_code=404, detail='This product already attached to doctor for this month')
-        product = await get_or_404(Products, obj.product_id, db)
+        product = await get_or_404(Product, obj.product_id, db)
         doctor_products.append(DoctorMonthlyPlan(**obj.dict(), date=start_date, price=product.price, discount_price=product.discount_price))
         result = await db.execute(select(UserProductPlan).filter(UserProductPlan.product_id==obj.product_id, UserProductPlan.plan_month>=start_date, UserProductPlan.plan_month<=end_date, UserProductPlan.med_rep_id==user_id))
         user_product = result.scalars().first()

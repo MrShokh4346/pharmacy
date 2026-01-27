@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, FastAPI, HTTPException, status
 from .doctors import DoctorPostupleniyaFact, Bonus
 from datetime import date, datetime, timedelta 
-from . import Products
+from . import Product
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
@@ -22,7 +22,7 @@ class ReportFactoryWerehouse(Base):
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
     factory = relationship("ManufacturedCompany", backref="factory_report_werehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="factory_report_werehouse", lazy='selectin')
+    product = relationship("Product", backref="factory_report_werehouse", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -45,7 +45,7 @@ class CurrentFactoryWarehouse(Base):
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
     factory = relationship("ManufacturedCompany", backref="current_werehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="factory_current_werehouse", lazy='selectin')
+    product = relationship("Product", backref="factory_current_werehouse", lazy='selectin')
 
     @classmethod
     async def add(cls, db: AsyncSession, **kwargs):
@@ -117,7 +117,7 @@ class Wholesale(Base):
 #     wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
 #     wholesale = relationship("Wholesale", backref="wholesale_report_warehouse", lazy='selectin')
 #     product_id = Column(Integer, ForeignKey("products.id"))
-#     product = relationship("Products", backref="wholesale_report_warehouse", lazy='selectin')
+#     product = relationship("Product", backref="wholesale_report_warehouse", lazy='selectin')
 
 #     async def save(self, db: AsyncSession, **kwargs):
 #         try:
@@ -138,7 +138,7 @@ class CurrentWholesaleWarehouse(Base):
     wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
     wholesale = relationship("Wholesale", cascade="all, delete",  back_populates="report_warehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="wholesale_current_warehouse", lazy='selectin')
+    product = relationship("Product", backref="wholesale_current_warehouse", lazy='selectin')
 
     @classmethod
     async def add(cls, db: AsyncSession, **kwargs):
@@ -171,7 +171,7 @@ class WholesaleReservationPayedAmounts(Base):
     payed = Column(Boolean, default=False)
     date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
-    product = relationship("Products", cascade="all, delete", backref="wholesale_payed_amounts", lazy='selectin')
+    product = relationship("Product", cascade="all, delete", backref="wholesale_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", backref="wholesale_payed_amounts", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
@@ -232,7 +232,7 @@ class WholesaleReservation(Base):
             res_products = []
             products = kwargs.pop('products')
             for product in products:
-                prd = await get_or_404(Products, product['product_id'], db)
+                prd = await get_or_404(Product, product['product_id'], db)
                 price = product['price'] if product['price'] else prd.price
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
                 wrh = result.scalar()
@@ -337,7 +337,7 @@ class WholesaleReservation(Base):
                     raise HTTPException(status_code=404, detail=f"No product found in this reservation with this id (product_id={obj['product_id']})")
                 self.reailized_debt += obj['amount'] * obj['quantity']
 
-                result = await db.execute(select(Products).filter(Products.id==obj['product_id']))
+                result = await db.execute(select(Product).filter(Product.id==obj['product_id']))
                 product = result.scalar()
                 nds_sum = obj['amount'] - obj['amount']/1.12 
                 skidka_sum = product.price - obj['amount']/1.12 
@@ -386,7 +386,7 @@ class WholesaleReservationProducts(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     reservation_price = Column(Float)
     # reservation_discount_price = Column(Integer)
-    product = relationship("Products", backref="wholesale_reservaion_products", lazy='selectin')
+    product = relationship("Product", backref="wholesale_reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))
     wholesale_reservation = relationship("WholesaleReservation", cascade="all, delete", back_populates="products")
 
@@ -409,7 +409,7 @@ class WholesaleOutput(Base):
     date = Column(DateTime, default=datetime.now())
     pharmacy = Column(String)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="wholesale_output", lazy='selectin')
+    product = relationship("Product", backref="wholesale_output", lazy='selectin')
     wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
     wholesale = relationship("Wholesale", backref="warehouse_output", lazy='selectin')
 

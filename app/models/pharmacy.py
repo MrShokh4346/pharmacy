@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 # from app.models.hospital import RemainderSumFromReservation
 from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan, Bonus, DoctorPostupleniyaFact
 from datetime import date , datetime, timedelta
-from . import Products, UserProductPlan
+from . import Product, UserProductPlan
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -28,7 +28,7 @@ class IncomingStockProducts(Base):
     stock_id = Column(Integer, ForeignKey("incoming_balance_in_stock.id", ondelete="CASCADE"))
     stock = relationship("IncomingBalanceInStock", cascade="all, delete", back_populates="products")
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="incomingstockproducts")
+    product = relationship("Product", backref="incomingstockproducts")
 
 
 class IncomingBalanceInStock(Base):
@@ -85,7 +85,7 @@ class CurrentBalanceInStock(Base):
     amount = Column(Integer)
 
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="currntbalanceinstock", lazy='selectin')
+    product = relationship("Product", backref="currntbalanceinstock", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", cascade="all, delete", back_populates='currntbalanceinstock', lazy='selectin')
 
@@ -124,7 +124,7 @@ class CheckingStockProducts(Base):
     stock_id = Column(Integer, ForeignKey("checking_balance_in_stock.id", ondelete="CASCADE"))
     stock = relationship("CheckingBalanceInStock", cascade="all, delete", backref="products")
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="checkingbalanceinstock")
+    product = relationship("Product", backref="checkingbalanceinstock")
 
 
 class CheckingBalanceInStock(Base):
@@ -203,7 +203,7 @@ class ReservationPayedAmounts(Base):
     month_number=Column(Integer)
     date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
-    product = relationship("Products", cascade="all, delete", backref="reservation_payed_amounts", lazy='selectin')
+    product = relationship("Product", cascade="all, delete", backref="reservation_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", backref="reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
@@ -262,7 +262,7 @@ class Reservation(Base):
             res_products = []
             products = kwargs.pop('products')
             for product in products:
-                prd = await get_or_404(Products, product['product_id'], db)
+                prd = await get_or_404(Product, product['product_id'], db)
                 price = product['price'] if product['price'] else prd.price
                 del product['price']
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
@@ -469,7 +469,7 @@ class ReservationProducts(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     reservation_price = Column(Float)
     reservation_discount_price = Column(Integer)
-    product = relationship("Products", backref="reservaion_products", lazy='selectin')
+    product = relationship("Product", backref="reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
     reservation = relationship("Reservation", cascade="all, delete", back_populates="products", lazy='selectin')
 
@@ -497,7 +497,7 @@ class ReservationProducts(Base):
         try:
             discount = kwargs['discount']
             del kwargs['discount']
-            product = await get_or_404(Products, kwargs['product_id'], db)
+            product = await get_or_404(Product, kwargs['product_id'], db)
             reservation_price = (product.price - product.price * discount / 100) * 1.12
             res_product = cls(**kwargs, not_payed_quantity=kwargs['quantity'], reservation_price=reservation_price)
             db.add(res_product)
@@ -554,7 +554,7 @@ class PharmacyHotSale(Base):
     date = Column(DateTime, default=datetime.now(), index=True)
 
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
-    product = relationship("Products", backref="hot_sale_products", lazy='selectin')
+    product = relationship("Product", backref="hot_sale_products", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"), index=True)
     pharmacy = relationship("Pharmacy", backref="hot_sale", cascade="all, delete", lazy='selectin')
 
@@ -579,7 +579,7 @@ class PharmacyFact(Base):
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), nullable=True)
     doctor = relationship("Doctor", backref="pharmacyfact", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="pharmacyfact", lazy='selectin')
+    product = relationship("Product", backref="pharmacyfact", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("Pharmacy", backref="pharmacyfact", cascade="all, delete", lazy='selectin')
 

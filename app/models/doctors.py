@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import Table
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from . import UserProductPlan, Products
+from . import UserProductPlan, Product
 from sqlalchemy import text
 import calendar
 from .database import  get_or_404
@@ -112,7 +112,7 @@ class DoctorMonthlyPlan(Base):
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
     date = Column(DateTime, default=datetime.now(), index=True)
-    product = relationship("Products",  backref="doctormonthlyplan", lazy="selectin")
+    product = relationship("Product",  backref="doctormonthlyplan", lazy="selectin")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     price = Column(Integer)
     discount_price = Column(Integer)
@@ -200,7 +200,7 @@ class DoctorFact(Base):
     doctor = relationship("Doctor", cascade="all, delete", backref="fact")
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     pharmacy = relationship("Pharmacy", backref="doctorfact")
-    product = relationship("Products",  backref="doctorfact")
+    product = relationship("Product",  backref="doctorfact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
@@ -210,7 +210,7 @@ class DoctorFact(Base):
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.pharmacy_id==kwargs['pharmacy_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
@@ -227,7 +227,7 @@ class DoctorFact(Base):
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'],  cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
@@ -264,7 +264,7 @@ class DoctorPostupleniyaFact(Base):
     doctor = relationship("Doctor", cascade="all, delete", back_populates="postupleniya_fact")
     # pharmacy_id = Column(Integer, ForeignKey("pharmacy.id"), nullable=True)
     # pharmacy = relationship("Pharmacy", backref="doctorfact")
-    product = relationship("Products",  backref="postupleniya_fact")
+    product = relationship("Product",  backref="postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
@@ -274,7 +274,7 @@ class DoctorPostupleniyaFact(Base):
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
         start_date = datetime(year, kwargs['month_number'], 1)  
         end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         doctor_postupleniya = result.scalars().first()
         if doctor_postupleniya is None:
@@ -314,7 +314,7 @@ class Bonus(Base):
     pre_investment = Column(Integer, default=0)
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), index=True)
     doctor = relationship("Doctor", cascade="all, delete", backref="bonus")
-    product = relationship("Products",  backref="bonus", lazy='selectin')
+    product = relationship("Product",  backref="bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     async def paying_bonus(self, amount: int, description: str, db: AsyncSession):
@@ -336,7 +336,7 @@ class Bonus(Base):
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         amount = product.marketing_expenses * kwargs['compleated']
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_bonus = result.scalars().first()
@@ -361,7 +361,7 @@ class Bonus(Base):
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_bonus = result.scalars().first()
         if month_bonus is None:
@@ -381,7 +381,7 @@ class Bonus(Base):
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
         start_date = datetime(year, kwargs['month_number'], 1)  
         end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         amount = product.marketing_expenses * kwargs['quantity']
         result = await db.execute(select(cls).filter(cls.doctor_id==kwargs['doctor_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         bonus = result.scalars().first()

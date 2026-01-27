@@ -139,11 +139,11 @@ class ProductExpenses(Base):
     marketing_expense = Column(Integer, default=0)
     salary_expenses = Column(Integer, default=0)
     date = Column(DateTime, default=datetime.now())
-    product = relationship("Products", backref="product_expenmses", lazy='selectin')
+    product = relationship("Product", backref="product_expenmses", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
 
-class Products(Base):
+class Product(Base):
     __tablename__ = "products"
     __table_args__ = {"extend_existing": True}
 
@@ -247,7 +247,7 @@ class DoctorVisitInfo(Base):
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
     doctor = relationship("Doctor", cascade="all, delete", backref="visit_info")
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="visit_info")
+    product = relationship("Product", backref="visit_info")
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -391,14 +391,14 @@ class UserProductPlan(Base):
     plan_month = Column(DateTime)
     price = Column(Integer)
     discount_price = Column(Integer)
-    product = relationship("Products", backref="product_plan", lazy='selectin')
+    product = relationship("Product", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     med_rep = relationship("Users", cascade="all, delete", backref="product_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
     async def save(self, db: AsyncSession):
         try:
-            product = await get_or_404(Products, self.product_id, db)
+            product = await get_or_404(Product, self.product_id, db)
             self.price = product.price
             self.discount_price = product.discount_price
             db.add(self)

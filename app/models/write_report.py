@@ -9,7 +9,7 @@ from sqlalchemy import func
 from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
-from .users import Users, Products, Region, UserProductPlan, ManufacturedCompany, Products
+from .users import Users, Product, Region, UserProductPlan, ManufacturedCompany, Product
 from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
 from .pharmacy import Reservation
 from .hospital import HospitalReservation
@@ -292,7 +292,7 @@ async def products(db: AsyncSession):
     PRODUCTS = []
     FACTORIES = []
     for zavod in zavodlar.scalars().all():
-        result = await db.execute(select(Products).filter(Products.man_company_id==zavod.id))
+        result = await db.execute(select(Product).filter(Product.man_company_id==zavod.id))
         objects = result.scalars().all()
         prs = lambda objects: [{'id': c.id, 'name': c.name, 'price': c.price} for c in objects]
         prs = prs(objects)

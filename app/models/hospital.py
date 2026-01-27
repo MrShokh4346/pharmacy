@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentFactoryWarehouse
-from . import Products, UserProductPlan
+from . import Product, UserProductPlan
 from .doctors import DoctorFact, DoctorPostupleniyaFact, Bonus
 import calendar
 from .database import get_db, get_or_404
@@ -66,7 +66,7 @@ class HospitalMonthlyPlan(Base):
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
     date = Column(DateTime, default=datetime.now(), index=True)
-    product = relationship("Products",  backref="hospitalmonthlyplan", lazy="selectin")
+    product = relationship("Product",  backref="hospitalmonthlyplan", lazy="selectin")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     price = Column(Integer)
     discount_price = Column(Integer)
@@ -118,7 +118,7 @@ class HospitalReservationPayedAmounts(Base):
     description = Column(String)
     date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), index=True)
-    product = relationship("Products", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
+    product = relationship("Product", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"), index=True)
     reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts", lazy='selectin'   )
 
@@ -171,7 +171,7 @@ class HospitalReservation(Base):
             res_products = []
             products = kwargs.pop('products')
             for product in products:
-                prd = await get_or_404(Products, product['product_id'], db)
+                prd = await get_or_404(Product, product['product_id'], db)
                 price = product['price'] if product['price'] else prd.price
                 del product['price']
                 result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
@@ -285,7 +285,7 @@ class HospitalReservationProducts(Base):
     reservation_price = Column(Integer)
     reservation_discount_price = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="hospital_reservation_products", lazy='selectin')
+    product = relationship("Product", backref="hospital_reservation_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
     reservation = relationship("HospitalReservation", cascade="all, delete", back_populates="products")
 
@@ -310,7 +310,7 @@ class HospitalBonus(Base):
     product_quantity = Column(Integer)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_bonus", cascade="all, delete")
-    product = relationship("Products",  backref="hospital_bonus", lazy='selectin')
+    product = relationship("Product",  backref="hospital_bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
     async def paying_bonus(self, amount: int, db: AsyncSession):
@@ -319,7 +319,7 @@ class HospitalBonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=kwargs['bonus_sum'])
         db.add(month_bonus)
 
@@ -335,7 +335,7 @@ class HospitalFact(Base):
     date = Column(DateTime, default=datetime.now(), index=True)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
     hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
-    product = relationship("Products",  backref="hospital_fact")
+    product = relationship("Product",  backref="hospital_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
     @classmethod
@@ -345,7 +345,7 @@ class HospitalFact(Base):
         num_days = calendar.monthrange(year, month)[1]
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
@@ -367,7 +367,7 @@ class HospitalPostupleniyaFact(Base):
     date = Column(DateTime, default=datetime.now())
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_postupleniya_fact", cascade="all, delete", lazy='selectin')
-    product = relationship("Products",  backref="hospital_postupleniya_fact")
+    product = relationship("Product",  backref="hospital_postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"))
 
     @classmethod
@@ -376,7 +376,7 @@ class HospitalPostupleniyaFact(Base):
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
         start_date = datetime(year, kwargs['month_number'], 1)  
         end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        product = await get_or_404(Products, kwargs['product_id'], db)
+        product = await get_or_404(Product, kwargs['product_id'], db)
         result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
@@ -469,6 +469,6 @@ class ReturnProducts(Base):
     reservation_quantity = Column(Integer) 
     return_quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Products", backref="return_products", lazy='selectin')
+    product = relationship("Product", backref="return_products", lazy='selectin')
     return_table_id = Column(Integer, ForeignKey("return_table.id", ondelete="CASCADE"))
     return_table = relationship("ReturnTable", cascade="all, delete", backref="products", lazy='selectin')

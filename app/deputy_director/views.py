@@ -411,14 +411,14 @@ async def get_proccess_report(month: int, db: AsyncSession = Depends(get_db)):
 
 @router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)
 async def set_product_expenses(product_id: int, marketing_expenses: int | None = None, salary_expenses: int | None = None, db: AsyncSession = Depends(get_db)):
-    product = await get_or_404(Products, product_id, db)
+    product = await get_or_404(Product, product_id, db)
     await product.set_expenses(marketing_expenses=marketing_expenses, salary_expenses=salary_expenses, db=db)
     return product
 
 
 @router.get('/get-products', response_model=List[ProductExpensesSchema])
 async def get_medcine(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products).options(selectinload(Products.man_company), selectinload(Products.category)))
+    result = await db.execute(select(Product).options(selectinload(Product.man_company), selectinload(Product.category)))
     return result.scalars().all()
 
 ##############################################################################################################################
