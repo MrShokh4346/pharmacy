@@ -1,3 +1,4 @@
+from app.models.hospital import RemainderSumFromReservation
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,9 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class RemainderSumFromReservationService:
     @staticmethod
-    async def set_remainder(cls, db: AsyncSession, **kwargs):
+    async def set_remainder(db: AsyncSession, **kwargs):
         try:
-            obj = cls(
+            obj = RemainderSumFromReservation(
                         amonut=kwargs['amonut'],
                         pharmacy_id=kwargs['pharmacy_id'],
                         reservation_invoice_number=kwargs['reservation_invoice_number']
