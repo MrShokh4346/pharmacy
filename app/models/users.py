@@ -111,25 +111,6 @@ class ExpenseCategory(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-# class Expense(Base):
-#     __tablename__ = 'expense'
-
-#     id = Column(Integer, primary_key=True)
-#     amount = Column(Integer)
-#     author = Column(String)
-#     description = Column(String)
-#     date = Column(DateTime, default=datetime.now())
-#     category = relationship("ExpenseCategory", backref="expense", lazy='selectin')
-#     category_id = Column(Integer, ForeignKey("expense_category.id"))
-    
-#     async def save(self, db: AsyncSession):
-#         try:
-#             db.add(self)
-#             await db.commit()
-#             await db.refresh(self)
-#         except IntegrityError as e:
-#             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
 class ProductExpenses(Base):
     __tablename__ = 'product_expenses'
@@ -167,36 +148,6 @@ class Product(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
         
-    async def update(self, db: AsyncSession, **kwargs):
-        try:
-            for key in list(kwargs.keys()):
-                kwargs.pop(key) if kwargs[key]==None else None 
-            self.name = kwargs.get('name', self.name)
-            self.is_exist = kwargs.get('is_exist', self.is_exist)
-            self.price = kwargs.get('price', self.price)
-            self.discount_price = kwargs.get('discount_price', self.discount_price)
-            if kwargs.get('price', None) or kwargs.get('discount_price', None):
-                await db.execute(update(UserProductPlan).where(UserProductPlan.plan_month >= datetime.now()).values(price=kwargs.get('price', self.price), discount_price=kwargs.get('discount_price', self.discount_price)))
-            self.man_company_id = kwargs.get('man_company_id', self.man_company_id)
-            self.category_id = kwargs.get('category_id', self.category_id)
-            await db.commit()
-            await db.refresh(self)
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-    async def set_expenses(self, db: AsyncSession, **kwargs):
-        self.marketing_expenses = kwargs.get('marketing_expenses') if kwargs.get('marketing_expenses') else self.marketing_expenses
-        self.salary_expenses = kwargs.get('salary_expenses') if kwargs.get('salary_expenses') else self.salary_expenses
-        expense = ProductExpenses(
-            marketing_expense = kwargs.get('marketing_expenses'),
-            salary_expenses = kwargs.get('salary_expenses'),
-            product_id = self.id 
-            )
-        db.add(expense)
-        await db.commit()
-        await db.refresh(self)
-
-
 
 class DoctorPlan(Base):
     __tablename__ = "doctor_plan"
@@ -300,21 +251,6 @@ class PharmacyPlan(Base):
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
 
-    def attach(self, db: AsyncSession, **kwargs):
-        try:
-            PharmacyPlanAttachedProduct.delete(id=self.id, db=db)
-            self.description = kwargs.get('description', self.description)
-            self.status = True
-            for doctor in kwargs['doctors']:
-                doctor_copy = doctor.copy()
-                del doctor_copy['products']
-                for product in doctor['products']:
-                        compleated = PharmacyPlanAttachedProduct(**product, **doctor_copy, plan_id=self.id)
-                        db.add(compleated)
-            db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
 class PharmacyPlanAttachedProduct(Base):
     __tablename__ = "pharmacy_plan_attached_product"
@@ -395,17 +331,6 @@ class UserProductPlan(Base):
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     med_rep = relationship("Users", cascade="all, delete", backref="product_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
-
-    async def save(self, db: AsyncSession):
-        try:
-            product = await get_or_404(Product, self.product_id, db)
-            self.price = product.price
-            self.discount_price = product.discount_price
-            db.add(self)
-            await db.commit()
-            await db.refresh(self)
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def update(self, amount: int, db: AsyncSession):
         try:
