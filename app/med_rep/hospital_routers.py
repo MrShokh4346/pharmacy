@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+from app.services.hospitalMonthlyPlanService import HospitalMonthlyPlanService
+from app.services.hospitalReservationService import HospitalReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
 from models.hospital import *
 from fastapi import APIRouter
@@ -77,7 +79,8 @@ async def attach_products_to_hospital(hospital_id: int, user_id: int, objects: A
 @router.put('/update-hospital-product-plan/{plan_id}', response_model=HospitalProductPlanOutSchema)
 async def update_doctor_product_plan(plan_id: int, amount: int, db: AsyncSession = Depends(get_db)):
     plan = await get_or_404(HospitalMonthlyPlan, plan_id, db)
-    await plan.update(amount, db)
+    # await plan.update(amount, db)
+    await HospitalMonthlyPlanService.update(plan=plan, amount=amount, db=db)
     return plan 
 
 
@@ -101,7 +104,7 @@ async def get_hospital_attached_products(hospital_id: int, filter_date: StartEnd
 @router.post('/hospital-reservation/{hospital_id}')
 async def hospital_reservation(hospital_id: int, res: HospitalReservationSchema, db: AsyncSession = Depends(get_db)):
     hospital = await get_or_404(Hospital, hospital_id, db)
-    reservation = await HospitalReservation.save(**res.dict(), db=db, hospital_id=hospital_id)
+    reservation = await HospitalReservationService.save(**res.dict(), db=db, hospital_id=hospital_id)
     return {"msg":"Done"}
 
 

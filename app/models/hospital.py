@@ -81,28 +81,6 @@ class HospitalMonthlyPlan(Base):
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
-    async def update(self, amount: int, db: AsyncSession):
-        from .users import UserProductPlan
-        try:
-            difference = self.monthly_plan - amount
-            self.monthly_plan = amount
-            result = await db.execute(select(UserProductPlan).filter(UserProductPlan.med_rep_id==self.hospital.med_rep_id, UserProductPlan.product_id==self.product_id))
-            user_plan = result.scalar()
-            user_plan.current_amount += difference
-            if user_plan.current_amount < 0:
-                raise HTTPException(status_code=404, detail="Med rep plan should be grater than 0 for tis product")
-            if self.monthly_plan == 0:
-                result = await db.execute(select(HospitalPostupleniyaFact).filter(HospitalPostupleniyaFact.hospital_id==self.hospital_id, HospitalPostupleniyaFact.product_id==self.product_id))
-                postupleniya = result.scalars().first()
-                if postupleniya:
-                    raise HTTPException(status_code=400, detail="There is postuplenuya fact whith this product in this hospital")
-                query = f"delete from hospital_monthly_plan WHERE id={self.id}"
-                result = await db.execute(text(query))
-            db.add(self)
-            await db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
 
 class HospitalReservationPayedAmounts(Base):
     __tablename__ = "hospital_reservation_payed_amounts"
@@ -162,58 +140,7 @@ class HospitalReservation(Base):
     manufactured_company = relationship("ManufacturedCompany", backref="hospital_reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
     payed = Column(Boolean, default=False)
-
-    @classmethod
-    async def save(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-
-        try:
-            total_quantity = 0
-            total_amount = 0
-            total_payable = 0
-            res_products = []
-            products = kwargs.pop('products')
-            for product in products:
-                prd = await get_or_404(Product, product['product_id'], db)
-                price = product['price'] if product['price'] else prd.price
-                del product['price']
-                result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==kwargs['manufactured_company_id'], CurrentFactoryWarehouse.product_id==product['product_id']))
-                wrh = result.scalar()
-                if (not wrh) or wrh.amount < product['quantity']: 
-                    raise HTTPException(status_code=404, detail=f"There is not enough {prd.name} in factory warehouse")
-                res_products.append(HospitalReservationProducts(**product, reservation_price=price, reservation_discount_price=prd.discount_price))
-                total_quantity += product['quantity']
-                total_amount += product['quantity'] * price
-            total_payable = (total_amount - total_amount * kwargs['discount'] / 100)
-            reservation = cls(**kwargs,
-                                total_quantity = total_quantity,
-                                total_amount = total_amount,
-                                total_payable = total_payable,
-                                total_payable_with_nds = (total_payable + total_payable * 0.12),
-                                debt = (total_payable + total_payable * 0.12)
-                                )
-            db.add(reservation)
-            for p in res_products:
-                p.reservation_id=reservation.id
-                reservation.products.append(p)
-            await db.commit()
-            return reservation
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-            
-    async def check_reservation(self, db: AsyncSession, **kwargs):
-        if self.checked == True:
-            raise HTTPException(status_code=400, detail=f"This reservation already checked")
-        self.checked = kwargs.get('checked')
-        self.date_implementation = datetime.now()
-        for product in self.products:
-            result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.factory_id==self.manufactured_company_id, CurrentFactoryWarehouse.product_id==product.product_id))
-            wrh = result.scalar()
-            if (not wrh) or wrh.amount < product.quantity: 
-                raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in warehouse")
-            wrh.amount -= product.quantity
-        await db.commit()
-
+         
     async def check_if_payed_reservation(self, db: AsyncSession, **kwargs):
         if self.checked == False:
             raise HTTPException(status_code=400, detail=f"This reservation not checked")
@@ -237,8 +164,6 @@ class HospitalReservation(Base):
         await db.commit()
 
     async def update_discount(self, discount: float, db: AsyncSession):
-        # if self.checked == True:
-        #     raise HTTPException(status_code=400, detail=f"This reservation already checked")
         for product in self.products:
             product.reservation_price = (product.reservation_price * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.total_payable = (self.total_payable * (100 / (100 - self.discount)) * (1 - discount / 100))
@@ -246,26 +171,6 @@ class HospitalReservation(Base):
         self.debt = (self.debt * (100 / (100 - self.discount)) * (1 - discount / 100))
         self.discount = discount
         await db.commit()
-
-    async def pay_reservation(self, db: AsyncSession, **kwargs):
-        try:
-            self.debt -= kwargs['amount']
-            self.profit += kwargs['amount']
-            reservation = HospitalReservationPayedAmounts(quantity=self.total_quantity, doctor_id=kwargs['doctor_id'], bonus_discount=kwargs['bonus_discount'], amount=kwargs['amount'], description=kwargs['description'], reservation_id=self.id)
-            await reservation.save(db)
-            if self.debt < 0:
-                raise HTTPException(status_code=400, detail=f"Something went wrong")
-            for prd in self.products:
-                product_price = (prd.product.price * 1.12) * (100 - self.discount)/100
-                fact_price = prd.quantity * product_price
-                bonus_sum = fact_price * kwargs['bonus_discount']/100
-                await DoctorFact.set_fact_to_hospital(month_number=kwargs['month_number'], doctor_id=kwargs['doctor_id'], product_id=prd.product.id, compleated=prd.quantity, db=db)
-                await DoctorPostupleniyaFact.set_fact(price=product_price, fact_price=fact_price, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
-                if self.bonus == True:
-                    await Bonus.set_bonus_to_hospital(bonus_sum=bonus_sum, product_id=prd.product.id, doctor_id=kwargs['doctor_id'], compleated=prd.quantity, month_number=kwargs['month_number'], db=db)
-            await db.commit()
-        except IntegrityError as e:
-            raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def edit_invoice_number(self, invoice_number: int, db: AsyncSession):
         try:
@@ -318,13 +223,6 @@ class HospitalBonus(Base):
         self.payed += amount
         await db.commit()
 
-    @classmethod
-    async def set_bonus(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=kwargs['bonus_sum'])
-        db.add(month_bonus)
-
 
 class HospitalFact(Base):
     __tablename__ = "hospital_fact"
@@ -339,23 +237,6 @@ class HospitalFact(Base):
     hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
     product = relationship("Product",  backref="hospital_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
-
-    @classmethod
-    async def set_fact(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        month = datetime.now().month  
-        num_days = calendar.monthrange(year, month)[1]
-        start_date = datetime(year, month, 1)  
-        end_date = datetime(year, month, num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_fact = result.scalars().first()
-        if month_fact is None:
-            month_fact = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], fact=kwargs['product_quantity'], price=product.price, discount_price=product.discount_price)
-            db.add(month_fact)
-        else:
-            month_fact.fact += kwargs['product_quantity']
 
 
 class HospitalPostupleniyaFact(Base):
@@ -372,23 +253,6 @@ class HospitalPostupleniyaFact(Base):
     hospital = relationship("Hospital", backref="hospital_postupleniya_fact", cascade="all, delete", lazy='selectin')
     product = relationship("Product",  backref="hospital_postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"))
-
-    @classmethod
-    async def set_fact(cls, db: AsyncSession, **kwargs):
-        from .users import Product
-        year = datetime.now().year
-        num_days = calendar.monthrange(year, kwargs['month_number'])[1]
-        start_date = datetime(year, kwargs['month_number'], 1)  
-        end_date = datetime(year, kwargs['month_number'], num_days, 23, 59)
-        product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(cls).filter(cls.hospital_id==kwargs['hospital_id'], cls.product_id==kwargs['product_id'], cls.date>=start_date, cls.date<=end_date))
-        month_fact = result.scalars().first()
-        if month_fact is None:
-            month_fact = cls(fact_price = kwargs['fact_price'], hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
-            db.add(month_fact)
-        else:
-            month_fact.fact += kwargs['compleated']
-            month_fact.fact_price += kwargs['fact_price']
 
 
 class RemainderSumFromReservation(Base):

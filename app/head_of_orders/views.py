@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from app.services.hospitalReservationService import HospitalReservationService
 from app.services.reservationProducts import ReservationProductsService
 from app.services.reservationService import ReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -285,7 +286,7 @@ async def check_hospital_reservation_products(reservation_id: int, obj: CheckSch
     if reservation is None:
         raise HTTPException(status_code=400, detail='Reservation not found')
     # await reservation.check_reservation(**obj.dict(), db=db)
-    await ReservationService.check_reservation(reservation=reservation, db=db, **obj.dict())
+    await HospitalReservationService.check_reservation(reservation=reservation, db=db, **obj.dict())
     return {"msg":"Done"}
 
 
@@ -420,7 +421,7 @@ async def pay_pharmacy_hospital_reservation(reservation_id: int, obj: PayHospita
     if not reservation:
         raise HTTPException(status_code=400, detail=f"Reservation not found")
     # await reservation.pay_reservation(**obj.dict(), db=db)
-    await ReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
+    await HospitalReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
     return reservation
 
 
