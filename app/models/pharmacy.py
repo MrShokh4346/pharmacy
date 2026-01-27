@@ -345,7 +345,7 @@ class Reservation(Base):
                 from app.models.hospital import RemainderSumFromReservation
 
                 if remaind > 0:
-                    await RemainderSumFromReservation.set_remainder(amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
+                    await RemainderSumFromReservation.set_remainder(db=db, amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
 
             if self.profit < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
