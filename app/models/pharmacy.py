@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 # from app.models.hospital import RemainderSumFromReservation
 from .doctors import Doctor, pharmacy_doctor, DoctorFact, DoctorMonthlyPlan, Bonus, DoctorPostupleniyaFact
 from datetime import date , datetime, timedelta
-from .users import Product, UserProductPlan
+# from .users import Product, UserProductPlan
 from .warehouse import CurrentWholesaleWarehouse, CurrentFactoryWarehouse
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
@@ -255,6 +255,7 @@ class Reservation(Base):
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         try:
             total_quantity = 0
             total_amount = 0
@@ -494,6 +495,7 @@ class ReservationProducts(Base):
 
     @classmethod
     async def add(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         try:
             discount = kwargs['discount']
             del kwargs['discount']
@@ -622,6 +624,8 @@ class PharmacyFact(Base):
                     # raise HTTPException(status_code=404, detail=f"You are trying to add more product than saled for this product (id={key})")
                 pharmacy = await get_or_404(Pharmacy, kwargs['pharmacy_id'], db)
                 if checking.saled > value:
+                    from .users import UserProductPlan
+
                     hot_sale = PharmacyHotSale(amount=checking.saled - value, product_id=key, pharmacy_id=kwargs['pharmacy_id'])
                     db.add(hot_sale)
                     await UserProductPlan.user_plan_minus(product_id=key, quantity=checking.saled - value, med_rep_id=pharmacy.med_rep_id, db=db)

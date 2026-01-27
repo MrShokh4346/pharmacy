@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
 from sqlalchemy import update
 from .warehouse import CurrentFactoryWarehouse
-from .users import Product, UserProductPlan
+# from .users import Product, UserProductPlan
 from .doctors import DoctorFact, DoctorPostupleniyaFact, Bonus
 import calendar
 from .database import get_db, get_or_404
@@ -82,6 +82,7 @@ class HospitalMonthlyPlan(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
     async def update(self, amount: int, db: AsyncSession):
+        from .users import UserProductPlan
         try:
             difference = self.monthly_plan - amount
             self.monthly_plan = amount
@@ -164,6 +165,8 @@ class HospitalReservation(Base):
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
+        from .users import Product
+
         try:
             total_quantity = 0
             total_amount = 0
@@ -209,8 +212,6 @@ class HospitalReservation(Base):
             if (not wrh) or wrh.amount < product.quantity: 
                 raise HTTPException(status_code=404, detail=f"There is not enough {product.product.name} in warehouse")
             wrh.amount -= product.quantity
-            # await UserProductPlan.user_plan_minus(product_id=product.product_id, med_rep_id=self.hospital.med_rep_id, quantity=product.quantity, db=db)
-            # await HospitalFact.set_fact(product_id=product.product_id, product_quantity=product.quantity, hospital_id=self.hospital_id, db=db)
         await db.commit()
 
     async def check_if_payed_reservation(self, db: AsyncSession, **kwargs):
@@ -319,6 +320,7 @@ class HospitalBonus(Base):
 
     @classmethod
     async def set_bonus(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         product = await get_or_404(Product, kwargs['product_id'], db)
         month_bonus = cls(hospital_id=kwargs['hospital_id'], product_id=kwargs['product_id'], product_quantity=kwargs['product_quantity'], amount=kwargs['bonus_sum'])
         db.add(month_bonus)
@@ -340,6 +342,7 @@ class HospitalFact(Base):
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         month = datetime.now().month  
         num_days = calendar.monthrange(year, month)[1]
@@ -372,6 +375,7 @@ class HospitalPostupleniyaFact(Base):
 
     @classmethod
     async def set_fact(cls, db: AsyncSession, **kwargs):
+        from .users import Product
         year = datetime.now().year
         num_days = calendar.monthrange(year, kwargs['month_number'])[1]
         start_date = datetime(year, kwargs['month_number'], 1)  
