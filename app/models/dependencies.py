@@ -5,8 +5,8 @@ from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
-from .users import Users, Products, Region, UserProductPlan
-from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
+from .users import Users, UserProductPlan
+from .doctors import Doctor, DoctorMonthlyPlan, DoctorFact
 from .pharmacy import Reservation
 from .hospital import HospitalReservation
 from .warehouse import WholesaleReservation

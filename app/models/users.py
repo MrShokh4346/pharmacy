@@ -25,6 +25,7 @@ def get_password_hash(password):
 
 class Region(Base):
     __tablename__ = "region"
+    __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
