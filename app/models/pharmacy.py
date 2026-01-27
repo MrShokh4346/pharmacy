@@ -1,3 +1,4 @@
+from app.services.remainderSumFromReservationService import RemainderSumFromReservationService
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Sequence
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -343,10 +344,9 @@ class Reservation(Base):
                 self.debt -= kwargs['total']
                 self.profit += kwargs['total']
                 remaind = self.profit - self.total_payable_with_nds
-                from app.models.hospital import RemainderSumFromReservation
 
                 if remaind > 0:
-                    await RemainderSumFromReservation.set_remainder(db=db, amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
+                    await RemainderSumFromReservationService.set_remainder(db=db, amonut=remaind, pharmacy_id=self.pharmacy_id, reservation_invoice_number=self.invoice_number)
 
             if self.profit < current:   
                 raise HTTPException(status_code=400, detail=f"Total should be greater then sum of amounts")
