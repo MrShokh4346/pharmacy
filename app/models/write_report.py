@@ -6,19 +6,10 @@ import calendar
 from datetime import datetime, timedelta, timezone, date
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func 
-from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
-from .users import Users, Product, Region, UserProductPlan, ManufacturedCompany
-from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
-from .pharmacy import Reservation
-from .hospital import HospitalReservation
-from .warehouse import WholesaleReservation
-from typing import Annotated
-from .database import get_db
-from fastapi.security import HTTPBearer
-from openpyxl import Workbook, load_workbook
-import shutil
+from .users import Users, Product, UserProductPlan, ManufacturedCompany
+from .doctors import  Doctor, DoctorMonthlyPlan
 from sqlalchemy import text 
 import os 
 
