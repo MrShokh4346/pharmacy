@@ -9,7 +9,7 @@ from sqlalchemy import func
 from jose import JWTError, jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
-from .users import Users, Product, Region, UserProductPlan, ManufacturedCompany, Product
+from .users import Users, Product, Region, UserProductPlan, ManufacturedCompany
 from .doctors import DoctorCategory, Speciality, MedicalOrganization, Doctor, DoctorMonthlyPlan, DoctorFact
 from .pharmacy import Reservation
 from .hospital import HospitalReservation
