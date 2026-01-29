@@ -293,7 +293,7 @@ class Notification(Base):
     date = Column(DateTime, default=datetime.now())
     unread = Column(Boolean, default=True)
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    med_rep = relationship("app.models.users.Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
+    med_rep = relationship("app.models.users.Users", primaryjoin="Notification.med_rep_id == Users.id", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
     region_manager_id = Column(Integer, ForeignKey("users.id"))
     region_manager = relationship("app.models.users.Users", backref="rm_notifications", foreign_keys=[region_manager_id])
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
