@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone, date
+from sqlite3 import IntegrityError
+from app.models.doctors import Bonus, BonusPayedAmounts, Distance, DoctorPostupleniyaFact
 from app.services.bonusService import BonusService
 from app.services.doctorMonthlyPlanService import DoctorMonthlyPlanService
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -7,8 +9,7 @@ from .doctor_schemas import *
 from .pharmacy_schemas import PharmacyListSchema
 from fastapi import APIRouter, Path
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.doctors import *
-from models.users import Users, DoctorPlan, Notification, DoctorVisitInfo, UserProductPlan
+from models.users import Product, Users, DoctorPlan, Notification,UserProductPlan
 from models.database import get_db, get_or_404
 from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials

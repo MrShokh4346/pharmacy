@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone, date
+from app.models.pharmacy import CurrentBalanceInStock, IncomingBalanceInStock
+from app.models.users import Product
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 
@@ -6,7 +8,7 @@ from app.common_depetencies import StartEndDates
 from .wholesale_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.pharmacy import *
+# from models.pharmacy import *
 from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservation, WholesaleReservationPayedAmounts
 from models.database import get_db, get_or_404
 from models.dependencies import *
@@ -52,12 +54,6 @@ async def search_for_med_rep_attached_doctors(region_id: int, search: str, db: A
 async def search_from_factory_warehouse(search: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(CurrentFactoryWarehouse).filter(CurrentFactoryWarehouse.product.has(Product.name.like(f"%{search}%"))))
     return result.scalars().all()
-
-
-# @router.get('/wholesale-report', response_model=List[WholesaleReportSchema])
-# async def wholesale_report(db: AsyncSession = Depends(get_db)):
-#     result = await db.execute(select(IncomingBalanceInStock).options(selectinload(IncomingBalanceInStock.wholesale), selectinload(IncomingBalanceInStock.pharmacy)).filter(IncomingBalanceInStock.wholesale_id != None))
-#     return result.scalars().all()
 
 
 @router.get('/wholesale-report-by-wholesale-id/{wholesale_id}', response_model=List[WholesaleReportSchema])
