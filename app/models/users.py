@@ -25,6 +25,7 @@ def get_password_hash(password):
 
 class Region(Base):
     __tablename__ = "region"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -49,6 +50,7 @@ class Region(Base):
 
 class ManufacturedCompany(Base):
     __tablename__ = "manufactured_company"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -73,6 +75,7 @@ class ManufacturedCompany(Base):
 
 class ProductCategory(Base):
     __tablename__ = "product_category"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -97,6 +100,7 @@ class ProductCategory(Base):
 
 class ExpenseCategory(Base):
     __tablename__ = 'expense_category'
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -114,6 +118,7 @@ class ExpenseCategory(Base):
 
 class ProductExpenses(Base):
     __tablename__ = 'product_expenses'
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -126,6 +131,7 @@ class ProductExpenses(Base):
 
 class Product(Base):
     __tablename__ = "products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -135,9 +141,9 @@ class Product(Base):
     is_exist = Column(Boolean, default=True)
     marketing_expenses = Column(Integer, default=0)
     salary_expenses = Column(Integer, default=0)
-    man_company = relationship("ManufacturedCompany", backref="product", lazy='selectin')
+    man_company = relationship("app.models.users.ManufacturedCompany", backref="product", lazy='selectin')
     man_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
-    category = relationship("ProductCategory", backref="product", lazy='selectin')
+    category = relationship("app.models.users.ProductCategory", backref="product", lazy='selectin')
     category_id = Column(Integer, ForeignKey("product_category.id"))
 
     async def save(self, db: AsyncSession):
@@ -151,6 +157,7 @@ class Product(Base):
 
 class DoctorPlan(Base):
     __tablename__ = "doctor_plan"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -160,9 +167,9 @@ class DoctorPlan(Base):
     status = Column(Boolean, default=False)
     postpone = Column(Boolean, default=False)
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
-    doctor = relationship("Doctor", cascade="all, delete", backref="visit_plan")
+    doctor = relationship("app.models.doctors.Doctor", cascade="all, delete", backref="visit_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    med_rep = relationship("Users", backref="doctor_visit_plan")
+    med_rep = relationship("app.models.users.Users", backref="doctor_visit_plan")
 
     async def save(self, db: AsyncSession):
         try:
@@ -190,13 +197,14 @@ class DoctorPlan(Base):
 
 class DoctorVisitInfo(Base):
     __tablename__ = "doctor_visit_info"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     recept = Column(Integer)
     data = Column(DateTime, default = datetime.now())
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
-    doctor = relationship("Doctor", cascade="all, delete", backref="visit_info")
+    doctor = relationship("app.models.doctors.Doctor", cascade="all, delete", backref="visit_info")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="visit_info")
 
@@ -212,6 +220,7 @@ class DoctorVisitInfo(Base):
 
 class PharmacyPlan(Base):
     __tablename__ = "pharmacy_plan"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -221,9 +230,9 @@ class PharmacyPlan(Base):
     status = Column(Boolean, default=False)
     postpone = Column(Boolean, default=False)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", backref="visit_plan")
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", cascade="all, delete", backref="visit_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id"))
-    med_rep = relationship("Users", backref="pharmacy_visit_plan")
+    med_rep = relationship("app.models.users.Users", backref="pharmacy_visit_plan")
 
     async def save(self, db: AsyncSession):
         try:
@@ -254,6 +263,7 @@ class PharmacyPlan(Base):
 
 class PharmacyPlanAttachedProduct(Base):
     __tablename__ = "pharmacy_plan_attached_product"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -262,7 +272,7 @@ class PharmacyPlanAttachedProduct(Base):
     product_name = Column(String)
     compleated = Column(Integer)
     plan_id = Column(Integer, ForeignKey("pharmacy_plan.id", ondelete="CASCADE"))
-    plan = relationship("PharmacyPlan", cascade="all, delete", backref="products")
+    plan = relationship("app.models.users.PharmacyPlan", cascade="all, delete", backref="products")
 
     @classmethod
     def delete(cls, id: int, db: AsyncSession):
@@ -272,6 +282,7 @@ class PharmacyPlanAttachedProduct(Base):
 
 class Notification(Base):
     __tablename__ = "notification"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -282,15 +293,15 @@ class Notification(Base):
     date = Column(DateTime, default=datetime.now())
     unread = Column(Boolean, default=True)
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    med_rep = relationship("Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
+    med_rep = relationship("app.models.users.Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
     region_manager_id = Column(Integer, ForeignKey("users.id"))
-    region_manager = relationship("Users", backref="rm_notifications", foreign_keys=[region_manager_id])
+    region_manager = relationship("app.models.users.Users", backref="rm_notifications", foreign_keys=[region_manager_id])
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", backref="notifications", cascade="all, delete", lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", backref="notifications", cascade="all, delete", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
-    doctor = relationship("Doctor", backref="notifications", cascade="all, delete", lazy='selectin')
+    doctor = relationship("app.models.doctors.Doctor", backref="notifications", cascade="all, delete", lazy='selectin')
     wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
-    wholesale = relationship("Wholesale", backref="notifications", cascade="all, delete", lazy='selectin')
+    wholesale = relationship("app.models.warehouse.Wholesale", backref="notifications", cascade="all, delete", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -318,6 +329,7 @@ class Notification(Base):
 
 class UserProductPlan(Base):
     __tablename__ = "user_product_plan"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -329,7 +341,7 @@ class UserProductPlan(Base):
     discount_price = Column(Integer)
     product = relationship("app.models.users.Product", backref="product_plan", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
-    med_rep = relationship("Users", cascade="all, delete", backref="product_plan")
+    med_rep = relationship("app.models.users.Users", cascade="all, delete", backref="product_plan")
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
 
     async def update(self, amount: int, db: AsyncSession):
@@ -364,6 +376,7 @@ class UserProductPlan(Base):
 
 class EditablePlanMonths(Base):
     __tablename__ = "editable_plan_months"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -382,6 +395,7 @@ class EditablePlanMonths(Base):
 
 class UserLoginMonitoring(Base):
     __tablename__ = "user_login_monitoring"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -393,7 +407,7 @@ class UserLoginMonitoring(Base):
     longitude = Column(String)
     duration = Column(String)
 
-    user = relationship("Users", backref="monitoring", lazy='selectin')
+    user = relationship("app.models.users.Users", backref="monitoring", lazy='selectin')
     user_id = Column(Integer, ForeignKey("users.id"))
 
     async def save(self, db: AsyncSession):
@@ -416,6 +430,7 @@ class UserLoginMonitoring(Base):
 
 class Users(Base):
     __tablename__ = "users"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -428,18 +443,18 @@ class Users(Base):
     code = Column(String)
     expire_date = Column(DateTime)
 
-    region = relationship("Region", backref="user")
+    region = relationship("app.models.users.Region", backref="user")
     region_id = Column(Integer, ForeignKey("region.id"), index=True)  #####
     region_manager_id = Column(Integer, ForeignKey("users.id"), index=True)      #####
-    region_manager = relationship("Users", remote_side=[id], foreign_keys=[region_manager_id])
+    region_manager = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[region_manager_id])
     ffm_id = Column(Integer, ForeignKey("users.id"), index=True)               #####  
-    ffm = relationship("Users", remote_side=[id], foreign_keys=[ffm_id])
+    ffm = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[ffm_id])
     product_manager_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
-    product_manager = relationship("Users", remote_side=[id], foreign_keys=[product_manager_id])
+    product_manager = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[product_manager_id])
     deputy_director_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
-    deputy_director = relationship("Users", remote_side=[id], foreign_keys=[deputy_director_id])
+    deputy_director = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[deputy_director_id])
     director_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
-    director = relationship("Users", remote_side=[id], foreign_keys=[director_id])
+    director = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[director_id])
    
     @property
     def password(self):

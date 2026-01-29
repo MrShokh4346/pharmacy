@@ -1,31 +1,25 @@
-from datetime import datetime, timedelta, timezone, date 
+from datetime import datetime, date 
+from app.auth.schemas import UserOutSchema
+from app.deputy_director.schemas import DoctorVisitPlanOutSchema, DoctorVisitPlanSchema, NotificationListSchema, NotificationOutSchema, NotificationSchema, PharmacyVisitPlanOutSchema, PharmacyVisitPlanSchema, ProductExpensesSchema, RegisterForDDSchema, ReportSchema, UserProductPlanInSchema, UserProductPlanOutSchema
 from app.deputy_director.utils import check_if_plan_is_editable, get_pm_sales, get_postupleniya_facts, get_sum_reservations, get_visit_facts
 from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
 from app.models.users import DoctorPlan, ManufacturedCompany, Notification, PharmacyPlan, Product, UserProductPlan, Users
 from app.models.write_report import write_to_excel
 from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-from .schemas import *
-from fastapi import APIRouter
-from models.hospital import HospitalFact, Hospital, HospitalBonus
-from models.doctors import DoctorFact, Doctor, Bonus, DoctorMonthlyPlan, DoctorPostupleniyaFact, MedicalOrganization
+from models.hospital import HospitalFact, Hospital
+from models.doctors import DoctorFact, Doctor, Bonus, DoctorMonthlyPlan, MedicalOrganization
 from models.pharmacy import PharmacyHotSale, Pharmacy
 from models.database import get_db, get_or_404
-from typing import Annotated, Any
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from typing import Annotated, Any, List
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
-from sqlalchemy import func, text
+from sqlalchemy import text
 import calendar
 from common_depetencies import StartEndDates
-# from dotenv.main import load_dotenv
 
-# load_dotenv()
 
-# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
-# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
 
 

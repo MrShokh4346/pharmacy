@@ -1,21 +1,13 @@
-from datetime import datetime, timedelta, timezone
+from app.auth.schemas import UserOutSchema
+from app.ffm.schemas import RegisterForFFMSchema
 from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
 from app.models.users import Users
 from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-from .schemas import *
-from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db
 from typing import Annotated, Any
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 
-# from dotenv.main import load_dotenv
-
-# load_dotenv()
-
-# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
-# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
 
 @router.post('/register-for-ffm', response_model=UserOutSchema, description='using RegisterForFFMSchema')

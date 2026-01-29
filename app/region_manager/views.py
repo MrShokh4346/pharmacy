@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from app.models.dependencies import check_if_user_already_exists, get_current_user
+from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
 from app.models.users import Users
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt

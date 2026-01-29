@@ -1,11 +1,10 @@
-from typing import Optional, List
+from typing import List
 from sqlalchemy.future import select
 from sqlalchemy import delete, update
-
 from expenses.schemas.sch_categories import ExpenseCategoriesSchema, CategoriesGetSchema
 from models.expenses import ExpenseCategories
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
+from fastapi import Response, status, HTTPException, Depends, APIRouter
 from models.database import get_db
 
 

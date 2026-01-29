@@ -12,6 +12,7 @@ from db.db import Base
 
 class Hospital(Base):
     __tablename__ = "hospital"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -22,10 +23,10 @@ class Hospital(Base):
     director = Column(String)
     purchasing_manager = Column(String)
     contact = Column(String)
-    region = relationship("Region", backref="hospital", lazy='selectin')
+    region = relationship("app.models.users.Region", backref="hospital", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id"), index=True) 
     med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)
-    med_rep = relationship("Users",  backref="mr_hospital", lazy='selectin')
+    med_rep = relationship("app.models.users.Users",  backref="mr_hospital", lazy='selectin')
 
     async def save(self, db: AsyncSession):
         try:
@@ -55,6 +56,7 @@ class Hospital(Base):
 
 class HospitalMonthlyPlan(Base):
     __tablename__ = "hospital_monthly_plan"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -65,7 +67,7 @@ class HospitalMonthlyPlan(Base):
     price = Column(Integer)
     discount_price = Column(Integer)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
-    hospital = relationship("Hospital", backref="hospital_monthly_plan", cascade="all, delete", lazy='selectin')
+    hospital = relationship("app.models.hospital.Hospital", backref="hospital_monthly_plan", cascade="all, delete", lazy='selectin')
  
     async def save(self, db: AsyncSession):
         try:
@@ -78,6 +80,7 @@ class HospitalMonthlyPlan(Base):
 
 class HospitalReservationPayedAmounts(Base):
     __tablename__ = "hospital_reservation_payed_amounts"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -93,7 +96,7 @@ class HospitalReservationPayedAmounts(Base):
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), index=True)
     product = relationship("app.models.users.Product", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"), index=True)
-    reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts", lazy='selectin'   )
+    reservation = relationship("app.models.hospital.HospitalReservation", cascade="all, delete", backref="payed_amounts", lazy='selectin'   )
 
     async def save(self, db: AsyncSession):
         try:
@@ -109,6 +112,7 @@ invoice_number_seq = Sequence('invoice_number_seq')
 
 class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -125,13 +129,13 @@ class HospitalReservation(Base):
     profit = Column(Integer, default=0)
     debt = Column(Integer, default=0)
     med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)        
-    med_rep = relationship("Users",  backref="hospital_reservation")
+    med_rep = relationship("app.models.users.Users",  backref="hospital_reservation")
     prosrochenniy_debt = Column(Boolean, default=False)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
-    hospital = relationship("Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')
-    products = relationship("HospitalReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
+    hospital = relationship("app.models.hospital.Hospital", backref="hospital_reservation", cascade="all, delete", lazy='selectin')
+    products = relationship("app.models.hospital.HospitalReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"), index=True)
-    manufactured_company = relationship("ManufacturedCompany", backref="hospital_reservation", lazy='selectin')
+    manufactured_company = relationship("app.models.users.ManufacturedCompany", backref="hospital_reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
     payed = Column(Boolean, default=False)
          
@@ -177,6 +181,7 @@ class HospitalReservation(Base):
 
 class HospitalReservationProducts(Base):
     __tablename__ = "hospital_reservation_products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -187,7 +192,7 @@ class HospitalReservationProducts(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="hospital_reservation_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
-    reservation = relationship("HospitalReservation", cascade="all, delete", back_populates="products")
+    reservation = relationship("app.models.hospital.HospitalReservation", cascade="all, delete", back_populates="products")
 
     @classmethod
     async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
@@ -201,6 +206,7 @@ class HospitalReservationProducts(Base):
 
 class HospitalBonus(Base):
     __tablename__ = "hospital_bonus"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -209,7 +215,7 @@ class HospitalBonus(Base):
     payed = Column(Integer, default=0)
     product_quantity = Column(Integer)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
-    hospital = relationship("Hospital", backref="hospital_bonus", cascade="all, delete")
+    hospital = relationship("app.models.hospital.Hospital", backref="hospital_bonus", cascade="all, delete")
     product = relationship("app.models.users.Product",  backref="hospital_bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
@@ -220,6 +226,7 @@ class HospitalBonus(Base):
 
 class HospitalFact(Base):
     __tablename__ = "hospital_fact"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -228,13 +235,14 @@ class HospitalFact(Base):
     discount_price = Column(Integer)
     date = Column(DateTime, default=datetime.now(), index=True)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
-    hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
+    hospital = relationship("app.models.hospital.Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
     product = relationship("app.models.users.Product",  backref="hospital_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
 
 class HospitalPostupleniyaFact(Base):
     __tablename__ = 'hospital_postupleniya_fact'
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -244,22 +252,23 @@ class HospitalPostupleniyaFact(Base):
     discount_price = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
-    hospital = relationship("Hospital", backref="hospital_postupleniya_fact", cascade="all, delete", lazy='selectin')
+    hospital = relationship("app.models.hospital.Hospital", backref="hospital_postupleniya_fact", cascade="all, delete", lazy='selectin')
     product = relationship("app.models.users.Product",  backref="hospital_postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"))
 
 
 class RemainderSumFromReservation(Base):
     __tablename__ = "remainder_sum_from_reservation"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     amonut = Column(Integer)
     date = Column(DateTime, default=datetime.now())
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='remainder')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", cascade="all, delete", backref='remainder')
     wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
-    wholesale = relationship("Wholesale", backref="remainder", cascade="all, delete", lazy='selectin')
+    wholesale = relationship("app.models.warehouse.Wholesale", backref="remainder", cascade="all, delete", lazy='selectin')
     reservation_invoice_number = Column(Integer)
 
     @classmethod
@@ -287,6 +296,7 @@ class RemainderSumFromReservation(Base):
 
 class ReturnTable(Base):
     __tablename__ = 'return_table'
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -295,11 +305,11 @@ class ReturnTable(Base):
     return_summa = Column(Integer)
 
     pharmacy_reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-    pharmacy_reservation = relationship("Reservation", cascade="all, delete", backref="return", lazy='selectin')
+    pharmacy_reservation = relationship("app.models.pharmacy.Reservation", cascade="all, delete", backref="return", lazy='selectin')
     wholesale_reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))                                             
-    wholesale_reservation = relationship("WholesaleReservation", cascade="all, delete", backref="return", lazy='selectin')
+    wholesale_reservation = relationship("app.models.warehouse.WholesaleReservation", cascade="all, delete", backref="return", lazy='selectin')
     hospital_reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
-    hospital_reservation = relationship("HospitalReservation", cascade="all, delete", backref="return", lazy='selectin')
+    hospital_reservation = relationship("app.models.hospital.HospitalReservation", cascade="all, delete", backref="return", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -329,6 +339,7 @@ class ReturnTable(Base):
 
 class ReturnProducts(Base):
     __tablename__ = "return_products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -337,4 +348,4 @@ class ReturnProducts(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="return_products", lazy='selectin')
     return_table_id = Column(Integer, ForeignKey("return_table.id", ondelete="CASCADE"))
-    return_table = relationship("ReturnTable", cascade="all, delete", backref="products", lazy='selectin')
+    return_table = relationship("app.models.hospital.ReturnTable", cascade="all, delete", backref="products", lazy='selectin')

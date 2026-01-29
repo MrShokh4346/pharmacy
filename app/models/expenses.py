@@ -9,6 +9,7 @@ from db.db import Base
 
 class Expense(Base):
     __tablename__ = "expense"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -22,12 +23,13 @@ class Expense(Base):
     created_at = Column(DateTime, default=datetime.now(), index=True)
     updated_at = Column(DateTime, default=datetime.now())
 
-    office = relationship("Office",  backref="expense")
-    expense_categories = relationship("ExpenseCategories",  backref="expense")
+    office = relationship("app.models.expenses.Office",  backref="expense")
+    expense_categories = relationship("app.models.expenses.ExpenseCategories",  backref="expense")
 
 
 class ExpenseCategories(Base):
     __tablename__ = "expense_categories"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -37,12 +39,13 @@ class ExpenseCategories(Base):
     created_at = Column(DateTime, default=datetime.now(), index=True)
     updated_at = Column(DateTime, default=datetime.now())
 
-    office = relationship("Office",  backref="expense_categories")
+    office = relationship("app.models.expenses.Office",  backref="expense_categories")
     # expense = relationship("Expense",  backref="expense_categories")
 
 
 class Office(Base):
     __tablename__ = "office"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)

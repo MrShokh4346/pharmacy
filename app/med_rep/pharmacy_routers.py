@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone, date
 from app.models.dependencies import get_user, write_excel, write_excel_hospital
-from app.models.pharmacy import CurrentBalanceInStock, Debt, Pharmacy, PharmacyFact, PharmacyHotSale, Reservation, ReservationPayedAmounts, pharmacy_doctor
+from app.models.pharmacy import CurrentBalanceInStock, Debt, Pharmacy, PharmacyFact, PharmacyHotSale, Reservation, ReservationPayedAmounts
 from app.services.checkingBalanceInStock import CheckingBalanceInStockService
 from app.services.incomingBalanceInStock import IncomingBalanceInStockService
 from app.services.pharmacyFact import PharmacyFactService
@@ -12,7 +12,7 @@ from jose import JWTError, jwt
 from app.common_depetencies import StartEndDates
 from .doctor_schemas import DoctorListSchema, DoctorAttachedProductSchema
 from .pharmacy_schemas import *
-from models.doctors import Doctor
+from models.doctors import Doctor, pharmacy_doctor
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.hospital import HospitalReservation

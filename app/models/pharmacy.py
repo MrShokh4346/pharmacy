@@ -10,19 +10,21 @@ from db.db import Base
 
 class IncomingStockProducts(Base):
     __tablename__ = "incoming_stock_products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
 
     stock_id = Column(Integer, ForeignKey("incoming_balance_in_stock.id", ondelete="CASCADE"))
-    stock = relationship("IncomingBalanceInStock", cascade="all, delete", back_populates="products")
+    stock = relationship("app.models.pharmacy.IncomingBalanceInStock", cascade="all, delete", back_populates="products")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="incomingstockproducts")
 
 
 class IncomingBalanceInStock(Base):
     __tablename__ = "incoming_balance_in_stock"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -30,17 +32,18 @@ class IncomingBalanceInStock(Base):
     description = Column(String)
 
     wholesale_id = Column(Integer, ForeignKey("wholesale.id"))
-    wholesale = relationship("Wholesale", backref='balanceinstock')
+    wholesale = relationship("app.models.warehouse.Wholesale", backref='balanceinstock')
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
-    factory = relationship("ManufacturedCompany", backref='balanceinstock')
+    factory = relationship("app.models.users.ManufacturedCompany", backref='balanceinstock')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='balanceinstock')
-    products = relationship("IncomingStockProducts", cascade="all, delete", back_populates="stock", lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", cascade="all, delete", backref='balanceinstock')
+    products = relationship("app.models.pharmacy.IncomingStockProducts", cascade="all, delete", back_populates="stock", lazy='selectin')
 
 
 
 class CurrentBalanceInStock(Base):
     __tablename__ = "current_balance_in_stock"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -49,11 +52,12 @@ class CurrentBalanceInStock(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="currntbalanceinstock", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", back_populates='currntbalanceinstock', lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", cascade="all, delete", back_populates='currntbalanceinstock', lazy='selectin')
 
 
 class CheckingStockProducts(Base):
     __tablename__ = "checking_stock_products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -63,13 +67,14 @@ class CheckingStockProducts(Base):
     chack = Column(Boolean, default=False)
 
     stock_id = Column(Integer, ForeignKey("checking_balance_in_stock.id", ondelete="CASCADE"))
-    stock = relationship("CheckingBalanceInStock", cascade="all, delete", backref="products")
+    stock = relationship("app.models.pharmacy.CheckingBalanceInStock", cascade="all, delete", backref="products")
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="checkingbalanceinstock")
 
 
 class CheckingBalanceInStock(Base):
     __tablename__ = "checking_balance_in_stock"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -77,11 +82,12 @@ class CheckingBalanceInStock(Base):
     description = Column(String)
 
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", backref='checkingbalanceinstock')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", cascade="all, delete", backref='checkingbalanceinstock')
 
 
 class Debt(Base):
     __tablename__ = "debt"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -90,7 +96,7 @@ class Debt(Base):
     payed = Column(Boolean, default=False) 
     date = Column(DateTime, default=datetime.now())
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", cascade="all, delete", backref="debts")
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", cascade="all, delete", backref="debts")
 
     async def save(self, db: AsyncSession):
         try:
@@ -111,6 +117,7 @@ class Debt(Base):
 
 class ReservationPayedAmounts(Base):
     __tablename__ = "reservation_payed_amounts"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -125,9 +132,9 @@ class ReservationPayedAmounts(Base):
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
     product = relationship("app.models.users.Product", cascade="all, delete", backref="reservation_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
-    doctor = relationship("Doctor", backref="reservation_payed_amounts", lazy='selectin')
+    doctor = relationship("app.models.doctors.Doctor", backref="reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-    reservation = relationship("Reservation", cascade="all, delete", back_populates="payed_amounts", lazy='selectin')
+    reservation = relationship("app.models.pharmacy.Reservation", cascade="all, delete", back_populates="payed_amounts", lazy='selectin')
    
     async def save(self, db: AsyncSession):
         try:
@@ -143,6 +150,7 @@ invoice_number_seq = Sequence('invoice_number_seq')
 
 class Reservation(Base):
     __tablename__ = "reservation"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -163,14 +171,14 @@ class Reservation(Base):
     profit = Column(Integer, default=0)
     debt = Column(Integer)
     med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)    
-    med_rep = relationship("Users",  backref="reservation")
+    med_rep = relationship("app.models.users.Users",  backref="reservation")
     prosrochenniy_debt = Column(Boolean, default=False)
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"), index=True)
-    pharmacy = relationship("Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
-    products = relationship("ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
-    payed_amounts = relationship("ReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", backref="reservation", cascade="all, delete", lazy='selectin')
+    products = relationship("app.models.pharmacy.ReservationProducts", cascade="all, delete", back_populates="reservation", lazy='selectin')
+    payed_amounts = relationship("app.models.pharmacy.ReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"), index=True)
-    manufactured_company = relationship("ManufacturedCompany", backref="reservation", lazy='selectin')
+    manufactured_company = relationship("app.models.users.ManufacturedCompany", backref="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
 
     async def update_date_implementation(self, date, db: AsyncSession):
@@ -207,6 +215,7 @@ class Reservation(Base):
 
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -217,7 +226,7 @@ class ReservationProducts(Base):
     reservation_discount_price = Column(Integer)
     product = relationship("app.models.users.Product", backref="reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("reservation.id", ondelete="CASCADE"))
-    reservation = relationship("Reservation", cascade="all, delete", back_populates="products", lazy='selectin')
+    reservation = relationship("app.models.pharmacy.Reservation", cascade="all, delete", back_populates="products", lazy='selectin')
 
     @classmethod
     async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
@@ -272,6 +281,7 @@ class ReservationProducts(Base):
 
 class PharmacyHotSale(Base):
     __tablename__ = "pharmacy_hot_sale"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -281,7 +291,7 @@ class PharmacyHotSale(Base):
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     product = relationship("app.models.users.Product", backref="hot_sale_products", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"), index=True)
-    pharmacy = relationship("Pharmacy", backref="hot_sale", cascade="all, delete", lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", backref="hot_sale", cascade="all, delete", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -294,6 +304,7 @@ class PharmacyHotSale(Base):
 
 class PharmacyFact(Base):
     __tablename__ = "pharmacy_fact"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -302,15 +313,16 @@ class PharmacyFact(Base):
     monthly_plan = Column(Integer)
 
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"), nullable=True)
-    doctor = relationship("Doctor", backref="pharmacyfact", lazy='selectin')
+    doctor = relationship("app.models.doctors.Doctor", backref="pharmacyfact", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
     product = relationship("app.models.users.Product", backref="pharmacyfact", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", backref="pharmacyfact", cascade="all, delete", lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", backref="pharmacyfact", cascade="all, delete", lazy='selectin')
 
 
 class Pharmacy(Base):
     __tablename__ = "pharmacy"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -330,21 +342,21 @@ class Pharmacy(Base):
     brand_name = Column(String, nullable=True)
     
     med_rep_id = Column(Integer, ForeignKey("users.id"))
-    med_rep = relationship("Users", backref="mr_pharmacy", foreign_keys=[med_rep_id], lazy='selectin')
+    med_rep = relationship("app.models.users.Users", backref="mr_pharmacy", foreign_keys=[med_rep_id], lazy='selectin')
     region_manager_id = Column(Integer, ForeignKey("users.id"))
-    region_manager = relationship("Users", backref="rm_pharmacy", foreign_keys=[region_manager_id])
+    region_manager = relationship("app.models.users.Users", backref="rm_pharmacy", foreign_keys=[region_manager_id])
     ffm_id = Column(Integer, ForeignKey("users.id"))
-    ffm = relationship("Users", backref="ffm_pharmacy", foreign_keys=[ffm_id])
+    ffm = relationship("app.models.users.Users", backref="ffm_pharmacy", foreign_keys=[ffm_id])
     product_manager_id = Column(Integer, ForeignKey("users.id"))
-    product_manager = relationship("Users", backref="pm_pharmacy", foreign_keys=[product_manager_id])
+    product_manager = relationship("app.models.users.Users", backref="pm_pharmacy", foreign_keys=[product_manager_id])
     deputy_director_id = Column(Integer, ForeignKey("users.id"))   
-    deputy_director = relationship("Users",  foreign_keys=[deputy_director_id])
+    deputy_director = relationship("app.models.users.Users",  foreign_keys=[deputy_director_id])
     director_id = Column(Integer, ForeignKey("users.id"))    
-    director = relationship("Users",  foreign_keys=[director_id])
-    region = relationship("Region", backref="pharmacy", lazy='selectin')
+    director = relationship("app.models.users.Users",  foreign_keys=[director_id])
+    region = relationship("app.models.users.Region", backref="pharmacy", lazy='selectin')
     region_id = Column(Integer, ForeignKey("region.id")) 
-    doctors = relationship("Doctor",  secondary="pharmacy_doctor", passive_deletes=True, back_populates="pharmacy")
-    currntbalanceinstock = relationship("CurrentBalanceInStock", cascade="all, delete", back_populates='pharmacy', lazy='selectin')
+    doctors = relationship("app.models.doctors.Doctor",  secondary="pharmacy_doctor", passive_deletes=True, back_populates="pharmacy")
+    currntbalanceinstock = relationship("app.models.pharmacy.CurrentBalanceInStock", cascade="all, delete", back_populates='pharmacy', lazy='selectin')
 
     async def save(self, db: AsyncSession):
         try:

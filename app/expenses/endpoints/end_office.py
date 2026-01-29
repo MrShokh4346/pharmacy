@@ -1,8 +1,6 @@
-from typing import Optional, List
-
+from typing import List
 from starlette.responses import JSONResponse
 from sqlalchemy.future import select
-# from sqlalchemy.sql.expression import update
 from sqlalchemy import delete, update
 from expenses.schemas.sch_office import OfficeSchema, OfficeGetSchema
 from models.expenses import Office

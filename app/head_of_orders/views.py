@@ -1,31 +1,19 @@
-from datetime import datetime, timedelta, timezone
 from app.head_of_orders.utils import filter_by_invoice_number_with_products, get_postupleniyas
 from app.services.hospitalReservationService import HospitalReservationService
 from app.services.reservationProducts import ReservationProductsService
 from app.services.reservationService import ReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
 from .schemas import *
-from fastapi import APIRouter
-from sqlalchemy.orm import Session
 from models.database import get_db, get_or_404
-from models.pharmacy import Pharmacy, Reservation, ReservationPayedAmounts, ReservationProducts
+from models.pharmacy import Pharmacy, Reservation, ReservationProducts
 from models.hospital import HospitalReservation, RemainderSumFromReservation, ReturnTable
 from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, WholesaleReservation, WholesaleReservationPayedAmounts, WholesaleReservationProducts
 from typing import Any, List
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import selectinload
-from sqlalchemy import update, text 
 from common_depetencies import StartEndDates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-# from dotenv.main import load_dotenv
-
-# load_dotenv()
-
-# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
-# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
 
 @router.post('/add-factory-warehouse')

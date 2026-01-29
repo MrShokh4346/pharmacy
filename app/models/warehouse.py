@@ -16,15 +16,16 @@ from db.db import Base
 
 class ReportFactoryWerehouse(Base):
     __tablename__ = "report_factory_warehouse"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
     quantity = Column(Integer)
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
-    factory = relationship("ManufacturedCompany", backref="factory_report_werehouse", lazy='selectin')
+    factory = relationship("app.models.users.ManufacturedCompany", backref="factory_report_werehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Product", backref="factory_report_werehouse", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="factory_report_werehouse", lazy='selectin')
 
     @classmethod
     async def save(cls, db: AsyncSession, **kwargs):
@@ -40,14 +41,15 @@ class ReportFactoryWerehouse(Base):
 
 class CurrentFactoryWarehouse(Base):
     __tablename__ = "current_factory_warehouse"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
     factory_id = Column(Integer, ForeignKey("manufactured_company.id"))
-    factory = relationship("ManufacturedCompany", backref="current_werehouse", lazy='selectin')
+    factory = relationship("app.models.users.ManufacturedCompany", backref="current_werehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Product", backref="factory_current_werehouse", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="factory_current_werehouse", lazy='selectin')
 
     @classmethod
     async def add(cls, db: AsyncSession, **kwargs):
@@ -63,14 +65,15 @@ class CurrentFactoryWarehouse(Base):
 
 class Wholesale(Base):
     __tablename__ = "wholesale"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
     contact = Column(String)
     region_id = Column(Integer, ForeignKey("region.id")) 
-    region = relationship("Region", backref="wholesales", lazy='selectin')
-    report_warehouse = relationship("CurrentWholesaleWarehouse", cascade="all, delete", back_populates="wholesale", lazy='selectin')
+    region = relationship("app.models.users.Region", backref="wholesales", lazy='selectin')
+    report_warehouse = relationship("app.models.warehouse.CurrentWholesaleWarehouse", cascade="all, delete", back_populates="wholesale", lazy='selectin')
 
     async def save(self, db: AsyncSession):
         try:
@@ -132,15 +135,16 @@ class Wholesale(Base):
 
 class CurrentWholesaleWarehouse(Base):
     __tablename__ = "current_wholesale_warehouse"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
     price = Column(Integer)
     wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"))
-    wholesale = relationship("Wholesale", cascade="all, delete",  back_populates="report_warehouse", lazy='selectin')
+    wholesale = relationship("app.models.warehouse.Wholesale", cascade="all, delete",  back_populates="report_warehouse", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Product", backref="wholesale_current_warehouse", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="wholesale_current_warehouse", lazy='selectin')
 
     @classmethod
     async def add(cls, db: AsyncSession, **kwargs):
@@ -157,6 +161,7 @@ class CurrentWholesaleWarehouse(Base):
 
 class WholesaleReservationPayedAmounts(Base):
     __tablename__ = "wholesale_reservation_payed_amounts"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -173,15 +178,15 @@ class WholesaleReservationPayedAmounts(Base):
     payed = Column(Boolean, default=False)
     date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"))
-    product = relationship("Product", cascade="all, delete", backref="wholesale_payed_amounts", lazy='selectin')
+    product = relationship("app.models.users.Product", cascade="all, delete", backref="wholesale_payed_amounts", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
-    doctor = relationship("Doctor", backref="wholesale_payed_amounts", lazy='selectin')
+    doctor = relationship("app.models.doctors.Doctor", backref="wholesale_payed_amounts", lazy='selectin')
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
-    pharmacy = relationship("Pharmacy", backref="wholesale_payed_amounts", cascade="all, delete", lazy='selectin')
+    pharmacy = relationship("app.models.pharmacy.Pharmacy", backref="wholesale_payed_amounts", cascade="all, delete", lazy='selectin')
     med_rep_id = Column(Integer, ForeignKey("users.id"))
-    med_rep = relationship("Users", backref="wholesale_payed_amounts", lazy='selectin')
+    med_rep = relationship("app.models.users.Users", backref="wholesale_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))
-    reservation = relationship("WholesaleReservation", cascade="all, delete", back_populates="wholesale_payed_amounts", lazy='selectin')
+    reservation = relationship("app.models.warehouse.WholesaleReservation", cascade="all, delete", back_populates="wholesale_payed_amounts", lazy='selectin')
    
     async def save(self, db: AsyncSession):
         try:
@@ -197,6 +202,7 @@ invoice_number_seq = Sequence('invoice_number_seq')
 
 class WholesaleReservation(Base):
     __tablename__ = "wholesale_reservation"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -216,13 +222,13 @@ class WholesaleReservation(Base):
     reailized_debt = Column(Integer, default=0)
     prosrochenniy_debt = Column(Boolean, default=False)
     med_rep_id = Column(Integer, ForeignKey("users.id"), index=True)    
-    med_rep = relationship("Users",  backref="wholesale_reservation")
+    med_rep = relationship("app.models.users.Users",  backref="wholesale_reservation")
     wholesale_id = Column(Integer, ForeignKey("wholesale.id", ondelete="CASCADE"), index=True)
-    wholesale = relationship("Wholesale", backref="wholesale_reservation", cascade="all, delete", lazy='selectin')
-    products = relationship("WholesaleReservationProducts", cascade="all, delete", back_populates="wholesale_reservation", lazy='selectin')
+    wholesale = relationship("app.models.warehouse.Wholesale", backref="wholesale_reservation", cascade="all, delete", lazy='selectin')
+    products = relationship("app.models.warehouse.WholesaleReservationProducts", cascade="all, delete", back_populates="wholesale_reservation", lazy='selectin')
     manufactured_company_id = Column(Integer, ForeignKey("manufactured_company.id"), index=True)
-    manufactured_company = relationship("ManufacturedCompany", backref="wholesale_reservation", lazy='selectin')
-    wholesale_payed_amounts = relationship("WholesaleReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
+    manufactured_company = relationship("app.models.users.ManufacturedCompany", backref="wholesale_reservation", lazy='selectin')
+    wholesale_payed_amounts = relationship("app.models.warehouse.WholesaleReservationPayedAmounts", cascade="all, delete", back_populates="reservation", lazy='selectin')
     checked = Column(Boolean, default=False)
 
     @classmethod
@@ -380,6 +386,7 @@ class WholesaleReservation(Base):
 
 class WholesaleReservationProducts(Base):
     __tablename__ = "wholesale_reservation_products"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -388,9 +395,9 @@ class WholesaleReservationProducts(Base):
     product_id = Column(Integer, ForeignKey("products.id"))
     reservation_price = Column(Float)
     # reservation_discount_price = Column(Integer)
-    product = relationship("Product", backref="wholesale_reservaion_products", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="wholesale_reservaion_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("wholesale_reservation.id", ondelete="CASCADE"))
-    wholesale_reservation = relationship("WholesaleReservation", cascade="all, delete", back_populates="products")
+    wholesale_reservation = relationship("app.models.warehouse.WholesaleReservation", cascade="all, delete", back_populates="products")
 
     @classmethod
     async def set_payed_quantity(cls, db: AsyncSession, **kwargs):
@@ -403,6 +410,7 @@ class WholesaleReservationProducts(Base):
 
 class WholesaleOutput(Base):
     __tablename__ = "wholesale_output"
+    __table_args__ = {'extend_existing': True}
     
 
     id = Column(Integer, primary_key=True)
@@ -411,9 +419,9 @@ class WholesaleOutput(Base):
     date = Column(DateTime, default=datetime.now())
     pharmacy = Column(String)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Product", backref="wholesale_output", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="wholesale_output", lazy='selectin')
     wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
-    wholesale = relationship("Wholesale", backref="warehouse_output", lazy='selectin')
+    wholesale = relationship("app.models.warehouse.Wholesale", backref="warehouse_output", lazy='selectin')
 
     async def save(self, wholesale_id: int, db: AsyncSession):
         try:

@@ -1,18 +1,16 @@
 from datetime import datetime, timedelta, timezone
+from app.auth.schemas import UserOutSchema
+from app.common.schemas import DoctorCategorySchema, DoctorSpecialitySchema, ExpenceCategoryInSchema, ExpenceCategoryOutSchema, ExpenceOutSchema, ExpenceSchema, ManufacturedCompanySchema, MedicalOrganizationInSchema, MedicalOrganizationOutSchema, MedicalOrganizationUpdateSchema, ProductCategorySchema, ProductInSchema, ProductOutSchema, ProductUpdateSchema, RegionSchema, UserByIdSchema, UserUpdateSchema
 from app.common.utils import get_hot_sale
 from app.deputy_director.utils import get_postupleniya_facts, get_visit_facts
 from app.models.dependencies import get_current_user, auth_header
 from app.models.users import ExpenseCategory, ManufacturedCompany, Notification, Product, ProductCategory, Region, UserProductPlan, Users
 from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-
-# from app.models.expenses import Expense
-from .schemas import *
 from models.doctors import DoctorCategory, MedicalOrganization, Speciality
 from models.database import get_db, get_or_404
 from typing import Annotated, List
 from fastapi.security import HTTPAuthorizationCredentials
-from deputy_director.schemas import NotificationOutSchema, NotificationListSchema
+from deputy_director.schemas import NotificationOutSchema, NotificationListSchema, UserSchema
 from director.schemas import user_role_to_role_ids
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession

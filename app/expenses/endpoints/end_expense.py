@@ -1,9 +1,6 @@
-from typing import Optional, List
-
-from starlette.responses import JSONResponse
+from typing import List
 from sqlalchemy.future import select
 from sqlalchemy import delete, update
-
 from expenses.schemas.sch_expense import ExpenseSchema, ExpenseGetSchema
 from models.expenses import Expense
 from sqlalchemy.ext.asyncio import AsyncSession

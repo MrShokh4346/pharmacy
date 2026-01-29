@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from app.auth.schemas import EditablePlanMonthsSchema, LoginEmailCodeSchema, LoginEmailSchema, LoginSchema, RegisterSchema, TokenSchema, UserLoginMonitoringSchema, UserLogoutMonitoringSchema, UserOutSchema
 from app.models.users import EditablePlanMonths, UserLoginMonitoring, Users, verify_password
-from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-from .schemas import *
+from fastapi import Depends, HTTPException, status
 from fastapi import APIRouter
-from models.dependencies import create_access_token#, simple_send
+from models.dependencies import create_access_token
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.pharmacy import Reservation
 from models.database import get_db, get_or_404
@@ -12,7 +11,7 @@ from sqlalchemy.future import select
 import string
 from common_depetencies import StartEndDates2
 import random
-from typing import Any, List
+from typing import List
 
 router = APIRouter()
 

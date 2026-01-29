@@ -6,7 +6,6 @@ from app.models.users import Product, UserProductPlan, Users
 from app.services.hospitalMonthlyPlanService import HospitalMonthlyPlanService
 from app.services.hospitalReservationService import HospitalReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
-# from models.hospital import *
 from fastapi import APIRouter
 from models.database import get_db, get_or_404
 from typing import List
