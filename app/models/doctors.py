@@ -15,7 +15,7 @@ from db.db import Base
 
 class Distance(Base):
     __tablename__ = "distance"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     distance = Column(Integer)
@@ -23,7 +23,7 @@ class Distance(Base):
 
 class Speciality(Base):
     __tablename__ = "speciality"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -47,7 +47,7 @@ class Speciality(Base):
 
 class DoctorCategory(Base):
     __tablename__ = "doctor_category"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -71,7 +71,7 @@ class DoctorCategory(Base):
 
 class MedicalOrganization(Base):
     __tablename__ = "medical_organization"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -107,7 +107,7 @@ class MedicalOrganization(Base):
 
 class DoctorMonthlyPlan(Base):
     __tablename__ = "doctor_monthly_plan"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
@@ -130,7 +130,7 @@ class DoctorMonthlyPlan(Base):
 
 class DoctorFact(Base):
     __tablename__ = "doctor_fact"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     fact = Column(Integer)
@@ -147,7 +147,7 @@ class DoctorFact(Base):
 
 class BonusPayedAmounts(Base):
     __tablename__ = "bonus_payed_amounts"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -159,7 +159,7 @@ class BonusPayedAmounts(Base):
 
 class DoctorPostupleniyaFact(Base):
     __tablename__ = 'doctor_postupleniya_fact'
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     fact = Column(Integer)
@@ -177,7 +177,7 @@ class DoctorPostupleniyaFact(Base):
 
 class Bonus(Base):
     __tablename__ = "bonus"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
@@ -202,7 +202,7 @@ pharmacy_doctor = Table(
 
 class Doctor(Base):
     __tablename__ = "doctor"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     full_name = Column(String)

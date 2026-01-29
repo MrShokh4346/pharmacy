@@ -12,7 +12,7 @@ from db.db import Base
 
 class Hospital(Base):
     __tablename__ = "hospital"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     company_name = Column(String)
@@ -55,7 +55,7 @@ class Hospital(Base):
 
 class HospitalMonthlyPlan(Base):
     __tablename__ = "hospital_monthly_plan"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
@@ -78,7 +78,7 @@ class HospitalMonthlyPlan(Base):
 
 class HospitalReservationPayedAmounts(Base):
     __tablename__ = "hospital_reservation_payed_amounts"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -109,7 +109,7 @@ invoice_number_seq = Sequence('invoice_number_seq')
 
 class HospitalReservation(Base):
     __tablename__ = "hospital_reservation"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now(), index=True)
@@ -177,7 +177,7 @@ class HospitalReservation(Base):
 
 class HospitalReservationProducts(Base):
     __tablename__ = "hospital_reservation_products"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
@@ -201,7 +201,7 @@ class HospitalReservationProducts(Base):
 
 class HospitalBonus(Base):
     __tablename__ = "hospital_bonus"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
@@ -220,7 +220,7 @@ class HospitalBonus(Base):
 
 class HospitalFact(Base):
     __tablename__ = "hospital_fact"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     fact = Column(Integer)
@@ -235,7 +235,7 @@ class HospitalFact(Base):
 
 class HospitalPostupleniyaFact(Base):
     __tablename__ = 'hospital_postupleniya_fact'
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     fact = Column(Integer)
@@ -251,7 +251,7 @@ class HospitalPostupleniyaFact(Base):
 
 class RemainderSumFromReservation(Base):
     __tablename__ = "remainder_sum_from_reservation"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amonut = Column(Integer)
@@ -287,7 +287,7 @@ class RemainderSumFromReservation(Base):
 
 class ReturnTable(Base):
     __tablename__ = 'return_table'
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
@@ -329,7 +329,7 @@ class ReturnTable(Base):
 
 class ReturnProducts(Base):
     __tablename__ = "return_products"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     reservation_quantity = Column(Integer) 

@@ -10,7 +10,7 @@ from db.db import Base
 
 class IncomingStockProducts(Base):
     __tablename__ = "incoming_stock_products"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
@@ -23,7 +23,7 @@ class IncomingStockProducts(Base):
 
 class IncomingBalanceInStock(Base):
     __tablename__ = "incoming_balance_in_stock"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
@@ -41,7 +41,7 @@ class IncomingBalanceInStock(Base):
 
 class CurrentBalanceInStock(Base):
     __tablename__ = "current_balance_in_stock"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -54,7 +54,7 @@ class CurrentBalanceInStock(Base):
 
 class CheckingStockProducts(Base):
     __tablename__ = "checking_stock_products"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     previous = Column(Integer)
@@ -70,7 +70,7 @@ class CheckingStockProducts(Base):
 
 class CheckingBalanceInStock(Base):
     __tablename__ = "checking_balance_in_stock"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now())
@@ -82,7 +82,7 @@ class CheckingBalanceInStock(Base):
 
 class Debt(Base):
     __tablename__ = "debt"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     description = Column(String)
@@ -111,7 +111,7 @@ class Debt(Base):
 
 class ReservationPayedAmounts(Base):
     __tablename__ = "reservation_payed_amounts"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -143,7 +143,7 @@ invoice_number_seq = Sequence('invoice_number_seq')
 
 class Reservation(Base):
     __tablename__ = "reservation"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     date = Column(DateTime, default=datetime.now(), index=True)
@@ -207,7 +207,7 @@ class Reservation(Base):
 
 class ReservationProducts(Base):
     __tablename__ = "reservation_products"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
@@ -272,7 +272,7 @@ class ReservationProducts(Base):
 
 class PharmacyHotSale(Base):
     __tablename__ = "pharmacy_hot_sale"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -294,7 +294,7 @@ class PharmacyHotSale(Base):
 
 class PharmacyFact(Base):
     __tablename__ = "pharmacy_fact"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     quantity = Column(Integer)
@@ -311,7 +311,7 @@ class PharmacyFact(Base):
 
 class Pharmacy(Base):
     __tablename__ = "pharmacy"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     company_name = Column(String)

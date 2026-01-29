@@ -25,7 +25,7 @@ def get_password_hash(password):
 
 class Region(Base):
     __tablename__ = "region"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -49,7 +49,7 @@ class Region(Base):
 
 class ManufacturedCompany(Base):
     __tablename__ = "manufactured_company"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -73,7 +73,7 @@ class ManufacturedCompany(Base):
 
 class ProductCategory(Base):
     __tablename__ = "product_category"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -97,7 +97,7 @@ class ProductCategory(Base):
 
 class ExpenseCategory(Base):
     __tablename__ = 'expense_category'
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -114,7 +114,7 @@ class ExpenseCategory(Base):
 
 class ProductExpenses(Base):
     __tablename__ = 'product_expenses'
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     marketing_expense = Column(Integer, default=0)
@@ -126,7 +126,7 @@ class ProductExpenses(Base):
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)
@@ -151,7 +151,7 @@ class Product(Base):
 
 class DoctorPlan(Base):
     __tablename__ = "doctor_plan"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     description = Column(String)
@@ -190,7 +190,7 @@ class DoctorPlan(Base):
 
 class DoctorVisitInfo(Base):
     __tablename__ = "doctor_visit_info"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     recept = Column(Integer)
@@ -212,7 +212,7 @@ class DoctorVisitInfo(Base):
 
 class PharmacyPlan(Base):
     __tablename__ = "pharmacy_plan"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     description = Column(String)
@@ -254,7 +254,7 @@ class PharmacyPlan(Base):
 
 class PharmacyPlanAttachedProduct(Base):
     __tablename__ = "pharmacy_plan_attached_product"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     doctor_name = Column(String)
@@ -272,7 +272,7 @@ class PharmacyPlanAttachedProduct(Base):
 
 class Notification(Base):
     __tablename__ = "notification"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     author = Column(String)
@@ -318,7 +318,7 @@ class Notification(Base):
 
 class UserProductPlan(Base):
     __tablename__ = "user_product_plan"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     amount = Column(Integer)
@@ -364,7 +364,7 @@ class UserProductPlan(Base):
 
 class EditablePlanMonths(Base):
     __tablename__ = "editable_plan_months"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     month = Column(Integer)
@@ -382,7 +382,7 @@ class EditablePlanMonths(Base):
 
 class UserLoginMonitoring(Base):
     __tablename__ = "user_login_monitoring"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
 
@@ -416,7 +416,7 @@ class UserLoginMonitoring(Base):
 
 class Users(Base):
     __tablename__ = "users"
-    __table_args__ = {"extend_existing": True}
+    
 
     id = Column(Integer, primary_key=True)
     full_name = Column(String)
