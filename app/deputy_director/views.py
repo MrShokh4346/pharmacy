@@ -120,6 +120,8 @@ async def delete_notofications(notofication_id: int, db: AsyncSession = Depends(
 async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession = Depends(get_db)):
     year = datetime.now().year
     day = datetime.now().day 
+    if plan.month and day > 28:
+        day = 28
     num_days = calendar.monthrange(year, plan.month)[1]
     start_date = date(year, plan.month, 1)  
     end_date = date(year, plan.month, num_days)
