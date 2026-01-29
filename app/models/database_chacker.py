@@ -1,9 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from db.db import engine
 import asyncio
-from .pharmacy import Reservation
-from .hospital import HospitalReservation
-from datetime import datetime
 from sqlalchemy.future import select
 from sqlalchemy import text 
 

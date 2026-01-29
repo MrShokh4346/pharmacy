@@ -60,7 +60,7 @@ class HospitalMonthlyPlan(Base):
     id = Column(Integer, primary_key=True)
     monthly_plan = Column(Integer)
     date = Column(DateTime, default=datetime.now(), index=True)
-    product = relationship("Product",  backref="hospitalmonthlyplan", lazy="selectin")
+    product = relationship("app.models.users.Product",  backref="hospitalmonthlyplan", lazy="selectin")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
     price = Column(Integer)
     discount_price = Column(Integer)
@@ -91,7 +91,7 @@ class HospitalReservationPayedAmounts(Base):
     description = Column(String)
     date = Column(DateTime, default=datetime.now())
     product_id = Column(Integer, ForeignKey("products.id", ondelete="CASCADE"), index=True)
-    product = relationship("Product", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
+    product = relationship("app.models.users.Product", cascade="all, delete", backref="hospital_reservation_payed_amounts", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"), index=True)
     reservation = relationship("HospitalReservation", cascade="all, delete", backref="payed_amounts", lazy='selectin'   )
 
@@ -185,7 +185,7 @@ class HospitalReservationProducts(Base):
     reservation_price = Column(Integer)
     reservation_discount_price = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Product", backref="hospital_reservation_products", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="hospital_reservation_products", lazy='selectin')
     reservation_id = Column(Integer, ForeignKey("hospital_reservation.id", ondelete="CASCADE"))
     reservation = relationship("HospitalReservation", cascade="all, delete", back_populates="products")
 
@@ -210,7 +210,7 @@ class HospitalBonus(Base):
     product_quantity = Column(Integer)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_bonus", cascade="all, delete")
-    product = relationship("Product",  backref="hospital_bonus", lazy='selectin')
+    product = relationship("app.models.users.Product",  backref="hospital_bonus", lazy='selectin')
     product_id = Column(Integer, ForeignKey("products.id"))
 
     async def paying_bonus(self, amount: int, db: AsyncSession):
@@ -229,7 +229,7 @@ class HospitalFact(Base):
     date = Column(DateTime, default=datetime.now(), index=True)
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"), index=True)
     hospital = relationship("Hospital", backref="hospital_fact", cascade="all, delete", lazy='selectin')
-    product = relationship("Product",  backref="hospital_fact")
+    product = relationship("app.models.users.Product",  backref="hospital_fact")
     product_id = Column(Integer, ForeignKey("products.id"), index=True)
 
 
@@ -245,7 +245,7 @@ class HospitalPostupleniyaFact(Base):
     date = Column(DateTime, default=datetime.now())
     hospital_id = Column(Integer, ForeignKey("hospital.id", ondelete="CASCADE"))
     hospital = relationship("Hospital", backref="hospital_postupleniya_fact", cascade="all, delete", lazy='selectin')
-    product = relationship("Product",  backref="hospital_postupleniya_fact")
+    product = relationship("app.models.users.Product",  backref="hospital_postupleniya_fact")
     product_id = Column(Integer, ForeignKey("products.id"))
 
 
@@ -335,6 +335,6 @@ class ReturnProducts(Base):
     reservation_quantity = Column(Integer) 
     return_quantity = Column(Integer)
     product_id = Column(Integer, ForeignKey("products.id"))
-    product = relationship("Product", backref="return_products", lazy='selectin')
+    product = relationship("app.models.users.Product", backref="return_products", lazy='selectin')
     return_table_id = Column(Integer, ForeignKey("return_table.id", ondelete="CASCADE"))
     return_table = relationship("ReturnTable", cascade="all, delete", backref="products", lazy='selectin')
