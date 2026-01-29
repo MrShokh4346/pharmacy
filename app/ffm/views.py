@@ -1,13 +1,15 @@
 from datetime import datetime, timedelta, timezone
+from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
+from app.models.users import Users
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
 from sqlalchemy.orm import Session
 from models.database import get_db
-from models.dependencies import *
-from typing import Any
+from typing import Annotated, Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 # from dotenv.main import load_dotenv
 
 # load_dotenv()

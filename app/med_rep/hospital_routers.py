@@ -1,17 +1,20 @@
+import calendar
 from datetime import datetime, timedelta, timezone
 from sqlite3 import IntegrityError
-from app.models.hospital import Hospital, HospitalBonus, HospitalFact, HospitalMonthlyPlan, HospitalReservationPayedAmounts
-from app.models.users import Product
+from app.models.hospital import Hospital, HospitalBonus, HospitalFact, HospitalMonthlyPlan, HospitalReservation, HospitalReservationPayedAmounts
+from app.models.users import Product, UserProductPlan, Users
 from app.services.hospitalMonthlyPlanService import HospitalMonthlyPlanService
 from app.services.hospitalReservationService import HospitalReservationService
 from fastapi import Depends, FastAPI, HTTPException, status
 # from models.hospital import *
 from fastapi import APIRouter
 from models.database import get_db, get_or_404
-from models.dependencies import *
 from typing import List
 from .hospital_schemas import *
 from common_depetencies import StartEndDates
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 
 router = APIRouter()

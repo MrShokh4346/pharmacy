@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta, timezone
-from app.models.users import ExpenseCategory, ManufacturedCompany, Notification, Product, ProductCategory, Region
+from app.common.utils import get_hot_sale
+from app.deputy_director.utils import get_postupleniya_facts, get_visit_facts
+from app.models.dependencies import get_current_user, auth_header
+from app.models.users import ExpenseCategory, ManufacturedCompany, Notification, Product, ProductCategory, Region, UserProductPlan, Users
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 
 # from app.models.expenses import Expense
 from .schemas import *
 from models.doctors import DoctorCategory, MedicalOrganization, Speciality
-from models.dependencies import *
 from models.database import get_db, get_or_404
 from typing import Annotated, List
 from fastapi.security import HTTPAuthorizationCredentials
@@ -16,7 +18,6 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from .utils import *
 from common_depetencies import StartEndDates
 # from dotenv.main import load_dotenv
 

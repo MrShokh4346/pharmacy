@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone, date
 from sqlite3 import IntegrityError
-from app.models.doctors import Bonus, BonusPayedAmounts, Distance, DoctorPostupleniyaFact
+from app.deputy_director.utils import check_if_plan_is_editable
+from app.models.dependencies import get_doctor_or_404, get_user
+from app.models.doctors import Bonus, BonusPayedAmounts, Distance, Doctor, DoctorFact, DoctorMonthlyPlan, DoctorPostupleniyaFact
 from app.services.bonusService import BonusService
 from app.services.doctorMonthlyPlanService import DoctorMonthlyPlanService
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -11,7 +13,6 @@ from fastapi import APIRouter, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import Product, Users, DoctorPlan, Notification,UserProductPlan
 from models.database import get_db, get_or_404
-from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import List, Annotated
 from deputy_director.schemas import DoctorVisitPlanOutSchema
@@ -21,7 +22,6 @@ from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import cast, Date
 import calendar
-from .utils import *
 from common_depetencies import StartEndDates
 
 

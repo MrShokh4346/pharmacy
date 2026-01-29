@@ -8,10 +8,8 @@ from app.common_depetencies import StartEndDates
 from .wholesale_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-# from models.pharmacy import *
 from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservation, WholesaleReservationPayedAmounts
 from models.database import get_db, get_or_404
-from models.dependencies import *
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import List
 from sqlalchemy import text
