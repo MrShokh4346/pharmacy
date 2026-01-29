@@ -1,14 +1,13 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Float
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from datetime import date, datetime,  timedelta 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from sqlalchemy import update
 import calendar
-from .database import get_db, get_or_404
+from .database import get_or_404
 from db.db import Base
 
 

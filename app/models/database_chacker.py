@@ -1,7 +1,6 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 from db.db import engine
 import asyncio
-from sqlalchemy.future import select
 from sqlalchemy import text 
 
 

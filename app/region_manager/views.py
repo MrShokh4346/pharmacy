@@ -4,7 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from .schemas import RegisterForRMSchema, UserOutSchema
 from models.database import get_db
 from typing import Annotated, Any 
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = FastAPI()

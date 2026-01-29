@@ -5,9 +5,6 @@ from sqlalchemy.orm import selectinload
 import calendar
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func 
-from dotenv.main import load_dotenv
-from fastapi import Request, Depends, HTTPException
 from .users import Users, Product, UserProductPlan, ManufacturedCompany
 from .doctors import  Doctor, DoctorMonthlyPlan
 from sqlalchemy import text 
@@ -39,10 +36,6 @@ class Excel:
     doctor_count = 1
     manufacturer_colors = ['#61E143', '#7D94DF', '#FDEF3D', '#FEBD3C', '#3BFFC2']
 
-    # {
-    #     {'zavod': 'some',
-    #     'products': [1,2,4]}
-    # }
 
     def __init__(self, products: list) -> None:
         count = 9
@@ -233,8 +226,6 @@ async def write_med_rep(row, user, excel, format, worksheet, start_date, end_dat
     worksheet.write(row - 1, excel.sum_plan, user_fact['med_rep_total_paln_sum'], format)
     worksheet.write(row - 1, excel.sum_fact, user_fact['med_rep_total_fact_sum'], format)
 
-    # print(user.full_name, ': ', row, end_row)
-
     return end_row
 
 
@@ -254,7 +245,6 @@ async def write_product_manager(row, pm, excel, format, workbook, worksheet, sta
         end_row = row
 
     worksheet.merge_range(merge_row, excel.product_manager, end_row, excel.product_manager, pm.full_name, pm_format)
-    # print('\t', pm.full_name, ": ", merge_row, end_row)
     return end_row
 
 

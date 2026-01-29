@@ -1,7 +1,6 @@
-# from .main import ALGORITHM, SECRET_KEY, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import datetime, timedelta, timezone, date
 from sqlalchemy.ext.asyncio import AsyncSession
-from jose import JWTError, jwt
+from jose import jwt
 from dotenv.main import load_dotenv
 from fastapi import Request, Depends, HTTPException
 import os
@@ -13,8 +12,7 @@ from .warehouse import WholesaleReservation
 from typing import Annotated
 from .database import get_db
 from fastapi.security import HTTPBearer
-from openpyxl import Workbook, load_workbook
-import shutil
+from openpyxl import load_workbook
 from fastapi.responses import FileResponse
 import os
 import subprocess
@@ -30,32 +28,6 @@ SECRET_KEY = os.environ['SECRET_KEY']
 ALGORITHM = os.environ['ALGORITHM']
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-
-# from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-
-# conf = ConnectionConfig(
-#     MAIL_USERNAME = "heartly.company",
-#     MAIL_PASSWORD = os.environ['EMAIL_PASSWORD'],
-#     MAIL_FROM = os.environ['SMTP_USER'],
-#     MAIL_PORT = 587,
-#     MAIL_SERVER = "smtp.mail.ru",
-#     MAIL_FROM_NAME="Heartly Company",
-#     MAIL_STARTTLS = True,
-#     MAIL_SSL_TLS = False,
-#     USE_CREDENTIALS = True,
-#     VALIDATE_CERTS = True
-# )
-
-
-# async def simple_send(email: str, body: str):
-#     message = MessageSchema(
-#         subject="Confirmation code to get token",
-#         recipients=[email],
-#         body=body,
-#         subtype=MessageType.html)
-#     # fm = FastMail(conf)
-#     await fm.send_message(message)
-#     return {"msg":"Code sent to your email"}
 
 auth_header = HTTPBearer()
 

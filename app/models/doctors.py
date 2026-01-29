@@ -5,11 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from sqlalchemy import Table
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.future import select
-# from .users import UserProductPlan, Product
-from sqlalchemy import text
-import calendar
-from .database import  get_or_404
 from db.db import Base
 
 

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import text, update
+from sqlalchemy import text
 from db.db import Base
 
 

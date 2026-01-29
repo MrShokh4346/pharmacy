@@ -12,7 +12,8 @@ from typing import List
 from sqlalchemy.orm import selectinload
 from common_depetencies import StartEndDates
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select, update
+from sqlalchemy.future import select
+from sqlalchemy import update
 
 router = FastAPI()
 

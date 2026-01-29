@@ -3,14 +3,12 @@ from app.services.doctorPostupleniyaFactService import DoctorPostupleniyaFactSer
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, DateTime, Sequence, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, FastAPI, HTTPException, status
-from .doctors import DoctorPostupleniyaFact, Bonus
-from datetime import date, datetime, timedelta 
+from fastapi import HTTPException
+from datetime import datetime, timedelta 
 from .users import Product
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
-from .database import  get_db, get_or_404
+from .database import get_or_404
 from db.db import Base
 
 
@@ -108,29 +106,6 @@ class Wholesale(Base):
             await db.commit()
         except IntegrityError as e:
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
-
-
-# class ReportWholesaleWarehouse(Base):
-#     __tablename__ = "report_wholesale_warehouse"
-
-#     id = Column(Integer, primary_key=True)
-#     quantity = Column(Integer)
-#     price = Column(Integer)
-#     date = Column(DateTime, default=datetime.now())
-#     factory_id = Column(Integer, ForeignKey("manufactured_company.id"), nullable=True)
-#     factory = relationship("ManufacturedCompany", backref="wholesale_report_warehouse", lazy='selectin')
-#     wholesale_id = Column(Integer, ForeignKey("wholesale.id"), nullable=True)
-#     wholesale = relationship("Wholesale", backref="wholesale_report_warehouse", lazy='selectin')
-#     product_id = Column(Integer, ForeignKey("products.id"))
-#     product = relationship("Product", backref="wholesale_report_warehouse", lazy='selectin')
-
-#     async def save(self, db: AsyncSession, **kwargs):
-#         try:
-#             db.add(self)
-#             await CurrentWholesaleWarehouse.add(product_id=kwargs['product_id'], wholesale_id=kwargs['wholesale_id'], amount=kwargs['quantity'], price=kwargs['price'], db=db)
-#             await db.commit()
-#         except IntegrityError as e:
-#             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
 class CurrentWholesaleWarehouse(Base):

@@ -1,11 +1,10 @@
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Date, Float, Sequence, text 
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, FastAPI, HTTPException, status
-from datetime import date, datetime,  timedelta 
+from fastapi import HTTPException
+from datetime import datetime,  timedelta 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.future import select
-from sqlalchemy import update
 from db.db import Base
 
 
