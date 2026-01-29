@@ -143,7 +143,7 @@ class Product(Base):
     salary_expenses = Column(Integer, default=0)
     man_company = relationship("app.models.users.ManufacturedCompany", backref="product", lazy='selectin')
     man_company_id = Column(Integer, ForeignKey("manufactured_company.id"))
-    category = relationship("app.models.users.ProductCategory", backref="product", lazy='selectin')
+    category = relationship("ProductCategory", backref="product", lazy='selectin')
     category_id = Column(Integer, ForeignKey("product_category.id"))
 
     async def save(self, db: AsyncSession):
@@ -272,7 +272,7 @@ class PharmacyPlanAttachedProduct(Base):
     product_name = Column(String)
     compleated = Column(Integer)
     plan_id = Column(Integer, ForeignKey("pharmacy_plan.id", ondelete="CASCADE"))
-    plan = relationship("app.models.users.PharmacyPlan", cascade="all, delete", backref="products")
+    plan = relationship("PharmacyPlan", cascade="all, delete", backref="products")
 
     @classmethod
     def delete(cls, id: int, db: AsyncSession):
@@ -293,9 +293,9 @@ class Notification(Base):
     date = Column(DateTime, default=datetime.now())
     unread = Column(Boolean, default=True)
     med_rep_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    med_rep = relationship("app.models.users.Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
+    med_rep = relationship("Users", backref="notifications", cascade="all, delete", foreign_keys=[med_rep_id])
     region_manager_id = Column(Integer, ForeignKey("users.id"))
-    region_manager = relationship("app.models.users.Users", backref="rm_notifications", foreign_keys=[region_manager_id])
+    region_manager = relationship("Users", backref="rm_notifications", foreign_keys=[region_manager_id])
     pharmacy_id = Column(Integer, ForeignKey("pharmacy.id", ondelete="CASCADE"))
     pharmacy = relationship("app.models.pharmacy.Pharmacy", backref="notifications", cascade="all, delete", lazy='selectin')
     doctor_id = Column(Integer, ForeignKey("doctor.id", ondelete="CASCADE"))
@@ -443,18 +443,18 @@ class Users(Base):
     code = Column(String)
     expire_date = Column(DateTime)
 
-    region = relationship("app.models.users.Region", backref="user")
+    region = relationship("Region", backref="user")
     region_id = Column(Integer, ForeignKey("region.id"), index=True)  #####
     region_manager_id = Column(Integer, ForeignKey("users.id"), index=True)      #####
-    region_manager = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[region_manager_id])
+    region_manager = relationship("Users", remote_side=[id], foreign_keys=[region_manager_id])
     ffm_id = Column(Integer, ForeignKey("users.id"), index=True)               #####  
-    ffm = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[ffm_id])
+    ffm = relationship("Users", remote_side=[id], foreign_keys=[ffm_id])
     product_manager_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
-    product_manager = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[product_manager_id])
+    product_manager = relationship("Users", remote_side=[id], foreign_keys=[product_manager_id])
     deputy_director_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
-    deputy_director = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[deputy_director_id])
+    deputy_director = relationship("Users", remote_side=[id], foreign_keys=[deputy_director_id])
     director_id = Column(Integer, ForeignKey("users.id"), index=True)    #####
-    director = relationship("app.models.users.Users", remote_side=[id], foreign_keys=[director_id])
+    director = relationship("Users", remote_side=[id], foreign_keys=[director_id])
    
     @property
     def password(self):
