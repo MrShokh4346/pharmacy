@@ -3,7 +3,6 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
-from models.users import *
 from models.database import get_db
 from models.dependencies import *
 from typing import Any, List 

@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta, timezone
+from app.models.users import ExpenseCategory, ManufacturedCompany, Notification, Product, ProductCategory, Region
 from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 
 # from app.models.expenses import Expense
 from .schemas import *
-from models import *
-from models.doctors import DoctorCategory
+from models.doctors import DoctorCategory, MedicalOrganization, Speciality
 from models.dependencies import *
-from models.database import get_db
+from models.database import get_db, get_or_404
 from typing import Annotated, List
 from fastapi.security import HTTPAuthorizationCredentials
 from deputy_director.schemas import NotificationOutSchema, NotificationListSchema

@@ -5,13 +5,11 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from jose import JWTError, jwt
 from .schemas import *
 from fastapi import APIRouter
-# from models.users import *
 from models.hospital import HospitalFact, Hospital, HospitalBonus
 from models.doctors import DoctorFact, Doctor, Bonus, DoctorPostupleniyaFact, MedicalOrganization
 from models.pharmacy import PharmacyHotSale, Pharmacy
 from models.database import get_db, get_or_404
 from models.dependencies import *
-# from models.write_report import *
 from typing import Any
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.future import select
