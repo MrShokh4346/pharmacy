@@ -5,6 +5,7 @@ from app.deputy_director.utils import check_if_plan_is_editable, get_pm_sales, g
 from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
 from app.models.users import DoctorPlan, ManufacturedCompany, Notification, PharmacyPlan, Product, UserProductPlan, Users
 from app.models.write_report import write_to_excel
+from app.services.userProductPlanService import UserProductPlanService
 from fastapi import Depends, FastAPI, HTTPException, status
 from app.models.hospital import HospitalFact, Hospital
 from app.models.doctors import DoctorFact, Doctor, Bonus, DoctorMonthlyPlan, MedicalOrganization
@@ -134,7 +135,7 @@ async def add_user_product_plan(plan: UserProductPlanInSchema, db: AsyncSession 
     if user_product:
         raise HTTPException(status_code=404, detail='Plan already exists for this product in this month')
     plan = UserProductPlan(**data, current_amount=plan.amount, plan_month=plan_date)
-    await plan.save(db)
+    await  UserProductPlanService.save(plan, db)
     return plan 
 
 
