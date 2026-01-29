@@ -1,23 +1,13 @@
-from datetime import datetime, timedelta, timezone
 from app.models.dependencies import write_excel_wholesale
-from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-from .schemas import *
-from fastapi import APIRouter
-from sqlalchemy.orm import Session
+from app.wholesale.schemas import ReservationHistorySchema, ReservationOutSchema, ReservationSchema, ReturnProductSchema, WholesaleListSchema, WholesaleOutSchema, WholesaleOutputOutSchema, WholesaleOutputSchema, WholesaleProductsInSchema, WholesaleProductsSchema, WholesaleReservationSchema, WholesaleSchema, WholesaleUpdateSchema
+from fastapi import Depends, FastAPI, HTTPException
 from models.database import get_db, get_or_404
-from models.warehouse import ReportFactoryWerehouse, CurrentFactoryWarehouse, Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation, WholesaleReservationPayedAmounts
+from models.warehouse import Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation, WholesaleReservationPayedAmounts
 from models.pharmacy import CurrentBalanceInStock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Any, List
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-# from dotenv.main import load_dotenv
 
-# load_dotenv()
-
-# FASTAPI_ROOT_PATH = os.getenv("FASTAPI_ROOT_PATH")
-# router = FastAPI(root_path=FASTAPI_ROOT_PATH)
 router = FastAPI()
 
 @router.post('/add-wholesale', response_model=WholesaleOutSchema)
@@ -57,12 +47,6 @@ async def wholesale_add_product(wholesale_id: int, product: WholesaleProductsInS
 async def get_wholesale_products(wholesale_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(CurrentWholesaleWarehouse).filter(CurrentWholesaleWarehouse.wholesale_id==wholesale_id))
     return result.scalars().all()
-
-
-# @router.get('/get-wholesale-warehouse-incomes/{wholesale_id}', response_model=List[WholesaleWarehouseIncomeOutSchema])
-# async def get_wholesale_warehouse_incomes(wholesale_id: int, db: AsyncSession = Depends(get_db)):
-#     result = await db.execute(select(ReportWholesaleWarehouse).filter(ReportWholesaleWarehouse.wholesale_id==wholesale_id))  
-#     return result.scalars().all()
 
 
 @router.post('/wholesale-output', response_model=WholesaleOutputOutSchema)

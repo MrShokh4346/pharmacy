@@ -1,22 +1,20 @@
-from datetime import datetime, timedelta, timezone, date
+from datetime import datetime, date
 from sqlite3 import IntegrityError
 from app.deputy_director.utils import check_if_plan_is_editable
+from app.med_rep.doctor_schemas import AttachProductsListSchema, BonusHistory, BonusOutSchema, DoctorInSchema, DoctorListSchema, DoctorListWithPlanSchema, DoctorOutSchema, DoctorPlanMoveShema, DoctorProductPlanOutSchema, DoctorUpdateSchema, DoctorVisitPlanListSchema, RescheduleSchema, VisitInfoSchema
 from app.models.dependencies import get_doctor_or_404, get_user
 from app.models.doctors import Bonus, BonusPayedAmounts, Distance, Doctor, DoctorFact, DoctorMonthlyPlan, DoctorPostupleniyaFact
 from app.services.bonusService import BonusService
 from app.services.doctorMonthlyPlanService import DoctorMonthlyPlanService
-from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-from .doctor_schemas import *
+from fastapi import Depends, HTTPException
 from .pharmacy_schemas import PharmacyListSchema
-from fastapi import APIRouter, Path
+from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.users import Product, Users, DoctorPlan, Notification,UserProductPlan
 from models.database import get_db, get_or_404
-from fastapi.security import HTTPAuthorizationCredentials
-from typing import List, Annotated
+from typing import List, Optional
 from deputy_director.schemas import DoctorVisitPlanOutSchema
-from deputy_director.schemas import NotificationOutSchema, NotificationListSchema
+from deputy_director.schemas import NotificationListSchema
 from sqlalchemy import text
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload

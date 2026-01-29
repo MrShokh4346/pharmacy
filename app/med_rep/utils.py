@@ -1,4 +1,4 @@
-from models.users import EditablePlanMonths, UserProductPlan
+from models.users import EditablePlanMonths
 from models.doctors import DoctorMonthlyPlan
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession

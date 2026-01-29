@@ -1,22 +1,16 @@
-from datetime import datetime, timedelta, timezone, date
+from app.med_rep.wholesale_schemas import FactoryWarehouseOutSchema, WholesaleProductListSchema, WholesaleReportSchema, WholesaleReservationPayedAmountsSchema
 from app.models.pharmacy import CurrentBalanceInStock, IncomingBalanceInStock
 from app.models.users import Product
-from fastapi import Depends, FastAPI, HTTPException, status
-from jose import JWTError, jwt
-
+from fastapi import Depends
 from app.common_depetencies import StartEndDates
-from .wholesale_schemas import *
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservation, WholesaleReservationPayedAmounts
-from models.database import get_db, get_or_404
-from fastapi.security import HTTPAuthorizationCredentials
+from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservationPayedAmounts
+from models.database import get_db
 from typing import List
-from sqlalchemy import text
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy import and_
-import calendar
 
 
 router = APIRouter()

@@ -1,15 +1,15 @@
 import calendar
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 from sqlite3 import IntegrityError
+from app.med_rep.hospital_schemas import AttachProductsListSchema, BonusOutSchema, CheckPayedSchema, CheckSchema, ExpireDateSchema, HospitalAttachedProducts, HospitalOutSchema, HospitalProductPlanOutSchema, HospitalReservationOutSchema, HospitalReservationSchema, HospitalSchema, HospitalUpdateSchema, ReservationHistorySchema
 from app.models.hospital import Hospital, HospitalBonus, HospitalFact, HospitalMonthlyPlan, HospitalReservation, HospitalReservationPayedAmounts
 from app.models.users import Product, UserProductPlan, Users
 from app.services.hospitalMonthlyPlanService import HospitalMonthlyPlanService
 from app.services.hospitalReservationService import HospitalReservationService
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, HTTPException
 from fastapi import APIRouter
 from models.database import get_db, get_or_404
 from typing import List
-from .hospital_schemas import *
 from common_depetencies import StartEndDates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
