@@ -123,7 +123,7 @@ class NotificationOutSchema(BaseModel):
     theme: Optional[str] = None 
     description: Optional[str] = None 
     description2: Optional[str] = None 
-    date: date 
+    date: datetime
     unread: bool
     doctor: Optional[DoctorListSchema] = None
     pharmacy: Optional[PharmacyOutSchema] = None
