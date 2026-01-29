@@ -19,9 +19,12 @@ router = APIRouter()
 async def authenticate_user(db: AsyncSession, username: str, password: str):
     result = await db.execute(select(Users).filter(Users.username == username))
     user = result.scalar()
+    hashed_password = user.hashed_password
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if isinstance(hashed_password, bytes):
+        hashed_password = hashed_password.decode('utf-8')
+    if not verify_password(password, hashed_password):
         return False
     return user
 
