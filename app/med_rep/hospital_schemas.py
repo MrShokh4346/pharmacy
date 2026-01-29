@@ -1,6 +1,6 @@
 from pydantic import BaseModel, validator
 from typing import List, Optional, Annotated
-from models.doctors import Speciality
+from app.models.doctors import Speciality
 from common.schemas import RegionSchema, DoctorCategorySchema, ManufacturedCompanySchema, DoctorSpecialitySchema, MedicalOrganizationOutSchema, ProductOutSchema
 from datetime import date, datetime
 from enum import Enum

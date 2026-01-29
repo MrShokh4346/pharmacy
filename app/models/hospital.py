@@ -11,7 +11,7 @@ from db.db import Base
 
 class Hospital(Base):
     __tablename__ = "hospital"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -55,7 +55,7 @@ class Hospital(Base):
 
 class HospitalMonthlyPlan(Base):
     __tablename__ = "hospital_monthly_plan"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -79,7 +79,7 @@ class HospitalMonthlyPlan(Base):
 
 class HospitalReservationPayedAmounts(Base):
     __tablename__ = "hospital_reservation_payed_amounts"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)

@@ -6,10 +6,10 @@ from app.models.dependencies import check_if_user_already_exists, get_current_us
 from app.models.users import DoctorPlan, ManufacturedCompany, Notification, PharmacyPlan, Product, UserProductPlan, Users
 from app.models.write_report import write_to_excel
 from fastapi import Depends, FastAPI, HTTPException, status
-from models.hospital import HospitalFact, Hospital
-from models.doctors import DoctorFact, Doctor, Bonus, DoctorMonthlyPlan, MedicalOrganization
-from models.pharmacy import PharmacyHotSale, Pharmacy
-from models.database import get_db, get_or_404
+from app.models.hospital import HospitalFact, Hospital
+from app.models.doctors import DoctorFact, Doctor, Bonus, DoctorMonthlyPlan, MedicalOrganization
+from app.models.pharmacy import PharmacyHotSale, Pharmacy
+from app.models.database import get_db, get_or_404
 from typing import Annotated, Any, List
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.future import select

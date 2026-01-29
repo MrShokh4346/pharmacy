@@ -3,10 +3,10 @@ from starlette.responses import JSONResponse
 from sqlalchemy.future import select
 from sqlalchemy import delete, update
 from expenses.schemas.sch_office import OfficeSchema, OfficeGetSchema
-from models.expenses import Office
+from app.models.expenses import Office
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
-from models.database import get_db
+from app.models.database import get_db
 
 
 router = APIRouter(

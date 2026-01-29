@@ -4,7 +4,7 @@ from app.models.dependencies import check_if_user_already_exists, get_current_us
 from app.models.users import Users
 from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy.orm import Session
-from models.database import get_db
+from app.models.database import get_db
 from typing import Annotated, Any
 from fastapi.security import HTTPAuthorizationCredentials
 

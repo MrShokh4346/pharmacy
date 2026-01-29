@@ -10,7 +10,7 @@ from db.db import Base
 
 class IncomingStockProducts(Base):
     __tablename__ = "incoming_stock_products"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -24,7 +24,7 @@ class IncomingStockProducts(Base):
 
 class IncomingBalanceInStock(Base):
     __tablename__ = "incoming_balance_in_stock"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -43,7 +43,7 @@ class IncomingBalanceInStock(Base):
 
 class CurrentBalanceInStock(Base):
     __tablename__ = "current_balance_in_stock"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -57,7 +57,7 @@ class CurrentBalanceInStock(Base):
 
 class CheckingStockProducts(Base):
     __tablename__ = "checking_stock_products"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -74,7 +74,7 @@ class CheckingStockProducts(Base):
 
 class CheckingBalanceInStock(Base):
     __tablename__ = "checking_balance_in_stock"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -87,7 +87,7 @@ class CheckingBalanceInStock(Base):
 
 class Debt(Base):
     __tablename__ = "debt"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)

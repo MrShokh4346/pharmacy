@@ -6,8 +6,8 @@ from app.deputy_director.utils import get_postupleniya_facts, get_visit_facts
 from app.models.dependencies import get_current_user, auth_header
 from app.models.users import ExpenseCategory, ManufacturedCompany, Notification, Product, ProductCategory, Region, UserProductPlan, Users
 from fastapi import Depends, FastAPI, HTTPException, status
-from models.doctors import DoctorCategory, MedicalOrganization, Speciality
-from models.database import get_db, get_or_404
+from app.models.doctors import DoctorCategory, MedicalOrganization, Speciality
+from app.models.database import get_db, get_or_404
 from typing import Annotated, List
 from fastapi.security import HTTPAuthorizationCredentials
 from deputy_director.schemas import NotificationOutSchema, NotificationListSchema, UserSchema

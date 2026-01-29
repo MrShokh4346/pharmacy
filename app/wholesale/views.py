@@ -1,9 +1,9 @@
 from app.models.dependencies import write_excel_wholesale
 from app.wholesale.schemas import ReservationHistorySchema, ReservationOutSchema, ReservationSchema, ReturnProductSchema, WholesaleListSchema, WholesaleOutSchema, WholesaleOutputOutSchema, WholesaleOutputSchema, WholesaleProductsInSchema, WholesaleProductsSchema, WholesaleReservationSchema, WholesaleSchema, WholesaleUpdateSchema
 from fastapi import Depends, FastAPI, HTTPException
-from models.database import get_db, get_or_404
-from models.warehouse import Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation, WholesaleReservationPayedAmounts
-from models.pharmacy import CurrentBalanceInStock
+from app.models.database import get_db, get_or_404
+from app.models.warehouse import Wholesale, CurrentWholesaleWarehouse,  WholesaleOutput, WholesaleReservation, WholesaleReservationPayedAmounts
+from app.models.pharmacy import CurrentBalanceInStock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from typing import Any, List

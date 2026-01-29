@@ -2,10 +2,10 @@ from typing import List
 from sqlalchemy.future import select
 from sqlalchemy import delete, update
 from expenses.schemas.sch_categories import ExpenseCategoriesSchema, CategoriesGetSchema
-from models.expenses import ExpenseCategories
+from app.models.expenses import ExpenseCategories
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Response, status, HTTPException, Depends, APIRouter
-from models.database import get_db
+from app.models.database import get_db
 
 
 router = APIRouter(

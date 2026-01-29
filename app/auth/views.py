@@ -3,10 +3,10 @@ from app.auth.schemas import EditablePlanMonthsSchema, LoginEmailCodeSchema, Log
 from app.models.users import EditablePlanMonths, UserLoginMonitoring, Users, verify_password
 from fastapi import Depends, HTTPException, status
 from fastapi import APIRouter
-from models.dependencies import create_access_token
+from app.models.dependencies import create_access_token
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.pharmacy import Reservation
-from models.database import get_db, get_or_404
+from app.models.pharmacy import Reservation
+from app.models.database import get_db, get_or_404
 from sqlalchemy.future import select
 import string
 from common_depetencies import StartEndDates2

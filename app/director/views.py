@@ -4,7 +4,7 @@ from app.models.dependencies import check_if_user_already_exists, get_current_us
 from app.models.users import Users
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi import APIRouter
-from models.database import get_db
+from app.models.database import get_db
 from typing import Annotated, Any
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -2,7 +2,7 @@ from app.project_manager.schemas import RegisterForPMSchema, UserOutSchema
 from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
 from app.models.users import Users
 from fastapi import Depends, FastAPI, HTTPException, status
-from models.database import get_db
+from app.models.database import get_db
 from typing import Annotated, Any
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession

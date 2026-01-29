@@ -10,8 +10,8 @@ from fastapi import Depends, HTTPException
 from .pharmacy_schemas import PharmacyListSchema
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.users import Product, Users, DoctorPlan, Notification,UserProductPlan
-from models.database import get_db, get_or_404
+from app.models.users import Product, Users, DoctorPlan, Notification,UserProductPlan
+from app.models.database import get_db, get_or_404
 from typing import List, Optional
 from deputy_director.schemas import DoctorVisitPlanOutSchema
 from deputy_director.schemas import NotificationListSchema

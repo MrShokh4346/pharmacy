@@ -5,8 +5,8 @@ from fastapi import Depends
 from app.common_depetencies import StartEndDates
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservationPayedAmounts
-from models.database import get_db
+from app.models.warehouse import CurrentWholesaleWarehouse, Wholesale, CurrentFactoryWarehouse, WholesaleReservationPayedAmounts
+from app.models.database import get_db
 from typing import List
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload

@@ -14,7 +14,7 @@ from db.db import Base
 
 class ReportFactoryWerehouse(Base):
     __tablename__ = "report_factory_warehouse"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -39,7 +39,7 @@ class ReportFactoryWerehouse(Base):
 
 class CurrentFactoryWarehouse(Base):
     __tablename__ = "current_factory_warehouse"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -63,7 +63,7 @@ class CurrentFactoryWarehouse(Base):
 
 class Wholesale(Base):
     __tablename__ = "wholesale"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)

@@ -8,7 +8,7 @@ from region_manager.views import router as rm_router
 from deputy_director.views import router as dd_router
 from director.views import router as d_router
 from db.db import Base
-from models.database_chacker import delete_expired_objects
+from app.models.database_chacker import delete_expired_objects
 from expenses.endpoints.routers import router as ex_router
 from med_rep.router import router as mr_router
 from head_of_orders.views import router as ho_router

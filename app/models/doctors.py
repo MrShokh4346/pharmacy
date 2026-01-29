@@ -10,7 +10,7 @@ from db.db import Base
 
 class Distance(Base):
     __tablename__ = "distance"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -19,7 +19,7 @@ class Distance(Base):
 
 class Speciality(Base):
     __tablename__ = "speciality"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -44,7 +44,7 @@ class Speciality(Base):
 
 class DoctorCategory(Base):
     __tablename__ = "doctor_category"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)
@@ -69,7 +69,7 @@ class DoctorCategory(Base):
 
 class MedicalOrganization(Base):
     __tablename__ = "medical_organization"
-    __table_args__ = {'extend_existing': True}
+
     
 
     id = Column(Integer, primary_key=True)

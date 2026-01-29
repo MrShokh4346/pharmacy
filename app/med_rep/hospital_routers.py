@@ -8,7 +8,7 @@ from app.services.hospitalMonthlyPlanService import HospitalMonthlyPlanService
 from app.services.hospitalReservationService import HospitalReservationService
 from fastapi import Depends, HTTPException
 from fastapi import APIRouter
-from models.database import get_db, get_or_404
+from app.models.database import get_db, get_or_404
 from typing import List
 from common_depetencies import StartEndDates
 from sqlalchemy.ext.asyncio import AsyncSession

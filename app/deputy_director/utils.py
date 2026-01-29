@@ -1,10 +1,10 @@
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from models.users import EditablePlanMonths, UserProductPlan, Users
-from models.pharmacy import  Reservation
-from models.warehouse import  WholesaleReservation
-from models.hospital import HospitalReservation
+from app.models.users import EditablePlanMonths, UserProductPlan, Users
+from app.models.pharmacy import  Reservation
+from app.models.warehouse import  WholesaleReservation
+from app.models.hospital import HospitalReservation
 from sqlalchemy.future import select
 from fastapi import HTTPException
 from collections import defaultdict

@@ -10,11 +10,11 @@ from app.services.reservationService import ReservationService
 from fastapi import Depends, HTTPException
 from app.common_depetencies import StartEndDates
 from .doctor_schemas import DoctorListSchema
-from models.doctors import Doctor, pharmacy_doctor
+from app.models.doctors import Doctor, pharmacy_doctor
 from fastapi import APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
-from models.users import PharmacyPlan, Notification
-from models.database import get_db, get_or_404
+from app.models.users import PharmacyPlan, Notification
+from app.models.database import get_db, get_or_404
 from typing import List
 from deputy_director.schemas import PharmacyVisitPlanOutSchema, PharmacyVisitPlanListSchema
 from deputy_director.schemas import NotificationOutSchema, NotificationListSchema
