@@ -394,7 +394,7 @@ async def get_wholesale_reservation_products(reservation_id: int, discount: floa
     return {"msg":"Done"}
 
 
-@router.post('/pay-reservation/{reservation_id}')
+@router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)
 async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
@@ -402,7 +402,7 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
         raise HTTPException(status_code=400, detail=f"Reservation not found")
     # await reservation.pay_reservation(**obj.dict(), db=db)
     await ReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
-    return {"msg":"Done"}
+    return reservation
 
 
 @router.post('/pay-hospital-reservation/{reservation_id}', response_model=ReservationOutSchema)
@@ -499,7 +499,7 @@ async def return_product_from_reservation(reservation_id: int, product_id: int, 
         raise HTTPException(status_code=400, detail=f"Reservation not found")
     # await reservation.return_product(product_id, quantity, db)
     await ReservationService.return_product(reservation=reservation, db=db, product_id=product_id, quantity=quantity)
-    return reservation
+    return {"msg: Done"}
 
 
 @router.post('/add-reservation-product')
