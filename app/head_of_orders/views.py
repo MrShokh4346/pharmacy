@@ -394,7 +394,7 @@ async def get_wholesale_reservation_products(reservation_id: int, discount: floa
     return {"msg":"Done"}
 
 
-@router.post('/pay-reservation/{reservation_id}', response_model=ReservationOutSchema)
+@router.post('/pay-reservation/{reservation_id}')
 async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Reservation).where(Reservation.id==reservation_id))
     reservation = result.scalars().first()
@@ -402,7 +402,7 @@ async def pay_pharmacy_reservation(reservation_id: int, obj: PayReservtionSchema
         raise HTTPException(status_code=400, detail=f"Reservation not found")
     # await reservation.pay_reservation(**obj.dict(), db=db)
     await ReservationService.pay_reservation(reservation=reservation, db=db, **obj.dict())
-    return reservation
+    return {"msg":"Done"}
 
 
 @router.post('/pay-hospital-reservation/{reservation_id}', response_model=ReservationOutSchema)
