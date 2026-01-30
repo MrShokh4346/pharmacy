@@ -93,7 +93,7 @@ class ReservationService:
                         raise HTTPException(status_code=404, detail=f"There is no doctor plan with this product (product_id={obj['product_id']}) in this doctor (doctor_id={obj['doctor_id']})")
 
                 reservation.reailized_debt += obj['amount'] * obj['quantity']
-                reservation = ReservationPayedAmounts(
+                reservation_pay = ReservationPayedAmounts(
                                         total_sum=kwargs['total'], 
                                         remainder_sum=kwargs['total'] - current, 
                                         amount=obj['amount'] * obj['quantity'], 
@@ -104,14 +104,14 @@ class ReservationService:
                                         product_id=obj['product_id'], 
                                         month_number=obj['month_number'],
                                         doctor_id=obj['doctor_id'])
-                await reservation.save(db)
+                await reservation_pay.save(db)
                 await ReservationProducts.set_payed_quantity(
                                             quantity=obj['quantity'],
-                                            reservation_id=reservation.reservation_id,
+                                            reservation_id=reservation_pay.reservation_id,
                                             product_id=obj['product_id'],
                                             db=db
                                             )
-                if reservation.bonus == True:
+                if reservation_pay.bonus == True:
                     await DoctorPostupleniyaFactService.set_fact(price=obj['amount'], fact_price=obj['amount'] * obj['quantity'], product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
                     await BonusService.set_bonus(product_id=obj['product_id'], doctor_id=obj['doctor_id'], compleated=obj['quantity'], month_number=obj['month_number'], db=db)
             await db.commit()
