@@ -214,7 +214,7 @@ async def paying_bonus(bonus_id: int, amount: int, description: str | None = Non
     if amount < 0:
         raise HTTPException(status_code=400, detail="Amount should be greater  then 0")
     bonus = await get_or_404(Bonus, bonus_id, db)
-    await bonus.paying_bonus(amount, description, db)    
+    await BonusService.paying_bonus(bonus, amount, description, db)
     return bonus
 
 

@@ -11,13 +11,13 @@ from app.models.users import Product
 class BonusService:
     
     @staticmethod
-    async def paying_bonus(self, amount: int, description: str, db: AsyncSession):
-        payed = BonusPayedAmounts(amount=amount, description=description, bonus_id=self.id)
+    async def paying_bonus(bonus: Bonus, amount: int, description: str, db: AsyncSession):
+        payed = BonusPayedAmounts(amount=amount, description=description, bonus_id=bonus.id)
         db.add(payed)
-        self.payed += amount
-        difference = self.payed - self.amount
+        bonus.payed += amount
+        difference = bonus.payed - bonus.amount
         if difference > 0:
-            self.pre_investment = difference
+            bonus.pre_investment = difference
         await db.commit()
 
     
