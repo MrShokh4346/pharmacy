@@ -2,10 +2,10 @@ from app.models.users import Product, ProductExpenses, UserProductPlan
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import update
+from sqlalchemy import update
 
 
-class ProductService:
+class ProductService:   
 
     @staticmethod
     async def update(product: Product, db: AsyncSession, **kwargs):
