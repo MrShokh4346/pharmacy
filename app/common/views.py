@@ -5,6 +5,7 @@ from app.common.utils import get_hot_sale
 from app.deputy_director.utils import get_postupleniya_facts, get_visit_facts
 from app.models.dependencies import get_current_user, auth_header
 from app.models.users import ExpenseCategory, ManufacturedCompany, Notification, Product, ProductCategory, Region, UserProductPlan, Users
+from app.services.productService import ProductService
 from fastapi import Depends, FastAPI, HTTPException, status
 from app.models.doctors import DoctorCategory, MedicalOrganization, Speciality
 from app.models.database import get_db, get_or_404
@@ -264,7 +265,8 @@ async def add_medcine(product: ProductInSchema, db: AsyncSession = Depends(get_d
 @router.put('/update-product/{product_id}', response_model=ProductOutSchema)
 async def update_doctor_category(product_id: int, obj: ProductUpdateSchema, db: AsyncSession = Depends(get_db)):
     product = await get_or_404(Product, product_id, db)
-    await product.update(**obj.dict(), db=db)
+    # await product.update(**obj.dict(), db=db)
+    await ProductService.update(product=product, db=db, **obj.dict())
     return product
     
 

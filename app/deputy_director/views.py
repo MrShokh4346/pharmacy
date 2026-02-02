@@ -5,6 +5,7 @@ from app.deputy_director.utils import check_if_plan_is_editable, get_pm_sales, g
 from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
 from app.models.users import DoctorPlan, ManufacturedCompany, Notification, PharmacyPlan, Product, UserProductPlan, Users
 from app.models.write_report import write_to_excel
+from app.services.productService import ProductService
 from app.services.userProductPlanService import UserProductPlanService
 from fastapi import Depends, FastAPI, HTTPException, status
 from app.models.hospital import HospitalFact, Hospital
@@ -409,7 +410,7 @@ async def get_proccess_report(month: int, db: AsyncSession = Depends(get_db)):
 @router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)
 async def set_product_expenses(product_id: int, marketing_expenses: int | None = None, salary_expenses: int | None = None, db: AsyncSession = Depends(get_db)):
     product = await get_or_404(Product, product_id, db)
-    await product.set_expenses(marketing_expenses=marketing_expenses, salary_expenses=salary_expenses, db=db)
+    await ProductService.update(product=product, db=db, marketing_expenses=marketing_expenses, salary_expenses=salary_expenses)
     return product
 
 
