@@ -410,7 +410,7 @@ async def get_proccess_report(month: int, db: AsyncSession = Depends(get_db)):
 @router.get('/set-product-expenses/{product_id}', response_model=ProductExpensesSchema)
 async def set_product_expenses(product_id: int, marketing_expenses: int | None = None, salary_expenses: int | None = None, db: AsyncSession = Depends(get_db)):
     product = await get_or_404(Product, product_id, db)
-    await ProductService.update(product=product, db=db, marketing_expenses=marketing_expenses, salary_expenses=salary_expenses)
+    await ProductService.set_expenses(product=product, db=db, marketing_expenses=marketing_expenses, salary_expenses=salary_expenses)
     return product
 
 
