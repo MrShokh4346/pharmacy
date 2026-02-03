@@ -37,6 +37,13 @@ class UserOutSchema(BaseModel):
     #     orm_mode = True
 
 
+class UserRegistrOutSchema(BaseModel):
+    id: int
+    username: str
+    full_name: str
+    status: str
+
+
 class LoginSchema(BaseModel):
     password: str
     username: str

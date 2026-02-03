@@ -1,5 +1,5 @@
 from datetime import datetime, date 
-from app.auth.schemas import UserOutSchema
+from app.auth.schemas import UserRegistrOutSchema
 from app.deputy_director.schemas import DoctorVisitPlanOutSchema, DoctorVisitPlanSchema, NotificationListSchema, NotificationOutSchema, NotificationSchema, PharmacyVisitPlanOutSchema, PharmacyVisitPlanSchema, ProductExpensesSchema, RegisterForDDSchema, ReportSchema, UserProductPlanInSchema, UserProductPlanOutSchema
 from app.deputy_director.utils import check_if_plan_is_editable, get_pm_sales, get_postupleniya_facts, get_sum_reservations, get_visit_facts
 from app.models.dependencies import check_if_user_already_exists, get_current_user, auth_header
@@ -25,7 +25,7 @@ from common_depetencies import StartEndDates
 router = FastAPI()
 
 
-@router.post('/register-for-dd', response_model=UserOutSchema, description='using RegisterForDDSchema')
+@router.post('/register-for-dd', response_model=UserRegistrOutSchema, description='using RegisterForDDSchema')
 async def register_user_for_pm(user: RegisterForDDSchema, manager: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: AsyncSession = Depends(get_db)) -> Any:
     if manager.status == 'deputy_director':
         await check_if_user_already_exists(username=user.username, db = db)
