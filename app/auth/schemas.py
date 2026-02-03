@@ -22,11 +22,17 @@ class UpdateUserSchema(RegisterSchema):
     username: str | None = None
 
 
+class  RegionSchema(BaseModel):
+    id: int
+    name: str
+
+
 class UserOutSchema(BaseModel):
     id: int
     username: str
     full_name: str
     status: str
+    region: Optional[RegionSchema]
     # class Config:
     #     orm_mode = True
 
