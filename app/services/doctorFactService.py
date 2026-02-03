@@ -16,7 +16,8 @@ class DoctorFactService:
         start_date = datetime(year, month, 1)  
         end_date = datetime(year, month, num_days, 23, 59)
         product = await get_or_404(Product, kwargs['product_id'], db)
-        result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==kwargs['doctor_id'], DoctorMonthlyPlan.pharmacy_id==kwargs['pharmacy_id'], DoctorMonthlyPlan.product_id==kwargs['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+        result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==kwargs['doctor_id'], DoctorMonthlyPlan.product_id==kwargs['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
+        # result = await db.execute(select(DoctorMonthlyPlan).filter(DoctorMonthlyPlan.doctor_id==kwargs['doctor_id'], DoctorMonthlyPlan.pharmacy_id==kwargs['pharmacy_id'], DoctorMonthlyPlan.product_id==kwargs['product_id'], DoctorMonthlyPlan.date>=start_date, DoctorMonthlyPlan.date<=end_date))
         month_fact = result.scalars().first()
         if month_fact is None:
             month_fact = DoctorMonthlyPlan(date=kwargs['visit_date'], doctor_id=kwargs['doctor_id'], pharmacy_id=kwargs['pharmacy_id'], product_id=kwargs['product_id'], fact=kwargs['compleated'], price=product.price, discount_price=product.discount_price)
