@@ -26,7 +26,7 @@ class UserOutSchema(BaseModel):
     id: int
     username: str
     full_name: str
-
+    status: str
     # class Config:
     #     orm_mode = True
 

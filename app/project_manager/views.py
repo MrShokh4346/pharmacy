@@ -14,7 +14,7 @@ router = FastAPI()
 @router.post('/register-for-pm', response_model=UserOutSchema, description='using RegisterForPMSchema')
 async def register_user_for_pm(user: RegisterForPMSchema, manager: Annotated[Users, Depends(get_current_user)], token: HTTPAuthorizationCredentials = Depends(auth_header), db: AsyncSession = Depends(get_db)) -> Any:
     if manager.status == 'product_manager':
-        check_if_user_already_exists(username=user.username, db = db)
+        await check_if_user_already_exists(username=user.username, db = db)
         if user.status == 'medical_representative':
             if not (user.region_manager_id and user.ffm_id):
                 raise HTTPException(
