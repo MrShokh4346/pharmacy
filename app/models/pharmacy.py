@@ -115,7 +115,7 @@ class Debt(Base):
             raise HTTPException(status_code=404, detail=str(e.orig).split('DETAIL:  ')[1].replace('.\n', ''))
 
 
-class ReservationPayedAmounts(Base):
+class ReservationPayedAmoPayedAmounts(Base):
     __tablename__ = "reservation_payed_amounts"
     __table_args__ = {'extend_existing': True}
     

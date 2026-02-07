@@ -72,7 +72,7 @@ class PayReservtionDoctors(BaseModel):
     quantity: int
     bonus: Optional[bool] = True 
     month_number: Annotated[int | None, Path(title="", gt=0, le=12)] = None
-    doctor_id: Optional[int] = None 
+    doctor_id: int 
     product_id: int 
 
 

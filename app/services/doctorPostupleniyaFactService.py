@@ -25,6 +25,7 @@ class DoctorPostupleniyaFactService:
         else:
             doctor_postupleniya.fact += kwargs['compleated']
             doctor_postupleniya.fact_price += kwargs['fact_price']
+        await db.commit()
 
 
     @staticmethod
