@@ -438,7 +438,7 @@ async def get_pharmacy_reservation_payed_remiainder(reservation_id: int, db: Asy
     data = {
         "description": reservation.description,
         "debt": reservation.debt,
-        "remiainder_sum": remainder.amount if remainder else 0,
+        "remiainder_sum": remainder.amonut if remainder else 0,
         "invoice_number": remainder.reservation_invoice_number if remainder else None,
         "reservation_unpayed_products": [{'product_id':prd.product_id, 'quantity': prd.not_payed_quantity, 'price':prd.reservation_price} for prd in result.scalars().all()]
     }
