@@ -273,7 +273,7 @@ class ReservationHistorySchema(BaseModel):
     description: Optional[str] = None
     date: datetime
     product: ProductSchema
-    doctor: DoctorSchema
+    # doctor: DoctorSchema
 
 
 class WarehouseProductSchema(BaseModel):
